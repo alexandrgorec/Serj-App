@@ -19,7 +19,7 @@ function NewBuyer({ setOrder, BUYERS, handleCloseNewBuyer, showNewBuyer, MANAGER
     result.liters = document.querySelector("#newBuyer-liters").value;
     result.tons = document.querySelector("#newBuyer-tons").value;
     result.price = document.querySelector("#newBuyer-price").value;
-    result.driver = document.querySelector("#newBuyer-manager").value;
+    result.manager = document.querySelector("#newBuyer-manager").value;
     result.otk = document.querySelector("#newBuyer-otk").value;
     return (result);
   }
@@ -64,7 +64,7 @@ function NewBuyer({ setOrder, BUYERS, handleCloseNewBuyer, showNewBuyer, MANAGER
   return (
     <Offcanvas show={showNewBuyer} onHide={handleCloseNewBuyer}>
       <Offcanvas.Header closeButton>
-        <Offcanvas.Title>Добавить поставщика</Offcanvas.Title>
+        <Offcanvas.Title>Добавить покупателя</Offcanvas.Title>
       </Offcanvas.Header>
       <Offcanvas.Body>
         <Select data={BUYERS} label="Покупатель" id="newBuyer-name" />

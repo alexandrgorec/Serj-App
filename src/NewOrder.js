@@ -3,6 +3,13 @@ import NewSupplier from './NewSupplier';
 import OrderTable from './OrderTable';
 import NewBuyer from './NewBuyer';
 
+import './NewOrder.css';
+import Form from 'react-bootstrap/Form';
+import FloatingLabel from 'react-bootstrap/FloatingLabel';
+import Select from "./Select";
+import Button from 'react-bootstrap/Button';
+import Offcanvas from 'react-bootstrap/Offcanvas';
+import { Alert } from 'react-bootstrap';
 
 import { useState } from 'react';
 
@@ -61,8 +68,8 @@ function NewOrder() {
       <NewBuyer
         setOrder={setOrder}
         BUYERS={BUYERS}
-        handleCloseNewSupplier={handleCloseNewBuyer}
-        showNewSupplier={showNewBuyer}
+        handleCloseNewBuyer={handleCloseNewBuyer}
+        showNewBuyer={showNewBuyer}
         MANAGERS={MANAGERS}
         TYPE_OF_PRODUCT={TYPE_OF_PRODUCT} />
     </>
