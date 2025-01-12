@@ -1,4 +1,3 @@
-import './NewOrder.css';
 import Form from 'react-bootstrap/Form';
 import FloatingLabel from 'react-bootstrap/FloatingLabel';
 import Select from "./Select";
