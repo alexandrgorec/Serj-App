@@ -15,11 +15,8 @@ const DRIVERS = ['Вася', "Петушара", "Димооооон", "Анат
 const TYPE_OF_PRODUCT = ['ДТ-Е-К5', "Дизель", "Не дизель", "GT-POWER"];
 const MANAGERS = ['Антон', "Сержан", "ЦАРЬ", "Иванов"];
 
-function NewOrder() {
-  const [order, setOrder] = useState({
-    suppliers: [],
-    buyers: [],
-  });
+function NewOrder({order,setOrder}) {
+
   const [alert, setAlert] = useState("");
   const [alertVariant, setAlertVariant] = useState("");
 
@@ -37,18 +34,21 @@ function NewOrder() {
     setAlert("");
   };
 
-
+ const clearData = () => {
+  setAlert("");
+  setOrder({
+    suppliers: [],
+    buyers: [],
+  });
+ }
   const sendData = () => {
     if (order.suppliers.length != 0 && order.buyers.length != 0) {
       axios.post(`http://${window.location.hostname}:3001/neworder`, order)
         .then(function (response) {
           if (response.data === "ok") {
+            clearData();
             setAlertVariant("success");
             setAlert("Заявка создана")
-            setOrder({
-              suppliers: [],
-              buyers: [],
-            });
           }
         })
         .catch(function (error) {
@@ -62,7 +62,7 @@ function NewOrder() {
   }
   return (
     <>
-      <div style={{ backgroundColor: "rgb(25, 147, 188)", textAlign: "center", padding: "5px" }}>Новая заявка</div>
+      <div style={{ backgroundColor: "rgb(25, 147, 188)", textAlign: "center", padding: "5px", userSelect:"none" }}>Новая заявка</div>
       <OrderTable
         handleShowNewSupplier={handleShowNewSupplier}
         handleShowNewBuyer={handleShowNewBuyer}
@@ -85,6 +85,7 @@ function NewOrder() {
         ? <Alert key={alertVariant} variant={alertVariant}> {alert} </Alert>
         : ""
       }
+      <Button variant="danger " onClick={clearData} style={{marginRight:"15px"}}>Очистить</Button>
       <Button variant="success" onClick={sendData}>Создать заявку</Button>
     </>
 

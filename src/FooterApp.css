@@ -1,0 +1,21 @@
+.footer {
+    background-color: #fdfdfd23;
+    padding-top: 10px;
+    border: 1px solid rgb(228, 228, 228);
+     position: fixed;
+     display: flex;
+     bottom: 0;
+     height: 80px;
+     width: 100%;
+     font-size: 19px;
+     font-weight: bold;
+     justify-content: center;
+     column-gap: 10px;
+     color:red;  
+}
+
+.footerButton{
+  height: 75%;
+  border-radius: 35%;
+  width: 60px;
+}
