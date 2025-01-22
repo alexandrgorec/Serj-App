@@ -1,21 +1,35 @@
 .footer {
     background-color: #fdfdfd23;
-    padding-top: 10px;
+    color:rgba(173, 173, 173, 0.993);
     border: 1px solid rgb(228, 228, 228);
+    padding-top: 4px;
+    padding-left: 15%;
+    padding-right: 15%;
      position: fixed;
      display: flex;
-     bottom: 0;
-     height: 80px;
+     bottom: -10px;
+     height: 90px;
      width: 100%;
-     font-size: 19px;
      font-weight: bold;
-     justify-content: center;
-     column-gap: 10px;
-     color:red;  
+     justify-content:space-around;
+     column-gap: 20px;
+}
+
+@media (max-width: 480px) {
+  .footer{
+      font-size: 10px;
+  }
 }
 
 .footerButton{
-  height: 75%;
-  border-radius: 35%;
-  width: 60px;
+  text-align: center;
+  user-select: none;
+}
+
+.footerButton:hover{
+  cursor: pointer;
+}
+
+.activeButton{
+  color:rgba(0, 132, 255, 0.61)
 }

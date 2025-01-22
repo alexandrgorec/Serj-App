@@ -2,6 +2,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 
 import NewOrder from "./NewOrder";
 import FooterApp from './FooterApp';
+import AllOrders from './AllOrders';
 import { useState } from 'react';
 
 
@@ -12,10 +13,11 @@ function App() {
     buyers: [],
   });
   return (
-    <>
-     {activeComponent === "NewOrder" ? <NewOrder order={newOrder} setOrder={setNewOrder} /> : ""}
-     <FooterApp setActiveComponent={setActiveComponent}/>
-    </>
+    <div style={{padding:'1px'}}>
+     {activeComponent === "NewOrder"  ? <NewOrder order={newOrder} setOrder={setNewOrder} /> : ""}
+     {activeComponent === "AllOrders" ? <AllOrders /> : ""}
+     <FooterApp setActiveComponent={setActiveComponent} activeComponent={activeComponent}/>
+    </div>
   );
 }
 

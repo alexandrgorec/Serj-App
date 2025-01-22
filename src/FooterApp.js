@@ -1,33 +1,61 @@
 import React from 'react';
 import './FooterApp.css';
-import { Button } from 'react-bootstrap';
+import { FaRegEdit } from "react-icons/fa";
+import { MdOutlineLibraryBooks } from "react-icons/md";
+import { LuWarehouse } from "react-icons/lu";
+import { useEffect } from 'react';
 
 
 
-function FooterApp({ setActiveComponent }) {
-  const setActiveButton = (buttonText) => {
+function FooterApp({ setActiveComponent, activeComponent }) {
+  const dropActiveStateFooterButtons = () => {
     let buttons = document.querySelectorAll(".footerButton");
     buttons.forEach(button => {
-      button.classList.remove("btn-outline-info");
-      button.classList.add("btn-outline-secondary");
-      if (button.innerText === buttonText) {
-        button.classList.remove("btn-outline-secondary");
-        button.classList.add("btn-outline-info");
-      }
+      button.classList.remove("activeButton");
     })
   }
-  const activeNewOrder = (evt) => {
-    setActiveButton(evt.target.innerText);
+  const activeNewOrder = () => {
+    dropActiveStateFooterButtons();
+    let button = document.querySelector(".divNewOrder");
+    button.classList.add("activeButton");
     setActiveComponent((active) => active = "NewOrder");
   }
-  const activeAllOrders = (evt) => {
-    setActiveButton(evt.target.innerText);
+  const activeAllOrders = () => {
+    dropActiveStateFooterButtons();
+    let button = document.querySelector(".divAllOrders");
+    button.classList.add("activeButton");
     setActiveComponent((active) => active = "AllOrders");
   }
+
+  const activeWareHouse = () => {
+    dropActiveStateFooterButtons();
+    let button = document.querySelector(".divWareHouse");
+    button.classList.add("activeButton");
+    setActiveComponent((active) => active = "WareHouse");
+  }
+
+  useEffect( () => {
+    let buttons = document.querySelectorAll(".footerButton");
+    buttons.forEach(button => {
+      if (button.classList.value.includes(activeComponent))
+        button.classList.add("activeButton");
+    })
+  })
+
   return (
     <div className='footer'>
-      <Button variant="outline-secondary" size="sm" className='footerButton' onClick={activeNewOrder}>Новая заявка</Button>
-      <Button variant="outline-secondary" size="sm" className='footerButton' onClick={activeAllOrders}>Все заявки</Button>
+      <div variant="outline-secondary" className='footerButton divNewOrder' onClick={activeNewOrder} >
+        <FaRegEdit size="3em" /><br />
+        Новая заявка
+      </div>
+      <div variant="outline-secondary" className='footerButton divAllOrders' onClick={activeAllOrders} >
+        <MdOutlineLibraryBooks size="3em" /><br />
+        Все заявки
+      </div>
+      <div variant="outline-secondary" className='footerButton divWareHouse' onClick={activeWareHouse} >
+        <LuWarehouse size="3em" /><br />
+        Склад
+      </div>
     </div>
 
 
