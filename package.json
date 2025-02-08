@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@craco/craco": "^7.1.0",
+    "@semantic-ui-react/craco-less": "^3.0.0",
     "antd": "^5.23.0",
     "axios": "^1.7.9",
     "bootstrap": "^5.3.3",
@@ -37,9 +39,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "devDependencies": {
-    "@craco/craco": "^7.1.0",
-    "@semantic-ui-react/craco-less": "^3.0.0"
   }
 }

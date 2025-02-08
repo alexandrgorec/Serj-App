@@ -4,13 +4,21 @@ import Select from "./Select";
 import Button from 'react-bootstrap/Button';
 import Offcanvas from 'react-bootstrap/Offcanvas';
 import { Alert } from 'react-bootstrap';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 
 
 
-function NewSupplier({ setOrder, SUPPLIERS, handleCloseNewSupplier, showNewSupplier, DRIVERS, TYPE_OF_PRODUCT }) {
+function NewSupplier({ setOrder, handleCloseNewSupplier, showNewSupplier, selectListsData, setLiterForSale }) {
   const [alert, setAlert] = useState("");
+
+  const handleAddLitersForSale = (liters, typeOfProduct) => {
+    setLiterForSale((litersObj) => {
+      litersObj[typeOfProduct] = (litersObj[typeOfProduct] || 0) + +liters;
+      console.log("litersObj",litersObj);
+      return(litersObj);
+    })
+  }
 
   const getSupplierData = () => {
     let result = {};
@@ -28,8 +36,6 @@ function NewSupplier({ setOrder, SUPPLIERS, handleCloseNewSupplier, showNewSuppl
   const verifySupplierData = (supplier) => {
     let verify = false;
     let errorVerifyMessage = "";
-    if (supplier.otk === "")
-      errorVerifyMessage = "ОТК не указан";
     if (supplier.driver === "")
       errorVerifyMessage = "Водитель не выбран";
     if (supplier.price === "")
@@ -52,7 +58,8 @@ function NewSupplier({ setOrder, SUPPLIERS, handleCloseNewSupplier, showNewSuppl
     const [verify, errorVerifyMessage] = verifySupplierData(newSupplier);
     if (verify) {
       setOrder((order) => {
-        order.suppliers.push(newSupplier)
+        order.suppliers.push(newSupplier);
+        handleAddLitersForSale(newSupplier.liters, newSupplier.typeOfProduct);
         return (order);
       })
       handleCloseNewSupplier();
@@ -62,15 +69,16 @@ function NewSupplier({ setOrder, SUPPLIERS, handleCloseNewSupplier, showNewSuppl
     }
   }
 
+  
   return (
     <Offcanvas show={showNewSupplier} onHide={handleCloseNewSupplier}>
       <Offcanvas.Header closeButton>
         <Offcanvas.Title>Добавить поставщика</Offcanvas.Title>
       </Offcanvas.Header>
       <Offcanvas.Body>
-        <Select data={SUPPLIERS} label="Поставщик" id="newSupplier-name" />
+        <Select data={selectListsData.SUPPLIERS} label="Поставщик" id="newSupplier-name" />
         <br />
-        <Select data={TYPE_OF_PRODUCT} label="Тип продукта" id="newSupplier-typeOfProduct" />
+        <Select data={selectListsData.TYPE_OF_PRODUCT} label="Тип продукта" id="newSupplier-typeOfProduct" />
         <br />
         <FloatingLabel label="Литры" className="mb-3" >
           <Form.Control as="input" type='number' id="newSupplier-liters" />
@@ -81,7 +89,7 @@ function NewSupplier({ setOrder, SUPPLIERS, handleCloseNewSupplier, showNewSuppl
         <FloatingLabel label="Цена" className="mb-3">
           <Form.Control as="input" type='number' id="newSupplier-price" />
         </FloatingLabel>
-        <Select data={DRIVERS} label="Водитель" id="newSupplier-driver" />
+        <Select data={selectListsData.DRIVERS} label="Водитель" id="newSupplier-driver" />
         <br />
         <FloatingLabel label="ОТК" className="mb-3">
           <Form.Control as="input" id="newSupplier-otk" />

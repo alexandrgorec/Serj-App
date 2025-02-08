@@ -4,17 +4,29 @@ import Select from "./Select";
 import Button from 'react-bootstrap/Button';
 import Offcanvas from 'react-bootstrap/Offcanvas';
 import { Alert } from 'react-bootstrap';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 
 
-function NewBuyer({ setOrder, BUYERS, handleCloseNewBuyer, showNewBuyer, MANAGERS, TYPE_OF_PRODUCT }) {
-  const [alert, setAlert] = useState("");
+
+function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, selectListsData, litersForSale, setLiterForSale }) {
+  const [message, setMessage] = useState("");
+  const [typeOfProduct, setTypeOfProduct] = useState('');
+  const refSelectTypeOfProduct = useRef(null);
+  const refLiters = useRef(null);
+
+
+
+  const handleMinusLitersForSale = (liters, typeOfProduct) => {
+    setLiterForSale((litersObj) => {
+      litersObj[typeOfProduct] = (litersObj[typeOfProduct] || 0) - (+liters);
+      return (litersObj);
+    })
+  }
 
   const getBuyerData = () => {
     let result = {};
     result.name = document.querySelector("#newBuyer-name").value;
-    console.log(result.name);
     result.typeOfProduct = document.querySelector("#newBuyer-typeOfProduct").value;
     result.liters = document.querySelector("#newBuyer-liters").value;
     result.tons = document.querySelector("#newBuyer-tons").value;
@@ -27,8 +39,6 @@ function NewBuyer({ setOrder, BUYERS, handleCloseNewBuyer, showNewBuyer, MANAGER
   const verifyBuyerData = (Buyer) => {
     let verify = false;
     let errorVerifyMessage = "";
-    if (Buyer.otk === "")
-      errorVerifyMessage = "ОТК не указан";
     if (Buyer.manager === "")
       errorVerifyMessage = "менеджер не выбран";
     if (Buyer.price === "")
@@ -41,8 +51,13 @@ function NewBuyer({ setOrder, BUYERS, handleCloseNewBuyer, showNewBuyer, MANAGER
       errorVerifyMessage = "Тип продукта не выбран";
     if (Buyer.name === "")
       errorVerifyMessage = "Покупатель не выбран";
+    if (Buyer.liters > litersForSale[Buyer.typeOfProduct])
+      errorVerifyMessage = "Количество литров превышает поставляемое значение";
+    if (Buyer.liters == 0)
+      errorVerifyMessage = "Количество литров не может быть равно 0";
     if (errorVerifyMessage === "")
       verify = true;
+
     return ([verify, errorVerifyMessage]);
   }
 
@@ -51,28 +66,54 @@ function NewBuyer({ setOrder, BUYERS, handleCloseNewBuyer, showNewBuyer, MANAGER
     const [verify, errorVerifyMessage] = verifyBuyerData(newBuyer);
     if (verify) {
       setOrder((order) => {
-        order.buyers.push(newBuyer)
+        order.buyers.push(newBuyer);
+        handleMinusLitersForSale(newBuyer.liters, newBuyer.typeOfProduct);
         return (order);
       })
       handleCloseNewBuyer();
     }
     else {
-      setAlert(errorVerifyMessage);
+      setMessage(errorVerifyMessage);
     }
   }
 
+  let set = new Set();
+  order.suppliers.forEach(supplier => {
+    if (litersForSale[supplier.typeOfProduct] != undefined && litersForSale[supplier.typeOfProduct] != 0)
+      set.add(supplier.typeOfProduct)
+  })
+  const TYPE_OF_PRODUCT = [...set];
+
+  let liters = 0;
+
+  // 
+  const handleOnShowBuyer = () => {
+    refSelectTypeOfProduct.current.addEventListener('change', () => {
+      refLiters.current.value = litersForSale[refSelectTypeOfProduct.current.value];
+    });
+
+
+    if (refSelectTypeOfProduct.current.length === 2) {
+      refSelectTypeOfProduct.current.selectedIndex = 1;
+      refLiters.current.value = litersForSale[refSelectTypeOfProduct.current.value];
+    }
+    setMessage('');
+  }
+
+
+
   return (
-    <Offcanvas show={showNewBuyer} onHide={handleCloseNewBuyer}>
+    <Offcanvas show={showNewBuyer} onShow={handleOnShowBuyer} onHide={handleCloseNewBuyer}>
       <Offcanvas.Header closeButton>
         <Offcanvas.Title>Добавить покупателя</Offcanvas.Title>
       </Offcanvas.Header>
       <Offcanvas.Body>
-        <Select data={BUYERS} label="Покупатель" id="newBuyer-name" />
+        <Select data={selectListsData.BUYERS} label="Покупатель" id="newBuyer-name" />
         <br />
-        <Select data={TYPE_OF_PRODUCT} label="Тип продукта" id="newBuyer-typeOfProduct" />
+        <Select data={TYPE_OF_PRODUCT} label="Тип продукта" id="newBuyer-typeOfProduct" ref={refSelectTypeOfProduct} />
         <br />
         <FloatingLabel label="Литры" className="mb-3" >
-          <Form.Control as="input" type='number' id="newBuyer-liters" />
+          <Form.Control type='number' id="newBuyer-liters" ref={refLiters} />
         </FloatingLabel>
         <FloatingLabel label="Тонны" className="mb-3">
           <Form.Control as="input" type='number' id="newBuyer-tons" />
@@ -80,7 +121,7 @@ function NewBuyer({ setOrder, BUYERS, handleCloseNewBuyer, showNewBuyer, MANAGER
         <FloatingLabel label="Цена" className="mb-3">
           <Form.Control as="input" type='number' id="newBuyer-price" />
         </FloatingLabel>
-        <Select data={MANAGERS} label="Менеджер" id="newBuyer-manager" />
+        <Select data={selectListsData.MANAGERS} label="Менеджер" id="newBuyer-manager" />
         <br />
         <FloatingLabel label="ОТК" className="mb-3">
           <Form.Control as="input" id="newBuyer-otk" />
@@ -88,14 +129,13 @@ function NewBuyer({ setOrder, BUYERS, handleCloseNewBuyer, showNewBuyer, MANAGER
         <Button style={{ float: 'left' }} variant="danger" onClick={handleCloseNewBuyer}>Отмена</Button>
         <Button style={{ float: 'right' }} variant="success" onClick={addNewBuyer}>Готово</Button>
         <br /><br />
-        {alert != ""
-          ? <Alert key="danger" variant="danger"> {alert} </Alert>
+        {message != ""
+          ? <Alert key="danger" variant="danger"> {message} </Alert>
           : ""
         }
       </Offcanvas.Body>
     </Offcanvas>
   );
 }
-
 
 export default NewBuyer;

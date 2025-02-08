@@ -36,7 +36,7 @@ function OrderTable({ handleShowNewSupplier, handleShowNewBuyer, order }) {
         </tbody>
         <thead>
           <tr>
-            <th colspan='5'><Button variant="primary" size="sm" onClick={handleShowNewBuyer}>+</Button> Покупатель </th>
+            <th colSpan='5'><Button variant="primary" size="sm" onClick={handleShowNewBuyer}>+</Button> Покупатель </th>
             <th>Менеджер</th>
             <th>Доставка</th>
           </tr>

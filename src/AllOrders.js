@@ -1,45 +1,60 @@
 import './AllOrders.css';
 import Table from 'react-bootstrap/Table';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Collapse from 'react-bootstrap/Collapse';
 import Button from 'react-bootstrap/Button';
 import axios from 'axios';
 
-function AllOrders() {
+const PORT = window.location.port === '3000' ? 3001 : window.location.port;
+
+
+function formatDate(date) {
+  date = new Date(Date.parse(date));
+  let dd = date.getDate();
+  if (dd < 10) dd = '0' + dd;
+
+  let mm = date.getMonth() + 1;
+  if (mm < 10) mm = '0' + mm;
+
+  let yy = date.getFullYear() % 100;
+  if (yy < 10) yy = '0' + yy;
+
+  return dd + '.' + mm + '.' + yy;
+}
+
+function AllOrders({ setAuth }) {
   const [openAll, setOpenAll] = useState(false);
   const [state, reload] = useState(false);
   const [orders, setOrders] = useState([]);
   const [needRequest, setNeedRequest] = useState(true)
   if (needRequest) {
-    axios.post(`http://${window.location.hostname}:3001/getallorders`)
+    axios.post(`http://${window.location.hostname}:${PORT}/getallorders`)
       .then(function (response) {
-        if (response.statusText === "OK") {
+        if (response.status === 202) {
           if (needRequest) {
             setNeedRequest(false);
             setOrders(response.data.map((order) => {
               order.open = false;
               return (order);
             }));
-            console.log("response is:", response.data);
           }
         }
+
       })
       .catch(function (error) {
         console.log(error);
       });
   }
-  console.log("orders is:", orders);
   return (
     <>
-      <div style={{ backgroundColor: "rgb(25, 147, 188)", textAlign: "center", padding: "5px", userSelect: "none" }}>Все заявки</div>
       <Button style={{ marginTop: '5px', marginBottom: '5px' }}
         onClick={() => {
-          setOrders( (orders) => {
-            orders.map( order => {
+          setOrders((orders) => {
+            orders.map(order => {
               order.open = !openAll;
-              return(order)
+              return (order)
             })
-            return(orders);
+            return (orders);
           })
           setOpenAll(!openAll);
         }}
@@ -50,7 +65,7 @@ function AllOrders() {
           orders.map((order, num) => {
             return (
               <>
-                <Table striped bordered hover onClick={() => {
+                <Table className='tableClickable colorborder' striped bordered hover onClick={() => {
                   setOrders((orders) => {
                     orders[num].open = !orders[num].open;
                     return (orders)
@@ -67,15 +82,15 @@ function AllOrders() {
                   </thead>
                   <tbody>
                     <tr>
-                      <td style={{ textAlign: 'center' }}>{num + 1}</td>
-                      <td>22.22.2025</td>
+                      <td style={{ textAlign: 'center', backgroundColor: 'rgb(238, 255, 0)' }}>{num + 1}</td>
+                      <td>{formatDate(order.orderdate)}</td>
                       <td>{
-                        order.suppliers.map((item) => {
+                        order.orderjson.suppliers.map((item) => {
                           return (item.name + "; ")
                         })
                       }</td>
                       <td>{
-                        order.buyers.map((item) => {
+                        order.orderjson.buyers.map((item) => {
                           return (item.name + "; ")
                         })
                       }</td>
@@ -83,7 +98,7 @@ function AllOrders() {
                   </tbody>
                 </Table>
                 <Collapse in={order.open}>
-                  <Table striped bordered hover onClick={() => {
+                  <Table className='tableClickable' striped bordered hover onClick={() => {
                     setOrders((orders) => {
                       orders[num].open = !orders[num].open;
                       return (orders)
@@ -102,7 +117,7 @@ function AllOrders() {
                       </tr>
                     </thead>
                     <tbody>
-                      {order.suppliers.map((supplier) => {
+                      {order.orderjson.suppliers.map((supplier) => {
                         return (
                           <tr>
                             <td>{supplier.name}</td>
@@ -124,7 +139,7 @@ function AllOrders() {
                       </tr>
                     </thead>
                     <tbody>
-                      {order.buyers.map((buyer) => {
+                      {order.orderjson.buyers.map((buyer) => {
                         return (
                           <tr>
                             <td>{buyer.name}</td>

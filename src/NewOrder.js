@@ -2,22 +2,25 @@ import NewSupplier from './NewSupplier';
 import OrderTable from './OrderTable';
 import NewBuyer from './NewBuyer';
 import Button from 'react-bootstrap/Button';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Alert } from 'react-bootstrap';
 import axios from 'axios';
 
+const PORT = window.location.port === '3000' ? 3001 : window.location.port;
 
-
-const SUPPLIERS = ['РНК', "Барс", "Грасс", "Юма"];
-const BUYERS = ['Техресурс', "Слава", "Мостпроект", "тройка-тт", "Тайга", "Сеч", "Горбунов"];
-const DRIVERS = ['Вася', "Петушара", "Димооооон", "Анатолий Степанович"];
-const TYPE_OF_PRODUCT = ['ДТ-Е-К5', "Дизель", "Не дизель", "GT-POWER"];
-const MANAGERS = ['Антон', "Сержан", "ЦАРЬ", "Иванов"];
-
-function NewOrder({order,setOrder}) {
-
+function NewOrder({ order, setOrder }) {
   const [alert, setAlert] = useState("");
   const [alertVariant, setAlertVariant] = useState("");
+  const [selectListsData, setSelectListsData] = useState({
+    SUPPLIERS: [],
+    BUYERS: [],
+    DRIVERS: [],
+    TYPE_OF_PRODUCT: [],
+    MANAGERS: [],
+  });
+  const [litersForSale, setLiterForSale] = useState({});
+
+
 
   const [showNewSupplier, setShowNewSupplier] = useState(false);
   const handleCloseNewSupplier = () => setShowNewSupplier(false);
@@ -33,18 +36,19 @@ function NewOrder({order,setOrder}) {
     setAlert("");
   };
 
- const clearData = () => {
-  setAlert("");
-  setOrder({
-    suppliers: [],
-    buyers: [],
-  });
- }
+  const clearData = () => {
+    setAlert("");
+    setOrder({
+      suppliers: [],
+      buyers: [],
+    });
+    setLiterForSale({});
+  }
   const sendData = () => {
     if (order.suppliers.length != 0 && order.buyers.length != 0) {
-      axios.post(`http://${window.location.hostname}:3001/neworder`, order)
+      axios.post(`http://${window.location.hostname}:${PORT}/neworder`, order)
         .then(function (response) {
-          if (response.data === "ok") {
+          if (response.data === 'заявка создана') {
             clearData();
             setAlertVariant("success");
             setAlert("Заявка создана")
@@ -59,32 +63,43 @@ function NewOrder({order,setOrder}) {
       setAlert("Заявка заполнена не полностью")
     }
   }
+
+  useEffect(() => {
+    axios.post(`http://${window.location.hostname}:${PORT}/getListsData`)
+      .then((response) => {
+        if (response.status === 200) {
+          setSelectListsData(response.data);
+        }
+      })
+  }, selectListsData);
+
   return (
     <>
-      <div style={{ backgroundColor: "rgb(25, 147, 188)", textAlign: "center", padding: "5px", userSelect:"none" }}>Новая заявка</div>
       <OrderTable
         handleShowNewSupplier={handleShowNewSupplier}
         handleShowNewBuyer={handleShowNewBuyer}
         order={order} />
       <NewSupplier
         setOrder={setOrder}
-        SUPPLIERS={SUPPLIERS}
+        selectListsData={selectListsData}
         handleCloseNewSupplier={handleCloseNewSupplier}
         showNewSupplier={showNewSupplier}
-        DRIVERS={DRIVERS}
-        TYPE_OF_PRODUCT={TYPE_OF_PRODUCT} />
+        setLiterForSale={setLiterForSale}
+      />
       <NewBuyer
+        order={order}
         setOrder={setOrder}
-        BUYERS={BUYERS}
+        selectListsData={selectListsData}
         handleCloseNewBuyer={handleCloseNewBuyer}
         showNewBuyer={showNewBuyer}
-        MANAGERS={MANAGERS}
-        TYPE_OF_PRODUCT={TYPE_OF_PRODUCT} />
+        setLiterForSale={setLiterForSale}
+        litersForSale={litersForSale}
+      />
       {alert != ""
         ? <Alert key={alertVariant} variant={alertVariant}> {alert} </Alert>
         : ""
       }
-      <Button variant="danger " onClick={clearData} style={{marginRight:"15px"}}>Очистить</Button>
+      <Button variant="danger " onClick={clearData} style={{ marginRight: "15px" }}>Очистить</Button>
       <Button variant="success" onClick={sendData}>Создать заявку</Button>
     </>
 

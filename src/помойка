@@ -1,0 +1,129 @@
+import Form from 'react-bootstrap/Form';
+import FloatingLabel from 'react-bootstrap/FloatingLabel';
+import Select from "./Select";
+import Button from 'react-bootstrap/Button';
+import Offcanvas from 'react-bootstrap/Offcanvas';
+import { Alert } from 'react-bootstrap';
+import { useState, useRef, useEffect } from 'react';
+
+
+
+
+function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, selectListsData, litersForSale, setLiterForSale }) {
+  const [message, setMessage] = useState("");
+  const [buyer, setBuyer] = useState({});
+  const ref = useRef(null);
+
+  const handleChangeBuyer = (property, value) => {
+    setBuyer((buyer) => {
+      buyer[property] = value;
+      return (buyer);
+    })
+  }
+
+  const handleMinusLitersForSale = (liters, typeOfProduct) => {
+    setLiterForSale((litersObj) => {
+      litersObj[typeOfProduct] = (litersObj[typeOfProduct] || 0) - (+liters);
+      return (litersObj);
+    })
+  }
+
+  const getBuyerData = () => {
+    let result = {};
+    result.name = document.querySelector("#newBuyer-name").value;
+    result.typeOfProduct = document.querySelector("#newBuyer-typeOfProduct").value;
+    result.liters = document.querySelector("#newBuyer-liters").value;
+    result.tons = document.querySelector("#newBuyer-tons").value;
+    result.price = document.querySelector("#newBuyer-price").value;
+    result.manager = document.querySelector("#newBuyer-manager").value;
+    result.otk = document.querySelector("#newBuyer-otk").value;
+    return (result);
+  }
+
+  const verifyBuyerData = (Buyer) => {
+    let verify = false;
+    let errorVerifyMessage = "";
+    if (Buyer.manager === "")
+      errorVerifyMessage = "менеджер не выбран";
+    if (Buyer.price === "")
+      errorVerifyMessage = "Цена не указана";
+    if (Buyer.tons === "")
+      errorVerifyMessage = "Тонны не указаны";
+    if (Buyer.liters === "")
+      errorVerifyMessage = "Литры не указаны";
+    if (Buyer.typeOfProduct === "")
+      errorVerifyMessage = "Тип продукта не выбран";
+    if (Buyer.name === "")
+      errorVerifyMessage = "Покупатель не выбран";
+    if (errorVerifyMessage === "")
+      verify = true;
+    return ([verify, errorVerifyMessage]);
+  }
+
+  const addNewBuyer = () => {
+    const newBuyer = getBuyerData();
+    const [verify, errorVerifyMessage] = verifyBuyerData(newBuyer);
+    if (verify) {
+      setOrder((order) => {
+        order.buyers.push(newBuyer);
+        handleMinusLitersForSale(newBuyer.liters, newBuyer.typeOfProduct);
+        return (order);
+      })
+      handleCloseNewBuyer();
+    }
+    else {
+      setMessage(errorVerifyMessage);
+    }
+  }
+
+  let set = new Set();
+  order.suppliers.forEach(supplier => set.add(supplier.typeOfProduct))
+  const TYPE_OF_PRODUCT = [...set];
+
+  let liters = 0;
+
+  // litersForSale[ref.current.value]
+  const handleOnShowBuyer = () => {
+    if (ref.current.length === 2)
+      ref.current.selectedIndex = 1;
+  }
+
+
+  return (
+    <Offcanvas show={showNewBuyer} onShow={handleOnShowBuyer} onHide={handleCloseNewBuyer}>
+      <Offcanvas.Header closeButton>
+        <Offcanvas.Title>Добавить покупателя</Offcanvas.Title>
+      </Offcanvas.Header>
+      <Offcanvas.Body>
+        <Select data={selectListsData.BUYERS} label="Покупатель" id="newBuyer-name" onChangeFunc={(evt) => handleChangeBuyer('name', evt.target.value)} />
+        <br />
+        <Select data={TYPE_OF_PRODUCT} label="Тип продукта" id="newBuyer-typeOfProduct" ref={ref} onChangeFunc={(evt) => handleChangeBuyer('typeOfProduct', evt.target.value)} />
+        <br />
+        <FloatingLabel label="Литры" className="mb-3" >
+          <Form.Control type='number' id="newBuyer-liters" onChange={(evt) => handleChangeBuyer('liters', +evt.target.value)} />
+        </FloatingLabel>
+        <FloatingLabel label="Тонны" className="mb-3">
+          <Form.Control as="input" type='number' id="newBuyer-tons" onChange={(evt) => handleChangeBuyer('tons', +evt.target.value)} />
+        </FloatingLabel>
+        <FloatingLabel label="Цена" className="mb-3">
+          <Form.Control as="input" type='number' id="newBuyer-price" onChange={(evt) => handleChangeBuyer('price', +evt.target.value)} />
+        </FloatingLabel>
+        <Select data={selectListsData.MANAGERS} label="Менеджер" id="newBuyer-manager" onChangeFunc={(evt) => handleChangeBuyer('manager', evt.target.value)} />
+        <br />
+        <FloatingLabel label="ОТК" className="mb-3">
+          <Form.Control as="input" id="newBuyer-otk" onChange={(evt) => handleChangeBuyer('otk', +evt.target.value)} />
+        </FloatingLabel>
+        <Button style={{ float: 'left' }} variant="danger" onClick={handleCloseNewBuyer}>Отмена</Button>
+        <Button style={{ float: 'right' }} variant="success" onClick={() => console.log(buyer)}>Готово</Button>
+        <br /><br />
+        {message != ""
+          ? <Alert key="danger" variant="danger"> {message} </Alert>
+          : ""
+        }
+      </Offcanvas.Body>
+    </Offcanvas>
+  );
+}
+
+// addNewBuyer
+export default NewBuyer;

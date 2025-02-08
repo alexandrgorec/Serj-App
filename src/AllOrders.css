@@ -3,3 +3,13 @@
         font-size: 10px;
     }
 }
+
+.tableClickable {
+    cursor: pointer;
+    margin: 0;
+}
+
+.colorborder{
+    border-top-color: rgba(6, 55, 146, 0.438);
+}
+

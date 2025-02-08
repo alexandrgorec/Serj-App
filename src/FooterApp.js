@@ -18,20 +18,20 @@ function FooterApp({ setActiveComponent, activeComponent }) {
     dropActiveStateFooterButtons();
     let button = document.querySelector(".divNewOrder");
     button.classList.add("activeButton");
-    setActiveComponent((active) => active = "NewOrder");
+    setActiveComponent((active) => active = "Новая заявка");
   }
   const activeAllOrders = () => {
     dropActiveStateFooterButtons();
     let button = document.querySelector(".divAllOrders");
     button.classList.add("activeButton");
-    setActiveComponent((active) => active = "AllOrders");
+    setActiveComponent((active) => active = "Все заявки");
   }
 
   const activeWareHouse = () => {
     dropActiveStateFooterButtons();
     let button = document.querySelector(".divWareHouse");
     button.classList.add("activeButton");
-    setActiveComponent((active) => active = "WareHouse");
+    setActiveComponent((active) => active = "Склад");
   }
 
   useEffect( () => {
