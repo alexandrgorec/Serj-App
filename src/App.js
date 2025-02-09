@@ -12,7 +12,6 @@ const PORT = window.location.port === '3000' ? 3001 : window.location.port;
 
 
 function App() {
-
   const [auth, setAuth] = useState(false);
   const [activeComponent, setActiveComponent] = useState("Новая заявка");
   const [state, reload] = useState(false);
@@ -22,17 +21,12 @@ function App() {
   });
   if (!auth)
     return (<Login setAuth={setAuth} />);
-  let h = window.innerHeight;
-  setInterval(() => {
-    if (h != window.innerHeight)
-      h = window.innerHeight;
-    else {
-      reload(!state);
-    }
-  }, 500)
+
+ const height = (window.innerHeight/window.outerHeight) > 0.85 ? 100 : 89.7;
+  // 
   return (
-    <>
-      <div className='app' style={{ gridTemplateRows: `${0.05 * h}px ${0.85 * h}px ${0.1 * h}px` }}>
+    <div style={{ height: `${height}vh` }}>
+      <div className='app' >
         <div className='activeComponentHeader'>{activeComponent}</div>
         <div className='content'>
           {activeComponent === "Новая заявка" ? <NewOrder order={newOrder} setOrder={setNewOrder} /> : ""}
@@ -40,7 +34,7 @@ function App() {
         </div>
         <FooterApp setActiveComponent={setActiveComponent} activeComponent={activeComponent} />
       </div>
-    </>
+    </div>
   );
 }
 

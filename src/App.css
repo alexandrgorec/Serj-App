@@ -11,11 +11,11 @@
 
 .app {
     padding: 1px;
-    height: 100vh;
+    height: 100%;
     display: grid;
     grid-template-columns: 1fr;
-    flex-direction: column;
-    justify-content:space-around;
+    grid-template-rows: 5% 85% 10%;
+    background-color: aliceblue;
    
 }
 

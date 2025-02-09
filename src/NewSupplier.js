@@ -4,13 +4,19 @@ import Select from "./Select";
 import Button from 'react-bootstrap/Button';
 import Offcanvas from 'react-bootstrap/Offcanvas';
 import { Alert } from 'react-bootstrap';
-import { useEffect, useState } from 'react';
+import { useRef, useState } from 'react';
 
 
 
 
 function NewSupplier({ setOrder, handleCloseNewSupplier, showNewSupplier, selectListsData, setLiterForSale }) {
   const [alert, setAlert] = useState("");
+  const refLiters = useRef(null);
+  const refTons = useRef(null);
+  const refPrice = useRef(null);
+  const refOtk = useRef(null);
+  const refReady = useRef(null);
+
 
   const handleAddLitersForSale = (liters, typeOfProduct) => {
     setLiterForSale((litersObj) => {
@@ -69,6 +75,21 @@ function NewSupplier({ setOrder, handleCloseNewSupplier, showNewSupplier, select
     }
   }
 
+
+  const nextFocus = (evt) => {
+    console.log(evt);
+    if (evt.keyCode === 13) {
+      console.log(evt);
+      if (evt.target.id === 'newSupplier-liters')
+      refTons.current.focus();
+      if (evt.target.id === 'newSupplier-tons')
+        refPrice.current.focus();
+      if (evt.target.id === 'newSupplier-price')
+        refOtk.current.focus();
+      if (evt.target.id === 'newSupplier-otk')
+        refReady.current.focus();
+    }
+  }
   
   return (
     <Offcanvas show={showNewSupplier} onHide={handleCloseNewSupplier}>
@@ -80,22 +101,22 @@ function NewSupplier({ setOrder, handleCloseNewSupplier, showNewSupplier, select
         <br />
         <Select data={selectListsData.TYPE_OF_PRODUCT} label="Тип продукта" id="newSupplier-typeOfProduct" />
         <br />
-        <FloatingLabel label="Литры" className="mb-3" >
-          <Form.Control as="input" type='number' id="newSupplier-liters" />
-        </FloatingLabel>
-        <FloatingLabel label="Тонны" className="mb-3">
-          <Form.Control as="input" type='number' id="newSupplier-tons" />
-        </FloatingLabel>
-        <FloatingLabel label="Цена" className="mb-3">
-          <Form.Control as="input" type='number' id="newSupplier-price" />
-        </FloatingLabel>
         <Select data={selectListsData.DRIVERS} label="Водитель" id="newSupplier-driver" />
         <br />
+        <FloatingLabel label="Литры" className="mb-3" >
+          <Form.Control as="input" type='number' id="newSupplier-liters" ref={refLiters} onKeyUp={nextFocus} />
+        </FloatingLabel>
+        <FloatingLabel label="Тонны" className="mb-3">
+          <Form.Control as="input" type='number' id="newSupplier-tons" ref={refTons} onKeyUp={nextFocus}/>
+        </FloatingLabel>
+        <FloatingLabel label="Цена" className="mb-3">
+          <Form.Control as="input" type='number' id="newSupplier-price" ref={refPrice} onKeyUp={nextFocus}/>
+        </FloatingLabel>
         <FloatingLabel label="ОТК" className="mb-3">
-          <Form.Control as="input" id="newSupplier-otk" />
+          <Form.Control as="input" id="newSupplier-otk" ref={refOtk} onKeyUp={nextFocus}/>
         </FloatingLabel>
         <Button style={{ float: 'left' }} variant="danger" onClick={handleCloseNewSupplier}>Отмена</Button>
-        <Button style={{ float: 'right' }} variant="success" onClick={addNewSupplier}>Готово</Button>
+        <Button style={{ float: 'right' }} variant="success" onClick={addNewSupplier} ref={refReady} >Готово</Button>
         <br /><br />
         {alert != ""
           ? <Alert key="danger" variant="danger"> {alert} </Alert>

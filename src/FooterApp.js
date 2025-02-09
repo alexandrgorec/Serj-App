@@ -18,12 +18,14 @@ function FooterApp({ setActiveComponent, activeComponent }) {
     dropActiveStateFooterButtons();
     let button = document.querySelector(".divNewOrder");
     button.classList.add("activeButton");
+    window.scrollTo(0,0);
     setActiveComponent((active) => active = "Новая заявка");
   }
   const activeAllOrders = () => {
     dropActiveStateFooterButtons();
     let button = document.querySelector(".divAllOrders");
     button.classList.add("activeButton");
+    window.scrollTo(0,0);
     setActiveComponent((active) => active = "Все заявки");
   }
 
@@ -31,6 +33,7 @@ function FooterApp({ setActiveComponent, activeComponent }) {
     dropActiveStateFooterButtons();
     let button = document.querySelector(".divWareHouse");
     button.classList.add("activeButton");
+    window.scrollTo(0,0);
     setActiveComponent((active) => active = "Склад");
   }
 
