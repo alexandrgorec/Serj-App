@@ -1,115 +1,130 @@
 import Form from 'react-bootstrap/Form';
 import FloatingLabel from 'react-bootstrap/FloatingLabel';
-import Select from "./Select";
 import Button from 'react-bootstrap/Button';
 import Offcanvas from 'react-bootstrap/Offcanvas';
+import ComboBox from './ComboBox';
 import { Alert } from 'react-bootstrap';
-import { useState, useRef } from 'react';
+import { useRef, useState } from 'react';
+import axios from 'axios';
 
 
+const verifyBuyerData = (Buyer) => {
+  let verify = false;
+  let errorVerifyMessage = "";
+  if (Buyer.manager === "")
+    errorVerifyMessage = "менеджер не выбран";
+  if (Buyer.liters === "")
+    errorVerifyMessage = "Литры не указаны";
+  if (Buyer.typeOfProduct === "")
+    errorVerifyMessage = "Тип продукта не выбран";
+  if (Buyer.name === "")
+    errorVerifyMessage = "Покупатель не выбран";
+  if (Buyer.liters === 0)
+    errorVerifyMessage = "Количество литров не может быть равно 0";
+  if (errorVerifyMessage === "")
+    verify = true;
+
+  return ([verify, errorVerifyMessage]);
+}
+
+const getBuyerData = () => {
+  let result = {};
+  result.name = document.querySelector("#newBuyer-name").value;
+  result.typeOfProduct = document.querySelector("#newBuyer-typeOfProduct").value;
+  result.liters = document.querySelector("#newBuyer-liters").value;
+  result.tons = document.querySelector("#newBuyer-tons").value;
+  result.price = document.querySelector("#newBuyer-price").value;
+  result.manager = document.querySelector("#newBuyer-manager").value;
+  result.otk = document.querySelector("#newBuyer-otk").value;
+  return (result);
+}
 
 
-function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, selectListsData, litersForSale, setLiterForSale }) {
+function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, selectListsData, litersForSale, refreshLiterForSale, currentBuyer = null, editBuyerInDB = false, PORT = 3001 }) {
   const [message, setMessage] = useState("");
-  const [typeOfProduct, setTypeOfProduct] = useState('');
-  const refSelectTypeOfProduct = useRef(null);
   const refLiters = useRef(null);
   const refTons = useRef(null);
   const refPrice = useRef(null);
   const refOtk = useRef(null);
   const refReady = useRef(null);
+  const index = currentBuyer;
+
+  if (currentBuyer !== null)
+    currentBuyer = order.buyers[currentBuyer];
 
 
 
-  const handleMinusLitersForSale = (liters, typeOfProduct) => {
-    setLiterForSale((litersObj) => {
-      litersObj[typeOfProduct] = (litersObj[typeOfProduct] || 0) - (+liters);
-      return (litersObj);
-    })
-  }
 
-  const getBuyerData = () => {
-    let result = {};
-    result.name = document.querySelector("#newBuyer-name").value;
-    result.typeOfProduct = document.querySelector("#newBuyer-typeOfProduct").value;
-    result.liters = document.querySelector("#newBuyer-liters").value;
-    result.tons = document.querySelector("#newBuyer-tons").value;
-    result.price = document.querySelector("#newBuyer-price").value;
-    result.manager = document.querySelector("#newBuyer-manager").value;
-    result.otk = document.querySelector("#newBuyer-otk").value;
-    return (result);
-  }
-
-  const verifyBuyerData = (Buyer) => {
-    let verify = false;
-    let errorVerifyMessage = "";
-    if (Buyer.manager === "")
-      errorVerifyMessage = "менеджер не выбран";
-    if (Buyer.price === "")
-      errorVerifyMessage = "Цена не указана";
-    if (Buyer.tons === "")
-      errorVerifyMessage = "Тонны не указаны";
-    if (Buyer.liters === "")
-      errorVerifyMessage = "Литры не указаны";
-    if (Buyer.typeOfProduct === "")
-      errorVerifyMessage = "Тип продукта не выбран";
-    if (Buyer.name === "")
-      errorVerifyMessage = "Покупатель не выбран";
-    if (Buyer.liters > litersForSale[Buyer.typeOfProduct])
-      errorVerifyMessage = "Количество литров превышает поставляемое значение";
-    if (Buyer.liters == 0)
-      errorVerifyMessage = "Количество литров не может быть равно 0";
-    if (errorVerifyMessage === "")
-      verify = true;
-
-    return ([verify, errorVerifyMessage]);
-  }
-
-  const addNewBuyer = () => {
-    const newBuyer = getBuyerData();
-    const [verify, errorVerifyMessage] = verifyBuyerData(newBuyer);
+  const saveBuyer = () => {
+    const buyer = getBuyerData();
+    const [verify, errorVerifyMessage] = verifyBuyerData(buyer);
     if (verify) {
-      setOrder((order) => {
-        order.buyers.push(newBuyer);
-        handleMinusLitersForSale(newBuyer.liters, newBuyer.typeOfProduct);
-        return (order);
-      })
+      if (!editBuyerInDB) {
+        if (currentBuyer === null) { // Новый покупатель
+          setOrder((order) => {
+            order.buyers.push(buyer);
+            refreshLiterForSale();
+            return (order);
+          })
+        }
+        else { // Редактируем имеющегося покупателя
+          setOrder((order) => {
+            order.buyers[index] = buyer;
+            refreshLiterForSale();
+            return (order);
+          })
+        }
+      }
+      if (editBuyerInDB) {
+        setOrder((order) => {
+          order.orderjson.buyers[index] = buyer;
+          return (order);
+        });
+        axios.post(`http://${window.location.hostname}:${PORT}/editorder`, order)
+          .then(function (response) {
+            if (response.status === 202) {
+              console.log("edited");
+            }
+          })
+          .catch(function (error) {
+            console.log(error);
+          })
+          .finally(() => { handleCloseNewBuyer() });
+      }
       handleCloseNewBuyer();
     }
     else {
       setMessage(errorVerifyMessage);
     }
   }
+  let TYPE_OF_PRODUCT = [];
+  if (!editBuyerInDB) {
+    let set = new Set();
+    order.suppliers.forEach(supplier => {
+      if (litersForSale[supplier.typeOfProduct] !== undefined && litersForSale[supplier.typeOfProduct] > 0)
+        set.add(supplier.typeOfProduct)
+    })
+    TYPE_OF_PRODUCT = currentBuyer === null ? [...set] : selectListsData.TYPE_OF_PRODUCT;
+  }
+  else{
+    TYPE_OF_PRODUCT = selectListsData.TYPE_OF_PRODUCT;
+  }
 
-  let set = new Set();
-  order.suppliers.forEach(supplier => {
-    if (litersForSale[supplier.typeOfProduct] != undefined && litersForSale[supplier.typeOfProduct] != 0)
-      set.add(supplier.typeOfProduct)
-  })
-  const TYPE_OF_PRODUCT = [...set];
 
-  let liters = 0;
 
-  // 
+
   const handleOnShowBuyer = () => {
-    refSelectTypeOfProduct.current.addEventListener('change', () => {
-      refLiters.current.value = litersForSale[refSelectTypeOfProduct.current.value];
+    const comboBoxTypeOfProduct = document.querySelector('#newBuyer-typeOfProduct');
+    comboBoxTypeOfProduct.addEventListener('change', () => {
+      refLiters.current.value = (litersForSale[comboBoxTypeOfProduct.value] || '');
     });
-
-
-    if (refSelectTypeOfProduct.current.length === 2) {
-      refSelectTypeOfProduct.current.selectedIndex = 1;
-      refLiters.current.value = litersForSale[refSelectTypeOfProduct.current.value];
-    }
     setMessage('');
   }
 
   const nextFocus = (evt) => {
-    console.log(evt);
     if (evt.keyCode === 13) {
-      console.log(evt);
       if (evt.target.id === 'newBuyer-liters')
-      refTons.current.focus();
+        refTons.current.focus();
       if (evt.target.id === 'newBuyer-tons')
         refPrice.current.focus();
       if (evt.target.id === 'newBuyer-price')
@@ -120,34 +135,93 @@ function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, selectLi
   }
 
   return (
-    <Offcanvas show={showNewBuyer} onShow={handleOnShowBuyer} onHide={handleCloseNewBuyer}>
+    <Offcanvas
+      show={showNewBuyer}
+      onShow={handleOnShowBuyer}
+      onHide={() => {
+        setMessage('');
+        handleCloseNewBuyer();
+      }}>
       <Offcanvas.Header closeButton>
-        <Offcanvas.Title>Добавить покупателя</Offcanvas.Title>
+        <Offcanvas.Title>{`${currentBuyer === null ? 'Добавить покупателя' : 'Редактировать покупателя'}`}</Offcanvas.Title>
       </Offcanvas.Header>
       <Offcanvas.Body>
-        <Select data={selectListsData.BUYERS} label="Покупатель" id="newBuyer-name" />
-        <br />
-        <Select data={TYPE_OF_PRODUCT} label="Тип продукта" id="newBuyer-typeOfProduct" ref={refSelectTypeOfProduct} />
-        <br />
-        <Select data={selectListsData.MANAGERS} label="Менеджер" id="newBuyer-manager" />
-        <br />
-        <FloatingLabel label="Литры" className="mb-3" >
-          <Form.Control as="input" type='number' id="newBuyer-liters" ref={refLiters} onKeyUp={nextFocus} />
+        <ComboBox
+          data={selectListsData.BUYERS}
+          defaultValue={`${currentBuyer ? currentBuyer.name : ''}`}
+          label="Покупатель" id="newBuyer-name"
+        />
+        <ComboBox
+          data={selectListsData.MANAGERS}
+          defaultValue={`${currentBuyer ? currentBuyer.manager : ''}`}
+          label="Менеджер" id="newBuyer-manager"
+        />
+        <ComboBox
+          data={TYPE_OF_PRODUCT}
+          defaultValue={`${currentBuyer ? currentBuyer.typeOfProduct : ''}`}
+          label="Тип продукта"
+          id="newBuyer-typeOfProduct"
+          relationship='#newBuyer-liters' />
+
+        <FloatingLabel
+          label="Литры"
+          className="mb-3" >
+          <Form.Control
+            as="input"
+            defaultValue={`${currentBuyer ? currentBuyer.liters : ''}`}
+            type='number'
+            id="newBuyer-liters"
+            ref={refLiters}
+            onKeyUp={nextFocus} />
         </FloatingLabel>
-        <FloatingLabel label="Тонны" className="mb-3">
-          <Form.Control as="input" type='number' id="newBuyer-tons" ref={refTons} onKeyUp={nextFocus} />
+        <FloatingLabel
+          label="Тонны"
+          className="mb-3">
+          <Form.Control
+            as="input"
+            defaultValue={`${currentBuyer ? currentBuyer.tons : ''}`}
+            type='number'
+            id="newBuyer-tons"
+            ref={refTons}
+            onKeyUp={nextFocus} />
         </FloatingLabel>
-        <FloatingLabel label="Цена" className="mb-3">
-          <Form.Control as="input" type='number' id="newBuyer-price" ref={refPrice} onKeyUp={nextFocus} />
+        <FloatingLabel
+          label="Цена"
+          className="mb-3">
+          <Form.Control
+            as="input"
+            defaultValue={`${currentBuyer ? currentBuyer.price : ''}`}
+            type='number'
+            id="newBuyer-price"
+            ref={refPrice}
+            onKeyUp={nextFocus} />
         </FloatingLabel>
 
-        <FloatingLabel label="ОТК" className="mb-3">
-          <Form.Control as="input" id="newBuyer-otk" ref={refOtk} onKeyUp={nextFocus}  />
+        <FloatingLabel
+          label="ОТК"
+          className="mb-3">
+          <Form.Control
+            as="input"
+            defaultValue={`${currentBuyer ? currentBuyer.otk : ''}`}
+            id="newBuyer-otk" ref={refOtk} onKeyUp={nextFocus} />
         </FloatingLabel>
-        <Button style={{ float: 'left' }} variant="danger" onClick={handleCloseNewBuyer}>Отмена</Button>
-        <Button style={{ float: 'right' }} variant="success" onClick={addNewBuyer} ref={refReady}>Готово</Button>
+        <Button
+          style={{ float: 'left' }}
+          variant="danger"
+          onClick={handleCloseNewBuyer}
+        >
+          Отмена
+        </Button>
+        <Button
+          style={{ float: 'right' }}
+          variant="success"
+          onClick={saveBuyer}
+          ref={refReady}
+        >
+          Готово
+        </Button>
         <br /><br />
-        {message != ""
+        {message !== ""
           ? <Alert key="danger" variant="danger"> {message} </Alert>
           : ""
         }

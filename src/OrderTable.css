@@ -3,3 +3,8 @@
         font-size: 10px;
     }
 }
+
+.icon:hover{
+    cursor: pointer;
+    transform: scale(1.05);
+}

@@ -2,56 +2,87 @@ import NewSupplier from './NewSupplier';
 import OrderTable from './OrderTable';
 import NewBuyer from './NewBuyer';
 import Button from 'react-bootstrap/Button';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Alert } from 'react-bootstrap';
 import axios from 'axios';
 
-const PORT = window.location.port === '3000' ? 3001 : window.location.port;
 
-function NewOrder({ order, setOrder }) {
-  const [alert, setAlert] = useState("");
+function NewOrder({ order, setOrder, selectListsData, PORT }) {
+  const [message, setMessage] = useState("");
   const [alertVariant, setAlertVariant] = useState("");
-  const [selectListsData, setSelectListsData] = useState({
-    SUPPLIERS: [],
-    BUYERS: [],
-    DRIVERS: [],
-    TYPE_OF_PRODUCT: [],
-    MANAGERS: [],
-  });
   const [litersForSale, setLiterForSale] = useState({});
+  const [currentBuyer, setCurrentBuyer] = useState(null);
+  const [currentSupplier, setCurrentSupplier] = useState(null);
 
+  const handleRefreshLitersForSale = () => {
+    let result = {};
+    order.suppliers.forEach((elem) => {
+      result[elem.typeOfProduct] = (result[elem.typeOfProduct] || 0) + (+elem.liters);
+    })
+    order.buyers.forEach((elem) => {
+      result[elem.typeOfProduct] = (result[elem.typeOfProduct] || 0) - (+elem.liters);
+    })
+    setLiterForSale(result);
+  }
 
 
   const [showNewSupplier, setShowNewSupplier] = useState(false);
   const handleCloseNewSupplier = () => setShowNewSupplier(false);
   const handleShowNewSupplier = () => {
+    setCurrentSupplier(null);
+    setMessage("");
     setShowNewSupplier(true);
-    setAlert("");
+
+  };
+
+  const handleEditSupplier = (index) => {
+    setCurrentSupplier(index);
+    setMessage("");
+    setShowNewSupplier(true);
+
   };
 
   const [showNewBuyer, setShowNewBuyer] = useState(false);
   const handleCloseNewBuyer = () => setShowNewBuyer(false);
   const handleShowNewBuyer = () => {
+    setCurrentBuyer(null);
+    setMessage("");
     setShowNewBuyer(true);
-    setAlert("");
+
+  };
+
+  const handleEditBuyer = (index) => {
+    setCurrentBuyer(index);
+    setMessage("");
+    setShowNewBuyer(true);
+
   };
 
   const clearData = () => {
-    setAlert("");
+    setMessage("");
     setOrder({
       suppliers: [],
       buyers: [],
     });
+    setCurrentBuyer(null);
+    setCurrentSupplier(null);
     setLiterForSale({});
   }
   const sendData = () => {
-    if (order.suppliers.length != 0 && order.buyers.length != 0) {
+    let alertMessage = '';
+    console.log(litersForSale)
+    Object.values(litersForSale).forEach(elem => alertMessage = elem < 0 ? 'Количество литров по типу продукта у покупателей не может быть большем чем у поставщиков' : '')
+    if (order.buyers.length === 0)
+      alertMessage = 'Заполните раздел Покупатели'
+    if (order.suppliers.length === 0)
+      alertMessage = 'Заполните раздел Поставщики'
+    if (alertMessage === '') {
       axios.post(`http://${window.location.hostname}:${PORT}/neworder`, order)
         .then(function (response) {
           if (response.data === 'заявка создана') {
             clearData();
             setAlertVariant("success");
-            setAlert("Заявка создана")
+            setMessage("Заявка создана")
           }
         })
         .catch(function (error) {
@@ -60,31 +91,28 @@ function NewOrder({ order, setOrder }) {
     }
     else {
       setAlertVariant("danger");
-      setAlert("Заявка заполнена не полностью")
+      setMessage(alertMessage)
     }
   }
 
-  useEffect(() => {
-    axios.post(`http://${window.location.hostname}:${PORT}/getListsData`)
-      .then((response) => {
-        if (response.status === 200) {
-          setSelectListsData(response.data);
-        }
-      })
-  }, selectListsData);
+
 
   return (
     <>
       <OrderTable
         handleShowNewSupplier={handleShowNewSupplier}
         handleShowNewBuyer={handleShowNewBuyer}
+        handleEditSupplier={handleEditSupplier}
+        handleEditBuyer={handleEditBuyer}
         order={order} />
       <NewSupplier
+        order={order}
         setOrder={setOrder}
         selectListsData={selectListsData}
         handleCloseNewSupplier={handleCloseNewSupplier}
         showNewSupplier={showNewSupplier}
-        setLiterForSale={setLiterForSale}
+        refreshLiterForSale={handleRefreshLitersForSale}
+        currentSupplier={currentSupplier}
       />
       <NewBuyer
         order={order}
@@ -92,11 +120,12 @@ function NewOrder({ order, setOrder }) {
         selectListsData={selectListsData}
         handleCloseNewBuyer={handleCloseNewBuyer}
         showNewBuyer={showNewBuyer}
-        setLiterForSale={setLiterForSale}
+        refreshLiterForSale={handleRefreshLitersForSale}
         litersForSale={litersForSale}
+        currentBuyer={currentBuyer}
       />
-      {alert != ""
-        ? <Alert key={alertVariant} variant={alertVariant}> {alert} </Alert>
+      {message !== ""
+        ? <Alert key={alertVariant} variant={alertVariant}> {message} </Alert>
         : ""
       }
       <Button variant="danger " onClick={clearData} style={{ marginRight: "15px" }}>Очистить</Button>

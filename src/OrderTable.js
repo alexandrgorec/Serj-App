@@ -1,15 +1,17 @@
 import './OrderTable.css';
 import Table from 'react-bootstrap/Table';
 import Button from 'react-bootstrap/Button';
+import Stack from 'react-bootstrap/Stack';
+import { BiEditAlt } from "react-icons/bi";
 
-function OrderTable({ handleShowNewSupplier, handleShowNewBuyer, order }) {
-
+function OrderTable({ handleShowNewSupplier, handleShowNewBuyer, handleEditSupplier, handleEditBuyer, order }) {
+  let size = window.innerWidth < 500 ? 'sm' : ''
   return (
-    <div className='newOrderTable'>
-      <Table striped bordered hover>
+    <div className='newOrderTable noselect'>
+      <Table striped bordered hover responsive="sm">
         <thead>
           <tr>
-            <th> <Button variant="primary" size="sm" onClick={handleShowNewSupplier}>+</Button> Поставщик </th>
+            <th> <Button variant="primary" size={size} onClick={handleShowNewSupplier}>+</Button> Поставщик </th>
             <th>Вид продукта</th>
             <th>Литры</th>
             <th>Тонны</th>
@@ -19,10 +21,16 @@ function OrderTable({ handleShowNewSupplier, handleShowNewBuyer, order }) {
           </tr>
         </thead>
         <tbody>
-          {order.suppliers.map((supplier) => {
+          {order.suppliers.map((supplier, index) => {
             return (
-              <tr>
-                <td><Button size="sm" variant="warning">н</Button> {supplier.name}</td>
+              <tr key={index}>
+                <td>
+                  <Stack gap={1} direction='horizontal'>
+                    {supplier.name}
+                    <BiEditAlt style={{color:'rgba(1, 87, 248, 0.85)'}} className='icon ms-auto' size="2em" onClick={() => handleEditSupplier(index)} />
+                    <Button size="sm" variant="warning" >н</Button>
+                  </Stack>
+                </td>
                 <td>{supplier.typeOfProduct}</td>
                 <td>{supplier.liters}</td>
                 <td>{supplier.tons}</td>
@@ -36,22 +44,28 @@ function OrderTable({ handleShowNewSupplier, handleShowNewBuyer, order }) {
         </tbody>
         <thead>
           <tr>
-            <th colSpan='5'><Button variant="primary" size="sm" onClick={handleShowNewBuyer}>+</Button> Покупатель </th>
+            <th colSpan='5'><Button variant="primary" size={size} onClick={handleShowNewBuyer}>+</Button> Покупатель </th>
             <th>Менеджер</th>
             <th>Доставка</th>
           </tr>
         </thead>
         <tbody>
-          {order.buyers.map((buyer) => {
+          {order.buyers.map((buyer, index) => {
             return (
-              <tr>
-                <td><Button size="sm" variant="warning">Н</Button>{buyer.name}</td>
+              <tr key={index}>
+                <td>
+                  <Stack gap={1} direction='horizontal'>
+                    {buyer.name}
+                    <BiEditAlt style={{color:'rgba(1, 87, 248, 0.85)'}} className='icon ms-auto' size="2em" onClick={() => handleEditBuyer(index)} />
+                    <Button size="sm" variant="warning" >н</Button>
+                  </Stack>
+                </td>
                 <td>{buyer.typeOfProduct}</td>
                 <td>{buyer.liters}</td>
                 <td>{buyer.tons}</td>
                 <td>{buyer.price}</td>
                 <td>{buyer.manager}</td>
-                <td>{buyer.otk}</td>
+                <td></td>
               </tr>
             )
           })}

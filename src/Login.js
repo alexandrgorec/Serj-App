@@ -11,7 +11,7 @@ const PORT = window.location.port === '3000' ? 3001 : window.location.port;
 
 
 
-function Login({ setAuth }) {
+function Login({ setToken }) {
     const refUser = useRef(null);
     const refPassword = useRef(null);
     const [alert, setAlert] = useState("");
@@ -27,13 +27,14 @@ function Login({ setAuth }) {
                 refUser.current.focus();
         }
         else {
-            axios.post(`http://${window.location.hostname}:${PORT}/auth`, {
+            axios.post(`http://${window.location.hostname}:${PORT}/getAccessToken`, {
                 u,
                 p,
             })
                 .then(function (response) {
-                    if (response.data === 'авторизован') {
-                        setAuth(true);
+                    if (response.status === 202) {
+                        window.localStorage.token = response.data;
+                        setToken(response.data);
                     }
                     else {
                         setAlert(response.data);
@@ -44,7 +45,7 @@ function Login({ setAuth }) {
 
     useEffect(() => {
         refUser.current.focus();
-    },[false])
+    }, [false])
     return (
         <div className='loginContainer'>
 
