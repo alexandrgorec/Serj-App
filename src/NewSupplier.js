@@ -36,7 +36,7 @@ const getSupplierData = () => {
   return (result);
 }
 
-function NewSupplier({ setOrder, handleCloseNewSupplier, showNewSupplier, selectListsData, refreshLiterForSale, order, currentSupplier = null, editSupplierInDB = false, PORT = 3001 }) {
+function NewSupplier({ setOrder, handleCloseNewSupplier, showNewSupplier, selectListsData, refreshLiterForSale, order, currentSupplier = null, editSupplierInDB = false, PORT = 3001, logOut, token }) {
   const [message, setMessage] = useState("");
   const refLiters = useRef(null);
   const refTons = useRef(null);
@@ -73,7 +73,10 @@ function NewSupplier({ setOrder, handleCloseNewSupplier, showNewSupplier, select
           order.orderjson.suppliers[index] = supplier;
           return (order);
         });
-        axios.post(`http://${window.location.hostname}:${PORT}/editorder`, order)
+        axios.post(`http://${window.location.hostname}:${PORT}/editorder`, {
+          order,
+          token,
+        })
           .then(function (response) {
             if (response.status === 202) {
               console.log("edited");
@@ -81,6 +84,9 @@ function NewSupplier({ setOrder, handleCloseNewSupplier, showNewSupplier, select
           })
           .catch(function (error) {
             console.log(error);
+            if (error.response.status === 999) {
+              logOut();
+            }
           })
           .finally( () => {handleCloseNewSupplier()});
       }

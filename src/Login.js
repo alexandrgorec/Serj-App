@@ -11,7 +11,7 @@ const PORT = window.location.port === '3000' ? 3001 : window.location.port;
 
 
 
-function Login({ setToken }) {
+function Login({ setToken, setUser }) {
     const refUser = useRef(null);
     const refPassword = useRef(null);
     const [alert, setAlert] = useState("");
@@ -40,12 +40,13 @@ function Login({ setToken }) {
                         setAlert(response.data);
                     }
                 })
+                .catch(function (error) {
+                    if (error.request)
+                        setAlert("Нет соединения")
+                });
         }
     }
 
-    useEffect(() => {
-        refUser.current.focus();
-    }, [false])
     return (
         <div className='loginContainer'>
 
@@ -53,14 +54,16 @@ function Login({ setToken }) {
                 <Form>
                     <Form.Group className="mb-3" controlId="formBasicEmail">
                         <h1><Form.Label className='h1'>Авторизация</Form.Label></h1>
-                        <Form.Label>Логин (123)</Form.Label>
-                        <Form.Control type="text" placeholder="Логин" ref={refUser} onChange={(evt) => setUserName(evt.target.value)} />
+                        <Form.Label>Менеджер: Логин и пароль - 111</Form.Label>
+                        <br/>
+                        <Form.Label>Бухгалтер: Логин и пароль - 123</Form.Label>
+                        <Form.Control type="text" autoFocus placeholder="Логин" ref={refUser} onChange={(evt) => setUserName(evt.target.value)} />
                         <Form.Text className="text-muted">
                         </Form.Text>
                     </Form.Group>
 
                     <Form.Group className="mb-3" controlId="formBasicPassword">
-                        <Form.Label>Пароль (123)</Form.Label>
+                        <Form.Label></Form.Label>
                         <Form.Control type="password" placeholder="Пароль" ref={refPassword} onChange={(evt) => setUserPassword(evt.target.value)} />
                     </Form.Group>
                     <div className="d-grid gap-2">

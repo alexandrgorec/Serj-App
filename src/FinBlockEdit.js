@@ -6,7 +6,7 @@ import { useEffect, useRef } from 'react';
 import axios from 'axios';
 
 
-function FinBlockEdit({ setOrder, handleCloseFinBlock, showFinBlock, order, current, PORT = 3001, suppliersOrBuyers = null }) {
+function FinBlockEdit({ setOrder, handleCloseFinBlock, showFinBlock, order, current, PORT = 3001, suppliersOrBuyers = null, token, logOut }) {
     const refSf = useRef(null);
     const refDate = useRef(null);
     const refSumma = useRef(null);
@@ -26,7 +26,10 @@ function FinBlockEdit({ setOrder, handleCloseFinBlock, showFinBlock, order, curr
             order.orderjson[suppliersOrBuyers][index].akt = document.querySelector("#finBlock-akt").value;
             return (order);
         });
-        axios.post(`http://${window.location.hostname}:${PORT}/editorder`, order)
+        axios.post(`http://${window.location.hostname}:${PORT}/editorder`, {
+            order,
+            token,
+        })
             .then(function (response) {
                 if (response.status === 202) {
                    
@@ -34,6 +37,9 @@ function FinBlockEdit({ setOrder, handleCloseFinBlock, showFinBlock, order, curr
             })
             .catch(function (error) {
                 console.log(error);
+                if (error.response.status === 999) {
+                    logOut();
+                  }
             })
             .finally(() => { handleCloseFinBlock() });
     }

@@ -40,7 +40,7 @@ const getBuyerData = () => {
 }
 
 
-function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, selectListsData, litersForSale, refreshLiterForSale, currentBuyer = null, editBuyerInDB = false, PORT = 3001 }) {
+function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, selectListsData, litersForSale, refreshLiterForSale, currentBuyer = null, editBuyerInDB = false, PORT = 3001, logOut, token, user='' }) {
   const [message, setMessage] = useState("");
   const refLiters = useRef(null);
   const refTons = useRef(null);
@@ -80,7 +80,10 @@ function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, selectLi
           order.orderjson.buyers[index] = buyer;
           return (order);
         });
-        axios.post(`http://${window.location.hostname}:${PORT}/editorder`, order)
+        axios.post(`http://${window.location.hostname}:${PORT}/editorder`, {
+          order,
+          token,
+        })
           .then(function (response) {
             if (response.status === 202) {
               console.log("edited");
@@ -88,6 +91,9 @@ function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, selectLi
           })
           .catch(function (error) {
             console.log(error);
+            if (error.response.status === 999) {
+              logOut();
+            }
           })
           .finally(() => { handleCloseNewBuyer() });
       }
@@ -106,7 +112,7 @@ function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, selectLi
     })
     TYPE_OF_PRODUCT = currentBuyer === null ? [...set] : selectListsData.TYPE_OF_PRODUCT;
   }
-  else{
+  else {
     TYPE_OF_PRODUCT = selectListsData.TYPE_OF_PRODUCT;
   }
 
@@ -153,7 +159,7 @@ function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, selectLi
         />
         <ComboBox
           data={selectListsData.MANAGERS}
-          defaultValue={`${currentBuyer ? currentBuyer.manager : ''}`}
+          defaultValue={`${currentBuyer ? currentBuyer.manager : user.name}`}
           label="Менеджер" id="newBuyer-manager"
         />
         <ComboBox
@@ -174,6 +180,7 @@ function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, selectLi
             ref={refLiters}
             onKeyUp={nextFocus} />
         </FloatingLabel>
+
         <FloatingLabel
           label="Тонны"
           className="mb-3">

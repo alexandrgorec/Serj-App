@@ -27,7 +27,7 @@ function formatDate(date) {
   return dd + '.' + mm + '.' + yy;
 }
 
-function AllOrders({ PORT, selectListsData, logOut, token}) {
+function AllOrders({ PORT, selectListsData, logOut, token, user }) {
   const [litersForSale, setLiterForSale] = useState({});
   const [currentBuyer, setCurrentBuyer] = useState(null);
   const [currentSupplier, setCurrentSupplier] = useState(null);
@@ -38,7 +38,6 @@ function AllOrders({ PORT, selectListsData, logOut, token}) {
     suppliers: [],
     buyers: [],
   });
-
 
 
   const handleRefreshLitersForSale = () => {
@@ -115,7 +114,7 @@ function AllOrders({ PORT, selectListsData, logOut, token}) {
       })
       .catch(function (error) {
         console.log(error);
-        if (error.response.status === 999) {
+        if (error?.response?.status === 999) {
           logOut();
         }
       });
@@ -125,35 +124,15 @@ function AllOrders({ PORT, selectListsData, logOut, token}) {
     getAllOrders();
   }, [null])
 
+  let NumberFormat = (num) => {
+    let res = new Intl.NumberFormat().format(num);
+    if (!num)
+      res = '';
+    return res;
+  }
 
   return (
     <>
-      <Button style={{ margin: '5px', marginLeft: '0' }}
-        onClick={() => {
-          setOrders((orders) => {
-            orders.map(order => {
-              order.open = true;
-              return (order)
-            })
-            return (orders);
-          })
-          reload(!state);
-        }}
-      > Развернуть все
-      </Button>
-      <Button style={{ marginTop: '5px', marginBottom: '5px' }}
-        onClick={() => {
-          setOrders((orders) => {
-            orders.map(order => {
-              order.open = false;
-              return (order)
-            })
-            return (orders);
-          })
-          reload(!state);
-        }}
-      > Свернуть все
-      </Button>
       <div className='allOrdersTable noselect'>
         <Table style={{ padding: '0', margin: '0' }} striped bordered hover>
           <thead>
@@ -161,7 +140,7 @@ function AllOrders({ PORT, selectListsData, logOut, token}) {
               <th width='2%' style={{ textAlign: 'center' }}>№</th>
               <th width='5%'>Дата</th>
               <th width='30%'>Поставщики</th>
-              <th>Покупатели</th>
+              <th >Покупатели</th>
             </tr>
           </thead>
         </Table>
@@ -196,7 +175,7 @@ function AllOrders({ PORT, selectListsData, logOut, token}) {
                 <Collapse in={order.open}>
                   <Table striped bordered hover size={size} responsive="sm">
                     <thead>
-                      <tr>
+                      <tr >
                         <th width='10%' >Поставщик </th>
                         <th width='10%' >Вид продукта</th>
                         <th width='5%' >Литры</th>
@@ -204,10 +183,15 @@ function AllOrders({ PORT, selectListsData, logOut, token}) {
                         <th width='5%' >Цена</th>
                         <th width='10%' >Водитель</th>
                         <th width='4%' >ОТК</th>
-                        <th width='6%' style={{ display: display }}>С/Ф</th>
-                        <th width='6%' style={{ display: display }}>Дата</th>
-                        <th width='6%' style={{ display: display }}>Сумма</th>
-                        <th width='6%' style={{ display: display }}>Акт транспорт</th>
+                        {user.rights.finBlockAccess &&
+                          <>
+                            <th width='6%' style={{ display: display }}>С/Ф</th>
+                            <th width='6%' style={{ display: display }}>Дата</th>
+                            <th width='6%' style={{ display: display }}>Сумма</th>
+                            <th width='6%' style={{ display: display }}>Акт транспорт</th>
+                          </>
+                        }
+
                       </tr>
                     </thead>
                     <tbody>
@@ -222,20 +206,25 @@ function AllOrders({ PORT, selectListsData, logOut, token}) {
                               </Stack>
                             </td>
                             <td >{supplier.typeOfProduct}</td>
-                            <td >{supplier.liters}</td>
-                            <td >{supplier.tons}</td>
-                            <td >{supplier.price}</td>
+                            <td >{NumberFormat(supplier.liters)}</td>
+                            <td >{NumberFormat(supplier.tons)}</td>
+                            <td >{NumberFormat(supplier.price)}</td>
                             <td >{supplier.driver}</td>
                             <td >{supplier.otk}</td>
-                            <td style={{ display: display }}>
-                              <Stack gap={1} direction='horizontal'>
-                                {supplier.sf}
-                                <BiEditAlt style={{ color: 'rgba(1, 87, 248, 0.85)' }} className='icon ms-auto' size="2em" onClick={() => { handleEditFinBlock(num, order.id, supplierIndex, 'suppliers') }} />
-                              </Stack>
-                            </td>
-                            <td style={{ display: display }}>{supplier.date}</td>
-                            <td style={{ display: display }}>{supplier.summa}</td>
-                            <td style={{ display: display }}>{supplier.akt}</td>
+
+                            {user.rights.finBlockAccess &&
+                              <>
+                                <td style={{ display: display }}>
+                                  <Stack gap={1} direction='horizontal'>
+                                    {supplier.sf}
+                                    <BiEditAlt style={{ color: 'rgba(1, 87, 248, 0.85)' }} className='icon ms-auto' size="2em" onClick={() => { handleEditFinBlock(num, order.id, supplierIndex, 'suppliers') }} />
+                                  </Stack>
+                                </td>
+                                <td style={{ display: display }}>{supplier.date}</td>
+                                <td style={{ display: display }}>{NumberFormat(supplier.summa)}</td>
+                                <td style={{ display: display }}>{supplier.akt}</td>
+                              </>
+                            }
                           </tr>
                         )
                       })}
@@ -245,7 +234,7 @@ function AllOrders({ PORT, selectListsData, logOut, token}) {
                         <th colSpan='5'>Покупатель </th>
                         <th>Менеджер</th>
                         <th>Доставка</th>
-                        <th style={{ display: display }} colSpan={4}></th>
+                        {user.rights.finBlockAccess && <th style={{ display: display }} colSpan={4}></th>}
                       </tr>
                     </thead>
                     <tbody>
@@ -260,20 +249,24 @@ function AllOrders({ PORT, selectListsData, logOut, token}) {
                               </Stack>
                             </td>
                             <td >{buyer.typeOfProduct}</td>
-                            <td >{buyer.liters}</td>
-                            <td >{buyer.tons}</td>
-                            <td >{buyer.price}</td>
+                            <td >{NumberFormat(buyer.liters)}</td>
+                            <td >{NumberFormat(buyer.tons)}</td>
+                            <td >{NumberFormat(buyer.price)}</td>
                             <td >{buyer.manager}</td>
                             <td ></td>
-                            <td style={{ display: display }}>
-                              <Stack gap={1} direction='horizontal'>
-                                {buyer.sf}
-                                <BiEditAlt style={{ color: 'rgba(1, 87, 248, 0.85)' }} className='icon ms-auto' size="2em" onClick={() => { handleEditFinBlock(num, order.id, buyerIndex, 'buyers') }} />
-                              </Stack>
-                            </td>
-                            <td style={{ display: display }}>{buyer.date}</td>
-                            <td style={{ display: display }}>{buyer.summa}</td>
-                            <td style={{ display: display }}>{buyer.akt}</td>
+                            {user.rights.finBlockAccess &&
+                              <>
+                                <td style={{ display: display }}>
+                                  <Stack gap={1} direction='horizontal'>
+                                    {buyer.sf}
+                                    <BiEditAlt style={{ color: 'rgba(1, 87, 248, 0.85)' }} className='icon ms-auto' size="2em" onClick={() => { handleEditFinBlock(num, order.id, buyerIndex, 'buyers') }} />
+                                  </Stack>
+                                </td>
+                                <td style={{ display: display }}>{buyer.date}</td>
+                                <td style={{ display: display }}>{NumberFormat(buyer.summa)}</td>
+                                <td style={{ display: display }}>{buyer.akt}</td>
+                              </>
+                            }
                           </tr>
                         )
                       })}
@@ -295,6 +288,8 @@ function AllOrders({ PORT, selectListsData, logOut, token}) {
         currentSupplier={currentSupplier}
         editSupplierInDB={true}
         PORT={PORT}
+        logOut={logOut}
+        token={token}
       />
       <NewBuyer
         order={order.orderjson}
@@ -307,6 +302,8 @@ function AllOrders({ PORT, selectListsData, logOut, token}) {
         litersForSale={litersForSale}
         editBuyerInDB={true}
         PORT={PORT}
+        logOut={logOut}
+        token={token}
       />
       <FinBlockEdit
         setOrder={setOrder}
@@ -316,7 +313,35 @@ function AllOrders({ PORT, selectListsData, logOut, token}) {
         current={currentFinBlock}
         PORT={PORT}
         suppliersOrBuyers={suppliersOrBuyers}
+        logOut={logOut}
+        token={token}
       />
+      <Button style={{ margin: '5px', marginLeft: '0' }}
+        onClick={() => {
+          setOrders((orders) => {
+            orders.map(order => {
+              order.open = true;
+              return (order)
+            })
+            return (orders);
+          })
+          reload(!state);
+        }}
+      > Развернуть все
+      </Button>
+      <Button style={{ marginTop: '5px', marginBottom: '5px' }}
+        onClick={() => {
+          setOrders((orders) => {
+            orders.map(order => {
+              order.open = false;
+              return (order)
+            })
+            return (orders);
+          })
+          reload(!state);
+        }}
+      > Свернуть все
+      </Button>
     </>
   );
 }

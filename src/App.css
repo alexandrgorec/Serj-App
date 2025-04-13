@@ -1,9 +1,6 @@
 .activeComponentHeader {
     display: flex;
-    background-color: rgb(25, 147, 188);
-    align-items: center;
-    justify-content: center;
-    padding: 5px;
+    background-color: rgba(31, 60, 247, 0.172);
     user-select: none;
     /* height: 5%; */
     width: 100%;
@@ -19,12 +16,20 @@
    
 }
 
+.logo{
+    background-image: url('../public/logo.jpg');
+    background-size: cover;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    padding: 0;
+}
+
 /* .desktop{
     grid-template-rows: 5% 85% 10%;
 } */
 
 .content{
-    border: 1px solid rgba(0, 0, 0, 0.39);
     position: relative;
     /* height: 80%; */
     overflow-y: scroll;

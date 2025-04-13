@@ -4,6 +4,7 @@ import Dropdown from 'react-bootstrap/Dropdown';
 import Button from 'react-bootstrap/Button';
 import Stack from 'react-bootstrap/Stack';
 import Form from 'react-bootstrap/Form';
+import FloatingLabel from 'react-bootstrap/FloatingLabel';
 import { useRef } from "react";
 
 
@@ -39,3 +40,8 @@ function ComboBox({ data = [], label = '', id, defaultValue = undefined }) {
 }
 
 export default ComboBox;
+
+<FloatingLabel
+label="Литры"
+className="mb-3" >
+</FloatingLabel>

@@ -7,7 +7,7 @@ import { Alert } from 'react-bootstrap';
 import axios from 'axios';
 
 
-function NewOrder({ order, setOrder, selectListsData, PORT }) {
+function NewOrder({ order, setOrder, selectListsData, PORT, token, logOut, user }) {
   const [message, setMessage] = useState("");
   const [alertVariant, setAlertVariant] = useState("");
   const [litersForSale, setLiterForSale] = useState({});
@@ -77,7 +77,10 @@ function NewOrder({ order, setOrder, selectListsData, PORT }) {
     if (order.suppliers.length === 0)
       alertMessage = 'Заполните раздел Поставщики'
     if (alertMessage === '') {
-      axios.post(`http://${window.location.hostname}:${PORT}/neworder`, order)
+      axios.post(`http://${window.location.hostname}:${PORT}/neworder`, {
+        order,
+        token,
+      })
         .then(function (response) {
           if (response.data === 'заявка создана') {
             clearData();
@@ -87,6 +90,9 @@ function NewOrder({ order, setOrder, selectListsData, PORT }) {
         })
         .catch(function (error) {
           console.log(error);
+          if (error.response.status === 999) {
+            logOut();
+          }
         });
     }
     else {
@@ -113,6 +119,8 @@ function NewOrder({ order, setOrder, selectListsData, PORT }) {
         showNewSupplier={showNewSupplier}
         refreshLiterForSale={handleRefreshLitersForSale}
         currentSupplier={currentSupplier}
+        logOut={logOut}
+        token={token}
       />
       <NewBuyer
         order={order}
@@ -123,6 +131,9 @@ function NewOrder({ order, setOrder, selectListsData, PORT }) {
         refreshLiterForSale={handleRefreshLitersForSale}
         litersForSale={litersForSale}
         currentBuyer={currentBuyer}
+        logOut={logOut}
+        token={token}
+        user={user}
       />
       {message !== ""
         ? <Alert key={alertVariant} variant={alertVariant}> {message} </Alert>
