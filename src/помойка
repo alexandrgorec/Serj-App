@@ -1,47 +1,90 @@
-import "./ComboBox.css";
-import ButtonGroup from 'react-bootstrap/ButtonGroup';
-import Dropdown from 'react-bootstrap/Dropdown';
-import Button from 'react-bootstrap/Button';
-import Stack from 'react-bootstrap/Stack';
-import Form from 'react-bootstrap/Form';
-import FloatingLabel from 'react-bootstrap/FloatingLabel';
-import { useRef } from "react";
+import React from 'react';
+import './FooterApp.css';
+import { FaRegEdit } from "react-icons/fa";
+import { MdOutlineLibraryBooks } from "react-icons/md";
+import { LuWarehouse } from "react-icons/lu";
+import { useEffect } from 'react';
+import { GiHamburgerMenu } from "react-icons/gi";
 
 
 
-function ComboBox({ data = [], label = '', id, defaultValue = undefined }) {
-    const ref = useRef(null);
-    const handleClick = (value) => {
-        ref.current.value = value;
-        let event = new Event('change')
-        ref.current.dispatchEvent(event);
-    }
-    return (
-        <div >
-            <Stack >
-                <Dropdown as={ButtonGroup} >
-                    <Form.Control as='input' type="text" defaultValue={defaultValue} autoComplete="off" placeholder={label} ref={ref} id={id} />
-                    <div className="vr" />
-                    <div className="vr" />
-                    <div className="vr" />
-                    <Dropdown.Toggle size="lg" split variant={'secondary'} />
-                    <Dropdown.Menu>
-                        {
-                            data.map(item =>
-                                <Dropdown.Item as={Button} key={item} size="lg" onClick={() => handleClick(item)} >{item}</Dropdown.Item>
-                            )
-                        }
-                    </Dropdown.Menu>
-                </Dropdown>
-            </Stack>
-            <br />
-        </div>
-    )
+
+
+
+function FooterApp({ setActiveComponent, activeComponent }) {
+
+
+  const dropActiveStateFooterButtons = () => {
+    let buttons = document.querySelectorAll(".footerButton");
+    buttons.forEach(button => {
+      button.classList.remove("activeButton");
+    })
+  }
+  const activeNewOrder = () => {
+    dropActiveStateFooterButtons();
+    let button = document.querySelector(".divNewOrder");
+    button.classList.add("activeButton");
+    window.scrollTo(0, 0);
+    setActiveComponent((active) => active = "Новая заявка");
+  }
+  const activeAllOrders = () => {
+    dropActiveStateFooterButtons();
+    let button = document.querySelector(".divAllOrders");
+    button.classList.add("activeButton");
+    window.scrollTo(0, 0);
+    setActiveComponent((active) => active = "Все заявки");
+  }
+
+  const activeWareHouse = () => {
+    dropActiveStateFooterButtons();
+    let button = document.querySelector(".divWareHouse");
+    button.classList.add("activeButton");
+    window.scrollTo(0, 0);
+    setActiveComponent((active) => active = "Склад");
+  }
+
+  const activeMenu = () => {
+    dropActiveStateFooterButtons();
+    let button = document.querySelector(".divMenu");
+    button.classList.add("activeButton");
+    window.scrollTo(0, 0);
+    setActiveComponent((active) => active = "Меню");
+  }
+
+  useEffect(() => {
+    let buttons = document.querySelectorAll(".footerButton");
+    buttons.forEach(button => {
+      if (button.classList.value.includes(activeComponent))
+        button.classList.add("activeButton");
+    })
+  })
+
+
+  return (
+    <div className='footer'>
+      <div variant="outline-secondary" className='footerButton divNewOrder activeButton' onClick={activeNewOrder} >
+        <FaRegEdit size="3em" /><br />
+        Новая заявка
+      </div>
+      <div variant="outline-secondary" className='footerButton divAllOrders' onClick={activeAllOrders} >
+        <MdOutlineLibraryBooks size="3em" /><br />
+        Все заявки
+      </div>
+      <div variant="outline-secondary" className='footerButton divWareHouse' onClick={activeWareHouse} >
+        <LuWarehouse size="3em" /><br />
+        Склад
+      </div>
+      <div variant="outline-secondary" className='footerButton divMenu' onClick={activeMenu} >
+        <GiHamburgerMenu size="3em" /><br />
+        Меню
+      </div>
+     
+    </div>
+
+
+  );
 }
 
-export default ComboBox;
+export default FooterApp;
 
-<FloatingLabel
-label="Литры"
-className="mb-3" >
-</FloatingLabel>
+// { <div className="p-2"><GiHamburgerMenu style={{ cursor: 'pointer' }} size={'2em'} /></div>}

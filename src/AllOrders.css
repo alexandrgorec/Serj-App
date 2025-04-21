@@ -4,11 +4,15 @@
     }
 }
 
-.tableClickable {
+.clickable{
     cursor: pointer;
-    margin: 0;
 }
 
 .colorborder{
     border-top-color: rgba(6, 55, 146, 0.438);
+    margin: 0;
+}
+
+.newOrder{
+    background-color: rgb(7, 194, 38);
 }

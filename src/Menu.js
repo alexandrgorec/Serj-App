@@ -15,18 +15,20 @@ function Menu() {
     if (menuComponent)
         return (
             <>
-                <div className="d-grid">
-                    <Button variant="outline-primary" size="lg" onClick={() => { setMenuComponent(null) }}>
+                <div className="col-md-3 mt-4 mx-auto d-grid">
+                    <Button variant="outline-primary" className='' size="lg" onClick={() => { setMenuComponent(null) }}>
                         Назад
                     </Button>
                 </div>
-                {menuComponent}
+                <div className="col-md-3 mx-auto">
+                    {menuComponent}
+                </div>
             </>
         )
 
 
     return (
-        <div className='menu'>
+        <div className='menu col-md-4 mt-1 mx-auto'>
 
             <div className='menuComponent' onClick={() => { setMenuComponent(<AddUser />) }} >
                 <TiUserAdd size="3em" /><br />

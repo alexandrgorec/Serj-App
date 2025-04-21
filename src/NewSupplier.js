@@ -11,8 +11,6 @@ import axios from 'axios';
 const verifySupplierData = (supplier) => {
   let verify = false;
   let errorVerifyMessage = "";
-  if (supplier.driver === "")
-    errorVerifyMessage = "Водитель не выбран";
   if (supplier.liters === "")
     errorVerifyMessage = "Литры не указаны";
   if (supplier.typeOfProduct === "")

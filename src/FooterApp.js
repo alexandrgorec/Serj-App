@@ -13,68 +13,21 @@ import { GiHamburgerMenu } from "react-icons/gi";
 
 function FooterApp({ setActiveComponent, activeComponent }) {
 
-
-  const dropActiveStateFooterButtons = () => {
-    let buttons = document.querySelectorAll(".footerButton");
-    buttons.forEach(button => {
-      button.classList.remove("activeButton");
-    })
-  }
-  const activeNewOrder = () => {
-    dropActiveStateFooterButtons();
-    let button = document.querySelector(".divNewOrder");
-    button.classList.add("activeButton");
-    window.scrollTo(0, 0);
-    setActiveComponent((active) => active = "Новая заявка");
-  }
-  const activeAllOrders = () => {
-    dropActiveStateFooterButtons();
-    let button = document.querySelector(".divAllOrders");
-    button.classList.add("activeButton");
-    window.scrollTo(0, 0);
-    setActiveComponent((active) => active = "Все заявки");
-  }
-
-  const activeWareHouse = () => {
-    dropActiveStateFooterButtons();
-    let button = document.querySelector(".divWareHouse");
-    button.classList.add("activeButton");
-    window.scrollTo(0, 0);
-    setActiveComponent((active) => active = "Склад");
-  }
-
-  const activeMenu = () => {
-    dropActiveStateFooterButtons();
-    let button = document.querySelector(".divMenu");
-    button.classList.add("activeButton");
-    window.scrollTo(0, 0);
-    setActiveComponent((active) => active = "Меню");
-  }
-
-  useEffect(() => {
-    let buttons = document.querySelectorAll(".footerButton");
-    buttons.forEach(button => {
-      if (button.classList.value.includes(activeComponent))
-        button.classList.add("activeButton");
-    })
-  })
-
-
   return (
     <div className='footer'>
-      <div variant="outline-secondary" className='footerButton divNewOrder activeButton' onClick={activeNewOrder} >
+      <div variant="outline-secondary" className='footerButton divNewOrder activeButton' onClick={ () => {setActiveComponent((active) => active = "NewOrder");}} >
         <FaRegEdit size="3em" /><br />
         Новая заявка
       </div>
-      <div variant="outline-secondary" className='footerButton divAllOrders' onClick={activeAllOrders} >
+      <div variant="outline-secondary" className='footerButton divAllOrders' onClick={ () => {setActiveComponent((active) => active = "AllOrders");}} >
         <MdOutlineLibraryBooks size="3em" /><br />
         Все заявки
       </div>
-      <div variant="outline-secondary" className='footerButton divWareHouse' onClick={activeWareHouse} >
+      <div variant="outline-secondary" className='footerButton divWareHouse' onClick={ () => {setActiveComponent((active) => active = "WareHouse");}} >
         <LuWarehouse size="3em" /><br />
         Склад
       </div>
-      <div variant="outline-secondary" className='footerButton divMenu' onClick={activeMenu} >
+      <div variant="outline-secondary" className='footerButton divMenu' onClick={ () => {setActiveComponent((active) => active = "Menu");}} >
         <GiHamburgerMenu size="3em" /><br />
         Меню
       </div>

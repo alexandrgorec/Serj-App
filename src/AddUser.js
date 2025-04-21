@@ -11,7 +11,7 @@ function AddUser() {
     const refPassword = useRef(null);
     const refName = useRef(null);
     return (
-        <Stack gap={2} className="col-md-3 mx-auto">
+        <Stack gap={2} >
             <br />
             <FloatingLabel
                 label="Логин пользователя"
@@ -59,7 +59,7 @@ function AddUser() {
                 
                
             />
-            <Button variant="primary" size='lg'  className='mt-3'>Добавить пользователя</Button>
+            <Button variant="primary" size='lg'  className='mt-3'>Добавить пользователя <br/>(пока не работает)</Button>
 
         </Stack>
     )

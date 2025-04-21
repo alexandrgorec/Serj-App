@@ -7,12 +7,15 @@ import { Alert } from 'react-bootstrap';
 import axios from 'axios';
 
 
-function NewOrder({ order, setOrder, selectListsData, PORT, token, logOut, user }) {
+function NewOrder({ order, setOrder, selectListsData, PORT, token, logOut, user, setActiveComponent }) {
+
+
   const [message, setMessage] = useState("");
   const [alertVariant, setAlertVariant] = useState("");
   const [litersForSale, setLiterForSale] = useState({});
   const [currentBuyer, setCurrentBuyer] = useState(null);
   const [currentSupplier, setCurrentSupplier] = useState(null);
+  const [buttonH, setButtonH] = useState(false);
 
   const handleRefreshLitersForSale = () => {
     let result = {};
@@ -44,14 +47,16 @@ function NewOrder({ order, setOrder, selectListsData, PORT, token, logOut, user 
 
   const [showNewBuyer, setShowNewBuyer] = useState(false);
   const handleCloseNewBuyer = () => setShowNewBuyer(false);
-  const handleShowNewBuyer = () => {
+  const handleShowNewBuyer = (H = false) => {
+    setButtonH(H);
     setCurrentBuyer(null);
     setMessage("");
     setShowNewBuyer(true);
 
   };
 
-  const handleEditBuyer = (index) => {
+  const handleEditBuyer = (index, buttonH) => {
+    setButtonH(buttonH);
     setCurrentBuyer(index);
     setMessage("");
     setShowNewBuyer(true);
@@ -70,7 +75,6 @@ function NewOrder({ order, setOrder, selectListsData, PORT, token, logOut, user 
   }
   const sendData = () => {
     let alertMessage = '';
-    console.log(litersForSale)
     Object.values(litersForSale).forEach(elem => alertMessage = elem < 0 ? 'Количество литров по типу продукта у покупателей не может быть большем чем у поставщиков' : '')
     if (order.buyers.length === 0)
       alertMessage = 'Заполните раздел Покупатели'
@@ -82,10 +86,13 @@ function NewOrder({ order, setOrder, selectListsData, PORT, token, logOut, user 
         token,
       })
         .then(function (response) {
-          if (response.data === 'заявка создана') {
+          if (response.status === 202) {
             clearData();
             setAlertVariant("success");
-            setMessage("Заявка создана")
+            sessionStorage.createdOrderId = response.data;
+            sessionStorage.bgColor = 'rgba(61, 174, 12, 0.44)';
+            setActiveComponent('AllOrders')
+            // setMessage("Заявка создана")  //id = response.data
           }
         })
         .catch(function (error) {
@@ -101,8 +108,6 @@ function NewOrder({ order, setOrder, selectListsData, PORT, token, logOut, user 
     }
   }
 
-
-
   return (
     <>
       <OrderTable
@@ -110,7 +115,13 @@ function NewOrder({ order, setOrder, selectListsData, PORT, token, logOut, user 
         handleShowNewBuyer={handleShowNewBuyer}
         handleEditSupplier={handleEditSupplier}
         handleEditBuyer={handleEditBuyer}
-        order={order} />
+        order={order}
+        user={user}
+        setOrder={setOrder}
+        token={token}
+        PORT={PORT}
+        logOut = {logOut}
+      />
       <NewSupplier
         order={order}
         setOrder={setOrder}
@@ -134,6 +145,7 @@ function NewOrder({ order, setOrder, selectListsData, PORT, token, logOut, user 
         logOut={logOut}
         token={token}
         user={user}
+        buttonH={buttonH}
       />
       {message !== ""
         ? <Alert key={alertVariant} variant={alertVariant}> {message} </Alert>

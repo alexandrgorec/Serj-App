@@ -40,7 +40,7 @@ const getBuyerData = () => {
 }
 
 
-function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, selectListsData, litersForSale, refreshLiterForSale, currentBuyer = null, editBuyerInDB = false, PORT = 3001, logOut, token, user='' }) {
+function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, selectListsData, litersForSale, refreshLiterForSale, currentBuyer = null, editBuyerInDB = false, PORT = 3001, logOut, token, user = '', buttonH }) {
   const [message, setMessage] = useState("");
   const refLiters = useRef(null);
   const refTons = useRef(null);
@@ -54,9 +54,9 @@ function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, selectLi
 
 
 
-
   const saveBuyer = () => {
     const buyer = getBuyerData();
+    buyer.buttonH = buttonH;
     const [verify, errorVerifyMessage] = verifyBuyerData(buyer);
     if (verify) {
       if (!editBuyerInDB) {
@@ -110,7 +110,7 @@ function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, selectLi
       if (litersForSale[supplier.typeOfProduct] !== undefined && litersForSale[supplier.typeOfProduct] > 0)
         set.add(supplier.typeOfProduct)
     })
-    TYPE_OF_PRODUCT = currentBuyer === null ? [...set] : selectListsData.TYPE_OF_PRODUCT;
+    TYPE_OF_PRODUCT = [...set];
   }
   else {
     TYPE_OF_PRODUCT = selectListsData.TYPE_OF_PRODUCT;
@@ -149,18 +149,18 @@ function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, selectLi
         handleCloseNewBuyer();
       }}>
       <Offcanvas.Header closeButton>
-        <Offcanvas.Title>{`${currentBuyer === null ? 'Добавить покупателя' : 'Редактировать покупателя'}`}</Offcanvas.Title>
+        <Offcanvas.Title >{`${currentBuyer === null ? 'Добавить покупателя' : 'Редактировать покупателя'}`}</Offcanvas.Title>
       </Offcanvas.Header>
       <Offcanvas.Body>
-        <ComboBox
-          data={selectListsData.BUYERS}
-          defaultValue={`${currentBuyer ? currentBuyer.name : ''}`}
-          label="Покупатель" id="newBuyer-name"
-        />
         <ComboBox
           data={selectListsData.MANAGERS}
           defaultValue={`${currentBuyer ? currentBuyer.manager : user.name}`}
           label="Менеджер" id="newBuyer-manager"
+        />
+        <ComboBox
+          data={selectListsData.BUYERS}
+          defaultValue={`${currentBuyer ? currentBuyer.name : ''}`}
+          label="Покупатель" id="newBuyer-name"
         />
         <ComboBox
           data={TYPE_OF_PRODUCT}
@@ -221,7 +221,7 @@ function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, selectLi
         </Button>
         <Button
           style={{ float: 'right' }}
-          variant="success"
+          variant={buttonH ? "warning" : "success"}
           onClick={saveBuyer}
           ref={refReady}
         >

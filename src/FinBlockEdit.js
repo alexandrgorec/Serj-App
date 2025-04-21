@@ -19,11 +19,10 @@ function FinBlockEdit({ setOrder, handleCloseFinBlock, showFinBlock, order, curr
 
     const saveFinBlock = () => {
         setOrder((order) => {
-            console.log(order);
-            order.orderjson[suppliersOrBuyers][index].sf = document.querySelector("#finBlock-sf").value;
-            order.orderjson[suppliersOrBuyers][index].date = document.querySelector("#finBlock-date").value;
-            order.orderjson[suppliersOrBuyers][index].summa = document.querySelector("#finBlock-summa").value;
-            order.orderjson[suppliersOrBuyers][index].akt = document.querySelector("#finBlock-akt").value;
+            order[suppliersOrBuyers][index].sf = document.querySelector("#finBlock-sf").value;
+            order[suppliersOrBuyers][index].date = document.querySelector("#finBlock-date").value;
+            order[suppliersOrBuyers][index].summa = document.querySelector("#finBlock-summa").value;
+            order[suppliersOrBuyers][index].akt = document.querySelector("#finBlock-akt").value;
             return (order);
         });
         axios.post(`http://${window.location.hostname}:${PORT}/editorder`, {
@@ -71,8 +70,9 @@ function FinBlockEdit({ setOrder, handleCloseFinBlock, showFinBlock, order, curr
 
     if (current === null)
         return;
+  
 
-    if (current.summa === null || current.summa === undefined) {
+    if (current?.summa === null || current?.summa === undefined) {
         current.summa = current.tons * current.price;
     }
 
