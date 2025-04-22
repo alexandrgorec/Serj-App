@@ -2,14 +2,12 @@ import NewSupplier from './NewSupplier';
 import OrderTable from './OrderTable';
 import NewBuyer from './NewBuyer';
 import Button from 'react-bootstrap/Button';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert } from 'react-bootstrap';
 import axios from 'axios';
 
 
 function NewOrder({ order, setOrder, selectListsData, PORT, token, logOut, user, setActiveComponent }) {
-
-
   const [message, setMessage] = useState("");
   const [alertVariant, setAlertVariant] = useState("");
   const [litersForSale, setLiterForSale] = useState({});
@@ -25,12 +23,15 @@ function NewOrder({ order, setOrder, selectListsData, PORT, token, logOut, user,
     order.buyers.forEach((elem) => {
       result[elem.typeOfProduct] = (result[elem.typeOfProduct] || 0) - (+elem.liters);
     })
-    setLiterForSale(result);
+    setLiterForSale(() => { return result });
   }
 
 
   const [showNewSupplier, setShowNewSupplier] = useState(false);
-  const handleCloseNewSupplier = () => setShowNewSupplier(false);
+  const handleCloseNewSupplier = () => {
+    setShowNewSupplier(false);
+    handleRefreshLitersForSale();
+  };
   const handleShowNewSupplier = () => {
     setCurrentSupplier(null);
     setMessage("");
@@ -46,8 +47,12 @@ function NewOrder({ order, setOrder, selectListsData, PORT, token, logOut, user,
   };
 
   const [showNewBuyer, setShowNewBuyer] = useState(false);
-  const handleCloseNewBuyer = () => setShowNewBuyer(false);
+  const handleCloseNewBuyer = () => {
+    handleRefreshLitersForSale();
+    setShowNewBuyer(false)
+  };
   const handleShowNewBuyer = (H = false) => {
+    handleRefreshLitersForSale();
     setButtonH(H);
     setCurrentBuyer(null);
     setMessage("");
@@ -56,6 +61,7 @@ function NewOrder({ order, setOrder, selectListsData, PORT, token, logOut, user,
   };
 
   const handleEditBuyer = (index, buttonH) => {
+    handleRefreshLitersForSale();
     setButtonH(buttonH);
     setCurrentBuyer(index);
     setMessage("");
@@ -80,7 +86,8 @@ function NewOrder({ order, setOrder, selectListsData, PORT, token, logOut, user,
       alertMessage = 'Заполните раздел Покупатели'
     if (order.suppliers.length === 0)
       alertMessage = 'Заполните раздел Поставщики'
-    if (alertMessage === '') {
+    // if (alertMessage === '') {
+    if (false) {
       axios.post(`http://${window.location.hostname}:${PORT}/neworder`, {
         order,
         token,
@@ -108,6 +115,7 @@ function NewOrder({ order, setOrder, selectListsData, PORT, token, logOut, user,
     }
   }
 
+
   return (
     <>
       <OrderTable
@@ -115,12 +123,13 @@ function NewOrder({ order, setOrder, selectListsData, PORT, token, logOut, user,
         handleShowNewBuyer={handleShowNewBuyer}
         handleEditSupplier={handleEditSupplier}
         handleEditBuyer={handleEditBuyer}
+        handleRefreshLitersForSale={handleRefreshLitersForSale}
         order={order}
         user={user}
         setOrder={setOrder}
         token={token}
         PORT={PORT}
-        logOut = {logOut}
+        logOut={logOut}
       />
       <NewSupplier
         order={order}
@@ -128,7 +137,6 @@ function NewOrder({ order, setOrder, selectListsData, PORT, token, logOut, user,
         selectListsData={selectListsData}
         handleCloseNewSupplier={handleCloseNewSupplier}
         showNewSupplier={showNewSupplier}
-        refreshLiterForSale={handleRefreshLitersForSale}
         currentSupplier={currentSupplier}
         logOut={logOut}
         token={token}
@@ -139,7 +147,6 @@ function NewOrder({ order, setOrder, selectListsData, PORT, token, logOut, user,
         selectListsData={selectListsData}
         handleCloseNewBuyer={handleCloseNewBuyer}
         showNewBuyer={showNewBuyer}
-        refreshLiterForSale={handleRefreshLitersForSale}
         litersForSale={litersForSale}
         currentBuyer={currentBuyer}
         logOut={logOut}
@@ -152,7 +159,10 @@ function NewOrder({ order, setOrder, selectListsData, PORT, token, logOut, user,
         : ""
       }
       <Button variant="danger " onClick={clearData} style={{ marginRight: "15px" }}>Очистить</Button>
-      <Button variant="success" onClick={sendData}>Создать заявку</Button>
+      <Button variant="success" onClick={() => {
+        console.log(litersForSale);
+        sendData();
+      }}>Создать заявку</Button>
     </>
 
   );

@@ -40,7 +40,7 @@ const getBuyerData = () => {
 }
 
 
-function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, selectListsData, litersForSale, refreshLiterForSale, currentBuyer = null, editBuyerInDB = false, PORT = 3001, logOut, token, user = '', buttonH }) {
+function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, selectListsData, litersForSale, currentBuyer = null, editBuyerInDB = false, PORT = 3001, logOut, token, user = '', buttonH }) {
   const [message, setMessage] = useState("");
   const refLiters = useRef(null);
   const refTons = useRef(null);
@@ -63,14 +63,12 @@ function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, selectLi
         if (currentBuyer === null) { // Новый покупатель
           setOrder((order) => {
             order.buyers.push(buyer);
-            refreshLiterForSale();
             return (order);
           })
         }
         else { // Редактируем имеющегося покупателя
           setOrder((order) => {
             order.buyers[index] = buyer;
-            refreshLiterForSale();
             return (order);
           })
         }

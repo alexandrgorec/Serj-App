@@ -33,12 +33,14 @@ function EditOrder({ order, setOrder, selectListsData, PORT, token, logOut, user
 
 
     const [showNewSupplier, setShowNewSupplier] = useState(false);
-    const handleCloseNewSupplier = () => setShowNewSupplier(false);
+    const handleCloseNewSupplier = () => {
+        handleRefreshLitersForSale();
+        setShowNewSupplier(false);
+    }
     const handleShowNewSupplier = () => {
         setCurrentSupplier(null);
         setMessage("");
         setShowNewSupplier(true);
-
     };
 
     const handleEditSupplier = (index) => {
@@ -49,21 +51,24 @@ function EditOrder({ order, setOrder, selectListsData, PORT, token, logOut, user
     };
 
     const [showNewBuyer, setShowNewBuyer] = useState(false);
-    const handleCloseNewBuyer = () => setShowNewBuyer(false);
+    const handleCloseNewBuyer = () => {
+        handleRefreshLitersForSale();
+        setShowNewBuyer(false);
+    }
     const handleShowNewBuyer = (H = false) => {
+        handleRefreshLitersForSale();
         setButtonH(H);
         setCurrentBuyer(null);
         setMessage("");
         setShowNewBuyer(true);
-
     };
 
     const handleEditBuyer = (index, buttonH) => {
+        handleRefreshLitersForSale();
         setButtonH(buttonH);
         setCurrentBuyer(index);
         setMessage("");
         setShowNewBuyer(true);
-
     };
 
     const sendData = () => {
@@ -102,10 +107,6 @@ function EditOrder({ order, setOrder, selectListsData, PORT, token, logOut, user
         }
     }
 
-    useEffect(() => {
-        handleRefreshLitersForSale();
-    }, [token])
-
     return (
         <>
             <div className='mt-2 mb-2 text-center noselect' ><h2>Редактитование заявки № {order.id}</h2></div>
@@ -114,6 +115,7 @@ function EditOrder({ order, setOrder, selectListsData, PORT, token, logOut, user
                 handleShowNewBuyer={handleShowNewBuyer}
                 handleEditSupplier={handleEditSupplier}
                 handleEditBuyer={handleEditBuyer}
+                handleRefreshLitersForSale={handleRefreshLitersForSale}
                 order={order}
                 user={user}
                 setOrder={setOrder}
@@ -127,7 +129,6 @@ function EditOrder({ order, setOrder, selectListsData, PORT, token, logOut, user
                 selectListsData={selectListsData}
                 handleCloseNewSupplier={handleCloseNewSupplier}
                 showNewSupplier={showNewSupplier}
-                refreshLiterForSale={handleRefreshLitersForSale}
                 currentSupplier={currentSupplier}
                 logOut={logOut}
                 token={token}
@@ -138,7 +139,6 @@ function EditOrder({ order, setOrder, selectListsData, PORT, token, logOut, user
                 selectListsData={selectListsData}
                 handleCloseNewBuyer={handleCloseNewBuyer}
                 showNewBuyer={showNewBuyer}
-                refreshLiterForSale={handleRefreshLitersForSale}
                 litersForSale={litersForSale}
                 currentBuyer={currentBuyer}
                 logOut={logOut}
@@ -151,10 +151,12 @@ function EditOrder({ order, setOrder, selectListsData, PORT, token, logOut, user
             <Button variant="primary " onClick={() => {
                 handleSetEditMode();
                 openEditedOrder();
-            }} style={{ marginRight: "15px" }}>Назад</Button>
+            }} style={{ marginRight: "15px" }}>
+                Назад
+            </Button>
             <Button variant="success" onClick={() => {
                 sendData();
-                document.querySelector(".content").scrollTo(0,999);
+                document.querySelector(".content").scrollTo(0, 999);
             }}>Сохранить изменения</Button>
             {message !== ""
                 ? <Alert key={alertVariant} className='mt-3' variant={alertVariant}> {message} </Alert>

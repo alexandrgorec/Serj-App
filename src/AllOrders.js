@@ -470,7 +470,7 @@ function AllOrders({ PORT, selectListsData, logOut, token, user }) {
           token={token}
         />
 
-        <Modal show={show} onHide={handleCloseModal} animation={true}>
+        <Modal centered show={show} onHide={handleCloseModal} animation={true} >
           <Modal.Header closeButton>
             <Modal.Title>Подтверждение удаления заявки № {idForDeleteOrder}</Modal.Title>
           </Modal.Header>

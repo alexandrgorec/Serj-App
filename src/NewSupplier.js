@@ -34,7 +34,7 @@ const getSupplierData = () => {
   return (result);
 }
 
-function NewSupplier({ setOrder, handleCloseNewSupplier, showNewSupplier, selectListsData, refreshLiterForSale, order, currentSupplier = null, editSupplierInDB = false, PORT = 3001, logOut, token }) {
+function NewSupplier({ setOrder, handleCloseNewSupplier, showNewSupplier, selectListsData, order, currentSupplier = null, editSupplierInDB = false, PORT = 3001, logOut, token }) {
   const [message, setMessage] = useState("");
   const refLiters = useRef(null);
   const refTons = useRef(null);
@@ -54,14 +54,12 @@ function NewSupplier({ setOrder, handleCloseNewSupplier, showNewSupplier, select
         if (currentSupplier === null) { // Новый поставщик
           setOrder((order) => {
             order.suppliers.push(supplier);
-            refreshLiterForSale();
             return (order);
           })
         }
         else { // Редактируем имеющегося поставщика
           setOrder((order) => {
             order.suppliers[index] = supplier;
-            refreshLiterForSale();
             return (order);
           })
         }

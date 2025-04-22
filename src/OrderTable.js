@@ -3,12 +3,12 @@ import Table from 'react-bootstrap/Table';
 import Button from 'react-bootstrap/Button';
 import Stack from 'react-bootstrap/Stack';
 import { BiEditAlt } from "react-icons/bi";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MdDelete } from "react-icons/md";
 import FinBlockEdit from './FinBlockEdit';
 
 
-function OrderTable({ handleShowNewSupplier, handleShowNewBuyer, handleEditSupplier, handleEditBuyer, setOrder, order, user, token, PORT, logOut }) {
+function OrderTable({ handleShowNewSupplier, handleShowNewBuyer, handleEditSupplier, handleEditBuyer, handleRefreshLitersForSale, setOrder, order, user, token, PORT, logOut }) {
   const [suppliersOrBuyers, setSuppliersOrBuyers] = useState(null);
   const [state, reload] = useState(false);
   const [currentFinBlock, setCurrentFinBlock] = useState(null);
@@ -36,6 +36,9 @@ function OrderTable({ handleShowNewSupplier, handleShowNewBuyer, handleEditSuppl
       res = '';
     return res;
   }
+
+
+
   return (
     <>
       <div className='newOrderTable noselect'>
@@ -68,12 +71,15 @@ function OrderTable({ handleShowNewSupplier, handleShowNewBuyer, handleEditSuppl
                       {supplier.name}
                       <BiEditAlt style={{ color: 'rgba(1, 87, 248, 0.85)' }} className='icon ms-auto' size="2em" onClick={() => handleEditSupplier(index)} />
                       {/* <Button size="sm" variant="warning" >н</Button> */}
+                      <div className="vr" />
                       <MdDelete size='1.7em' className='icon' style={{ color: 'rgb(194, 65, 65)' }} onClick={() => {
                         setOrder(order => {
                           order.suppliers = order.suppliers.filter((item, ind) => ind != index)
                           return (order);
                         })
-                        reload(!state)
+                        
+                        reload(!state);
+                        handleRefreshLitersForSale();
                       }}
 
 
@@ -127,12 +133,15 @@ function OrderTable({ handleShowNewSupplier, handleShowNewBuyer, handleEditSuppl
                       {buyer.name}
                       <BiEditAlt style={{ color: 'rgba(1, 87, 248, 0.85)' }} className='icon ms-auto' size="2em" onClick={() => handleEditBuyer(index, buyer.buttonH)} />
                       {/* <Button size="sm" variant="warning" >н</Button> */}
+                      <div className="vr" />
                       <MdDelete size='1.7em' className='icon' style={{ color: 'rgb(194, 65, 65)' }} onClick={() => {
                         setOrder(order => {
                           order.buyers = order.buyers.filter((item, ind) => ind != index)
                           return (order);
                         })
-                        reload(!state)
+                        
+                        reload(!state);
+                        handleRefreshLitersForSale();
                       }}
 
 
