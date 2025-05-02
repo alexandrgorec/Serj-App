@@ -3,7 +3,6 @@ import './FooterApp.css';
 import { FaRegEdit } from "react-icons/fa";
 import { MdOutlineLibraryBooks } from "react-icons/md";
 import { LuWarehouse } from "react-icons/lu";
-import { useEffect } from 'react';
 import { GiHamburgerMenu } from "react-icons/gi";
 
 
@@ -11,7 +10,7 @@ import { GiHamburgerMenu } from "react-icons/gi";
 
 
 
-function FooterApp({ setActiveComponent, activeComponent }) {
+function FooterApp({ setActiveComponent }) {
 
   return (
     <div className='footer'>
@@ -39,5 +38,3 @@ function FooterApp({ setActiveComponent, activeComponent }) {
 }
 
 export default FooterApp;
-
-// { <div className="p-2"><GiHamburgerMenu style={{ cursor: 'pointer' }} size={'2em'} /></div>}

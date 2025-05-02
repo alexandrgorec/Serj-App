@@ -4,15 +4,14 @@ import Button from 'react-bootstrap/Button';
 import Offcanvas from 'react-bootstrap/Offcanvas';
 import ComboBox from './ComboBox';
 import { Alert } from 'react-bootstrap';
-import { useRef, useState } from 'react';
+import { useRef, useState, useContext } from 'react';
 import axios from 'axios';
+import { userContext } from './App';
 
 
 const verifySupplierData = (supplier) => {
   let verify = false;
   let errorVerifyMessage = "";
-  if (supplier.liters === "")
-    errorVerifyMessage = "Литры не указаны";
   if (supplier.typeOfProduct === "")
     errorVerifyMessage = "Тип продукта не выбран";
   if (supplier.name === "")
@@ -29,12 +28,13 @@ const getSupplierData = () => {
   result.liters = document.querySelector("#newSupplier-liters").value;
   result.tons = document.querySelector("#newSupplier-tons").value;
   result.price = document.querySelector("#newSupplier-price").value;
-  result.driver = document.querySelector("#newSupplier-driver").value;
-  result.otk = document.querySelector("#newSupplier-otk").value;
+  // result.driver = document.querySelector("#newSupplier-driver").value;
+  // result.otk = document.querySelector("#newSupplier-otk").value;
   return (result);
 }
 
-function NewSupplier({ setOrder, handleCloseNewSupplier, showNewSupplier, selectListsData, order, currentSupplier = null, editSupplierInDB = false, PORT = 3001, logOut, token }) {
+function NewSupplier({ setOrder, handleCloseNewSupplier, showNewSupplier, order, currentSupplier = null, editSupplierInDB = false}) {
+  const {logOut, token, user, setUser, PORT} = useContext(userContext);
   const [message, setMessage] = useState("");
   const refLiters = useRef(null);
   const refTons = useRef(null);
@@ -110,7 +110,6 @@ function NewSupplier({ setOrder, handleCloseNewSupplier, showNewSupplier, select
   }
 
 
-
   return (
     <Offcanvas show={showNewSupplier} onHide={() => {
       setMessage('');
@@ -120,9 +119,9 @@ function NewSupplier({ setOrder, handleCloseNewSupplier, showNewSupplier, select
         <Offcanvas.Title>{`${currentSupplier === null ? 'Добавить поставщика' : 'Редактировать поставщика'}`}</Offcanvas.Title>
       </Offcanvas.Header>
       <Offcanvas.Body>
-        <ComboBox data={selectListsData.SUPPLIERS} defaultValue={`${currentSupplier ? currentSupplier.name : ''}`} label="Поставщик" id="newSupplier-name" />
-        <ComboBox data={selectListsData.TYPE_OF_PRODUCT} defaultValue={`${currentSupplier ? currentSupplier.typeOfProduct : ''}`} label="Тип продукта" id="newSupplier-typeOfProduct" />
-        <ComboBox data={selectListsData.DRIVERS} defaultValue={`${currentSupplier ? currentSupplier.driver : ''}`} label="Водитель" id="newSupplier-driver" />
+        <ComboBox data={user.selectListsData.SUPPLIERS} user={user} token={token} logOut={logOut} nameDataList={'SUPPLIERS'} setUser={setUser} defaultValue={`${currentSupplier ? currentSupplier.name : ''}`} label="Поставщик" id="newSupplier-name" />
+        <ComboBox data={user.selectListsData.TYPE_OF_PRODUCT} user={user} token={token} logOut={logOut} nameDataList={'TYPE_OF_PRODUCT'} setUser={setUser} defaultValue={`${currentSupplier ? currentSupplier.typeOfProduct : ''}`} label="Тип продукта" id="newSupplier-typeOfProduct" />
+        {/* <ComboBox data={user.selectListsData.DRIVERS} user={user} token={token} logOut={logOut} nameDataList={'DRIVERS'} setUser={setUser} defaultValue={`${currentSupplier ? currentSupplier.driver : ''}`} label="Водитель" id="newSupplier-driver" /> */}
 
         <FloatingLabel label="Литры" className="mb-3" >
           <Form.Control as="input" type='number' defaultValue={`${currentSupplier ? currentSupplier.liters : ''}`} id="newSupplier-liters" ref={refLiters} onKeyUp={nextFocus} />
@@ -133,9 +132,9 @@ function NewSupplier({ setOrder, handleCloseNewSupplier, showNewSupplier, select
         <FloatingLabel label="Цена" className="mb-3">
           <Form.Control as="input" type='number' defaultValue={`${currentSupplier ? currentSupplier.price : ''}`} id="newSupplier-price" ref={refPrice} onKeyUp={nextFocus} />
         </FloatingLabel>
-        <FloatingLabel label="ОТК" className="mb-3">
+        {/* <FloatingLabel label="ОТК" className="mb-3">
           <Form.Control as="input" id="newSupplier-otk" defaultValue={`${currentSupplier ? currentSupplier.otk : ''}`} ref={refOtk} onKeyUp={nextFocus} />
-        </FloatingLabel>
+        </FloatingLabel> */}
         <Button style={{ float: 'left' }} variant="danger" onClick={handleCloseNewSupplier}>Отмена</Button>
         <Button style={{ float: 'right' }} variant="success" onClick={saveSupplier} ref={refReady} >Готово</Button>
         <br /><br />

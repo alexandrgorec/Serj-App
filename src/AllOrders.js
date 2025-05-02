@@ -1,22 +1,18 @@
 import './AllOrders.css';
 import Table from 'react-bootstrap/Table';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import Collapse from 'react-bootstrap/Collapse';
 import Button from 'react-bootstrap/Button';
 import axios from 'axios';
 import Modal from 'react-bootstrap/Modal';
-
+import Form from 'react-bootstrap/Form';
 import Stack from 'react-bootstrap/Stack';
-import NewSupplier from './NewSupplier';
-import NewBuyer from './NewBuyer';
-import FinBlockEdit from './FinBlockEdit';
-
 import EditOrder from './EditOrder';
-
 import { BiEditAlt } from "react-icons/bi";
 import { FaEye } from "react-icons/fa";
 import { FaEyeSlash } from "react-icons/fa6";
 import { MdDelete } from "react-icons/md";
+import { userContext } from './App';
 
 
 function spisok(array) {
@@ -47,7 +43,8 @@ function formatDate(date) {
 
 
 
-function AllOrders({ PORT, selectListsData, logOut, token, user }) {
+function AllOrders() {
+  const {logOut, token, user, PORT} = useContext(userContext);
 
 
   const openEditedOrder = () => {
@@ -75,11 +72,6 @@ function AllOrders({ PORT, selectListsData, logOut, token, user }) {
     getAllOrders(false);
   }
 
-  const [litersForSale, setLiterForSale] = useState({});
-  const [currentBuyer, setCurrentBuyer] = useState(null);
-  const [currentSupplier, setCurrentSupplier] = useState(null);
-  const [currentFinBlock, setCurrentFinBlock] = useState(null);
-  const [suppliersOrBuyers, setSuppliersOrBuyers] = useState(null);
   const [orders, setOrders] = useState([]);
   const [order, setOrder] = useState({
     suppliers: [],
@@ -88,7 +80,6 @@ function AllOrders({ PORT, selectListsData, logOut, token, user }) {
 
   const [idForDeleteOrder, setIdForDeleteOrder] = useState(null);
   const [show, setShow] = useState(false);
-
   const handleCloseModal = () => setShow(false);
   const handleShowModal = () => setShow(true);
 
@@ -100,52 +91,6 @@ function AllOrders({ PORT, selectListsData, logOut, token, user }) {
     reload(!state);
   }
 
-  const handleRefreshLitersForSale = () => {
-
-
-    let result = {};
-    order.orderjson.suppliers.forEach((elem) => {
-      result[elem.typeOfProduct] = (result[elem.typeOfProduct] || 0) + (+elem.liters);
-    })
-    order.orderjson.buyers.forEach((elem) => {
-      result[elem.typeOfProduct] = (result[elem.typeOfProduct] || 0) - (+elem.liters);
-    })
-    setLiterForSale(result);
-  }
-
-  const [showNewSupplier, setShowNewSupplier] = useState(false);
-  const handleCloseNewSupplier = () => {
-    getAllOrders(false);
-    setShowNewSupplier(false);
-  }
-  const handleEditSupplier = (orderIndex, orderId, supplierIndex) => {
-    setCurrentSupplier(supplierIndex);
-    setOrder(orders[orderIndex]);
-    setShowNewSupplier(true);
-  };
-
-  const [showNewBuyer, setShowNewBuyer] = useState(false);
-  const handleCloseNewBuyer = () => {
-    getAllOrders(false);
-    setShowNewBuyer(false);
-  };
-  const handleEditBuyer = (orderIndex, orderId, buyerIndex) => {
-    setCurrentBuyer(buyerIndex);
-    setOrder(orders[orderIndex]);
-    setShowNewBuyer(true);
-  };
-
-  const [showFinBlock, setShowFinBlock] = useState(false);
-  const handleCloseFinBlock = () => {
-    getAllOrders(false);
-    setShowFinBlock(false);
-  }
-  const handleEditFinBlock = (orderIndex, orderId, finBlockIndex, suppliersOrBuyers) => {
-    setCurrentFinBlock(finBlockIndex);
-    setSuppliersOrBuyers(suppliersOrBuyers);
-    setOrder(orders[orderIndex]);
-    setShowFinBlock(true);
-  };
 
   let size = '';
   let display = '';
@@ -266,24 +211,28 @@ function AllOrders({ PORT, selectListsData, logOut, token, user }) {
             orders.map((order, num) => {
               return (
                 <>
-                  <Table key={num} className='colorborder' striped bordered hover onClick={() => {
-                    // showHideOrder(num);
-                    // setOrders((orders) => {
-                    //   orders[num].open = !orders[num].open;
-                    //   return (orders)
-                    // })
-                    // reload(!state);
-                  }}>
+                  <Table key={num} className='colorborder clickable' striped bordered hover onClick={() => {
+
+                    showHideOrder(num);
+                  }}
+                    onDoubleClick={() => {
+                      showHideOrder(num);
+                      setOrder(() => order.orderjson);
+                      handleSetEditMode();
+                    }}
+                  >
                     <tbody style={{ borderColor: order.id === sessionStorage.createdOrderId ? bgColorEdited : '' }}>
                       <tr id={`order-${order.id}`}>
+
                         <td width='2%' style={{ textAlign: 'center', backgroundColor: order.id === sessionStorage.createdOrderId ? bgColorEdited : '' }}>{order.id}</td>
-                        <td style={{ backgroundColor: order.id === sessionStorage.createdOrderId ? bgColorEdited : '' }} width='5%' >{formatDate(order.orderdate)}</td>
+                        <td style={{ backgroundColor: order.id === sessionStorage.createdOrderId ? bgColorEdited : '' }} width='5%' >{formatDate(order.orderjson.date)}</td>
                         <td style={{ backgroundColor: order.id === sessionStorage.createdOrderId ? bgColorEdited : '' }} width='30%'>{
                           spisok(order.orderjson.suppliers)
                           // order.orderjson.suppliers.map((item) => {
                           //   return (item.name + "; ")
                           // })
                         }</td>
+
                         <td style={{ backgroundColor: order.id === sessionStorage.createdOrderId ? bgColorEdited : '' }}>
                           <Stack direction="horizontal" gap={3} >
                             {
@@ -292,15 +241,17 @@ function AllOrders({ PORT, selectListsData, logOut, token, user }) {
                               //   return (item.name + "; ")
                               // })
                             }
-                            {!orders[num].open && <FaEye size='1.7em' className='ms-auto clickable' style={{ color: 'rgba(1, 87, 248, 0.85)' }} onClick={() => { showHideOrder(num) }} />}
-                            {orders[num].open && <FaEyeSlash size='1.7em' className='ms-auto clickable' style={{ color: 'rgba(1, 87, 248, 0.28)' }} onClick={() => { showHideOrder(num) }} />}
+                            {!orders[num].open && <FaEye size='1.7em' className='ms-auto icon clickable' style={{ color: 'rgba(1, 87, 248, 0.85)' }} />}
+                            {orders[num].open && <FaEyeSlash size='1.7em' className='ms-auto icon clickable' style={{ color: 'rgba(1, 87, 248, 0.28)' }} />}
                             <div className="vr" />
-                            <BiEditAlt size='1.7em' className='clickable' style={{ color: 'rgba(1, 87, 248, 0.85)' }} onClick={() => {
+                            <BiEditAlt size='1.7em' className='clickable icon' style={{ color: 'rgba(1, 87, 248, 0.85)' }} onClick={() => {
+                              showHideOrder(num);
                               setOrder(() => order.orderjson);
                               handleSetEditMode();
                             }} />
                             <div className="vr" />
-                            <MdDelete size='1.7em' className='clickable' style={{ color: 'rgb(194, 65, 65)' }} onClick={() => {
+                            <MdDelete size='1.7em' className='clickable icon' style={{ color: 'rgb(194, 65, 65)' }} onClick={() => {
+                              showHideOrder(num)
                               setIdForDeleteOrder(order.id);
                               handleShowModal();
                             }} />
@@ -313,8 +264,8 @@ function AllOrders({ PORT, selectListsData, logOut, token, user }) {
                     </tbody>
                   </Table>
                   <Collapse in={order.open}>
-                    <div>
-                      <Table className='mb-1' striped bordered hover size={size} responsive="sm">
+                    <div className='mb-3'>
+                      <Table className='mb-0' striped bordered hover size={size} responsive="sm">
                         <thead>
                           <tr >
                             <th width='10%' >Поставщик </th>
@@ -322,8 +273,10 @@ function AllOrders({ PORT, selectListsData, logOut, token, user }) {
                             <th width='5%' >Литры</th>
                             <th width='5%' >Тонны</th>
                             <th width='5%' >Цена</th>
-                            <th width='10%' >Водитель</th>
-                            <th width='4%' >ОТК</th>
+                            <th className='text-center' width='10%' >Перевозчик</th>
+                            <th className='text-center' width='10%' >Водитель</th>
+                            <th className='text-center' width='10%' >Сумма доставки</th>
+                            <th className='text-center' width='4%' >ОТК</th>
                             {user.rights.finBlockAccess &&
                               <>
                                 <th width='6%' style={{ display: display }}>С/Ф</th>
@@ -350,9 +303,14 @@ function AllOrders({ PORT, selectListsData, logOut, token, user }) {
                                 <td >{NumberFormat(supplier.liters)}</td>
                                 <td >{NumberFormat(supplier.tons)}</td>
                                 <td >{NumberFormat(supplier.price)}</td>
-                                <td >{supplier.driver}</td>
-                                <td >{supplier.otk}</td>
-
+                                {(supplierIndex === 0) &&
+                                  <>
+                                    <td className='align-middle text-center' rowSpan={order.orderjson.suppliers.length}>{order.orderjson.ip}</td>
+                                    <td className='align-middle text-center' rowSpan={order.orderjson.suppliers.length}>{order.orderjson.driver}</td>
+                                    <td className='align-middle text-center' rowSpan={order.orderjson.suppliers.length}>{order.orderjson.cost}</td>
+                                    <td className='align-middle text-center' rowSpan={order.orderjson.suppliers.length}>{order.orderjson.otk}</td>
+                                  </>
+                                }
                                 {user.rights.finBlockAccess &&
                                   <>
                                     <td style={{ display: display }}>
@@ -373,8 +331,8 @@ function AllOrders({ PORT, selectListsData, logOut, token, user }) {
                         <thead>
                           <tr>
                             <th colSpan='5'>Покупатель </th>
-                            <th>Менеджер</th>
-                            <th>Доставка</th>
+                            <th colSpan='4'>Менеджер</th>
+
                             {user.rights.finBlockAccess && <th style={{ display: display }} colSpan={4}></th>}
                           </tr>
                         </thead>
@@ -393,8 +351,8 @@ function AllOrders({ PORT, selectListsData, logOut, token, user }) {
                                 <td style={{ backgroundColor: buyer.buttonH ? bgColorH : '' }}>{NumberFormat(buyer.liters)}</td>
                                 <td style={{ backgroundColor: buyer.buttonH ? bgColorH : '' }}>{NumberFormat(buyer.tons)}</td>
                                 <td style={{ backgroundColor: buyer.buttonH ? bgColorH : '' }}>{NumberFormat(buyer.price)}</td>
-                                <td style={{ backgroundColor: buyer.buttonH ? bgColorH : '' }}>{buyer.manager}</td>
-                                <td style={{ backgroundColor: buyer.buttonH ? bgColorH : '' }}></td>
+                                <td colSpan='4' style={{ backgroundColor: buyer.buttonH ? bgColorH : '' }}>{buyer.manager}</td>
+
                                 {user.rights.finBlockAccess &&
                                   <>
                                     <td style={{ display: display, backgroundColor: buyer.buttonH ? bgColorH : '' }}>
@@ -412,63 +370,18 @@ function AllOrders({ PORT, selectListsData, logOut, token, user }) {
                             )
 
                           })}
-                          {order.orderjson.comments && <tr>
-                            <td colSpan={'100%'}>
-                              <h3>Комментарии к заявке № {order.id}:</h3>
-                              <pre>{order.orderjson.comments}</pre>
-                            </td>
-                          </tr>}
                         </tbody>
                       </Table>
-                      {/* <div className='mb-1 d-grid'>
-                      <Button variant="outline-primary" size='lg'>Редактировать</Button>
-                    </div> */}
+                      {order.orderjson.comments &&
+                        <Form.Control as="textarea" rows={4} disabled type='number' defaultValue={order.orderjson.comments} />
+                      }
 
                     </div>
-                  </Collapse>
+                  </Collapse >
                 </>);
             })
           }
-        </div>
-
-        <NewSupplier
-          order={order.orderjson}
-          setOrder={setOrder}
-          selectListsData={selectListsData}
-          handleCloseNewSupplier={handleCloseNewSupplier}
-          showNewSupplier={showNewSupplier}
-          refreshLiterForSale={handleRefreshLitersForSale}
-          currentSupplier={currentSupplier}
-          editSupplierInDB={true}
-          PORT={PORT}
-          logOut={logOut}
-          token={token}
-        />
-        <NewBuyer
-          order={order.orderjson}
-          setOrder={setOrder}
-          selectListsData={selectListsData}
-          handleCloseNewBuyer={handleCloseNewBuyer}
-          showNewBuyer={showNewBuyer}
-          refreshLiterForSale={handleRefreshLitersForSale}
-          currentBuyer={currentBuyer}
-          litersForSale={litersForSale}
-          editBuyerInDB={true}
-          PORT={PORT}
-          logOut={logOut}
-          token={token}
-        />
-        <FinBlockEdit
-          setOrder={setOrder}
-          order={order.orderjson}
-          handleCloseFinBlock={handleCloseFinBlock}
-          showFinBlock={showFinBlock}
-          current={currentFinBlock}
-          PORT={PORT}
-          suppliersOrBuyers={suppliersOrBuyers}
-          logOut={logOut}
-          token={token}
-        />
+        </div >
 
         <Modal centered show={show} onHide={handleCloseModal} animation={true} >
           <Modal.Header closeButton>
@@ -499,8 +412,6 @@ function AllOrders({ PORT, selectListsData, logOut, token, user }) {
           editMode && <EditOrder
             order={order}
             setOrder={setOrder}
-            selectListsData={selectListsData}
-            PORT={PORT}
             token={token}
             logOut={logOut}
             user={user}

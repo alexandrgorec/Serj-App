@@ -2,12 +2,16 @@ import NewSupplier from './NewSupplier';
 import OrderTable from './OrderTable';
 import NewBuyer from './NewBuyer';
 import Button from 'react-bootstrap/Button';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import { Alert } from 'react-bootstrap';
 import axios from 'axios';
+import { userContext } from './App';
 
 
-function NewOrder({ order, setOrder, selectListsData, PORT, token, logOut, user, setActiveComponent }) {
+function NewOrder({ order, setOrder, setActiveComponent }) {
+  const {logOut, token, PORT} = useContext(userContext);
+
+
   const [message, setMessage] = useState("");
   const [alertVariant, setAlertVariant] = useState("");
   const [litersForSale, setLiterForSale] = useState({});
@@ -81,13 +85,13 @@ function NewOrder({ order, setOrder, selectListsData, PORT, token, logOut, user,
   }
   const sendData = () => {
     let alertMessage = '';
-    Object.values(litersForSale).forEach(elem => alertMessage = elem < 0 ? 'Количество литров по типу продукта у покупателей не может быть большем чем у поставщиков' : '')
+    // Object.values(litersForSale).forEach(elem => alertMessage = elem < 0 ? 'Количество литров по типу продукта у покупателей не может быть большем чем у поставщиков' : '')
     if (order.buyers.length === 0)
       alertMessage = 'Заполните раздел Покупатели'
     if (order.suppliers.length === 0)
       alertMessage = 'Заполните раздел Поставщики'
-    // if (alertMessage === '') {
-    if (false) {
+    if (alertMessage === '') {
+    // if (false) {
       axios.post(`http://${window.location.hostname}:${PORT}/neworder`, {
         order,
         token,
@@ -118,6 +122,7 @@ function NewOrder({ order, setOrder, selectListsData, PORT, token, logOut, user,
 
   return (
     <>
+    {}
       <OrderTable
         handleShowNewSupplier={handleShowNewSupplier}
         handleShowNewBuyer={handleShowNewBuyer}
@@ -125,33 +130,23 @@ function NewOrder({ order, setOrder, selectListsData, PORT, token, logOut, user,
         handleEditBuyer={handleEditBuyer}
         handleRefreshLitersForSale={handleRefreshLitersForSale}
         order={order}
-        user={user}
         setOrder={setOrder}
-        token={token}
-        PORT={PORT}
-        logOut={logOut}
       />
       <NewSupplier
         order={order}
         setOrder={setOrder}
-        selectListsData={selectListsData}
         handleCloseNewSupplier={handleCloseNewSupplier}
         showNewSupplier={showNewSupplier}
         currentSupplier={currentSupplier}
-        logOut={logOut}
-        token={token}
+
       />
       <NewBuyer
         order={order}
         setOrder={setOrder}
-        selectListsData={selectListsData}
         handleCloseNewBuyer={handleCloseNewBuyer}
         showNewBuyer={showNewBuyer}
         litersForSale={litersForSale}
         currentBuyer={currentBuyer}
-        logOut={logOut}
-        token={token}
-        user={user}
         buttonH={buttonH}
       />
       {message !== ""

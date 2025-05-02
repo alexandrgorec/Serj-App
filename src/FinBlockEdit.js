@@ -2,11 +2,13 @@ import Form from 'react-bootstrap/Form';
 import FloatingLabel from 'react-bootstrap/FloatingLabel';
 import Button from 'react-bootstrap/Button';
 import Offcanvas from 'react-bootstrap/Offcanvas';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useContext } from 'react';
 import axios from 'axios';
+import { userContext } from './App';
 
 
-function FinBlockEdit({ setOrder, handleCloseFinBlock, showFinBlock, order, current, PORT = 3001, suppliersOrBuyers = null, token, logOut }) {
+function FinBlockEdit({ setOrder, handleCloseFinBlock, showFinBlock, order, current, suppliersOrBuyers = null }) {
+    const {logOut, token, PORT} = useContext(userContext);
     const refSf = useRef(null);
     const refDate = useRef(null);
     const refSumma = useRef(null);

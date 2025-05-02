@@ -3,7 +3,7 @@ import NewOrder from "./NewOrder";
 import FooterApp from './FooterApp';
 import AllOrders from './AllOrders';
 import Login from './Login';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, createContext } from 'react';
 import axios from 'axios';
 import './App.css';
 import { MdLogout } from "react-icons/md";
@@ -14,14 +14,23 @@ import { FaCircleUser } from "react-icons/fa6";
 
 
 
+export const userContext = createContext();
 
-const PORT = window.location.port === '3000' ? 3001 : window.location.port;
 
 function App() {
+  const PORT = window.location.port === '3000' ? 3001 : window.location.port;
   const [token, setToken] = useState(window.localStorage.token);
   const [user, setUser] = useState({
     name: '',
     rights: {},
+    selectListsData: {
+      SUPPLIERS: [],
+      BUYERS: [],
+      DRIVERS: [],
+      TYPE_OF_PRODUCT: [],
+      MANAGERS: [],
+      user: {},
+    }
   })
   const logOut = () => {
     delete window.localStorage.token;
@@ -32,14 +41,6 @@ function App() {
 
 
   const [activeComponent, setActiveComponent] = useState("NewOrder");
-  const [selectListsData, setSelectListsData] = useState({
-    SUPPLIERS: [],
-    BUYERS: [],
-    DRIVERS: [],
-    TYPE_OF_PRODUCT: [],
-    MANAGERS: [],
-    user: {},
-  });
   const [newOrder, setNewOrder] = useState({
     suppliers: [],
     buyers: [],
@@ -60,7 +61,6 @@ function App() {
       axios.post(`http://${window.location.hostname}:${PORT}/getData`, { token })
         .then((response) => {
           if (response.status === 202) {
-            setSelectListsData(response.data.selectListsData);
             setUser(response.data.user);
           }
         })
@@ -73,32 +73,30 @@ function App() {
 
 
 
-
-
-  if (!token)
-    return (<Login setToken={setToken} />);
   const height = (window.innerHeight / window.outerHeight) > 0.85 ? 100 : 89.7;
-
   return (
-    <div style={{ height: `${height}vh` }}>
-      <div className='app' >
-        <Stack direction="horizontal" gap={3} className='activeComponentHeader'>
-          <Stack style={{ userSelect: 'none', cursor: 'pointer' }} direction="horizontal" gap={1}><div className='logo'></div>Santo</Stack >
-          <div className='p-2 ms-auto noselect' style={{ cursor: 'pointer' }}>{user.name}  <FaCircleUser style={{ paddingBottom: '2px' }} size={'1.5em'} /></div>
-          <div onClick={logOut} className="p-2 noselect" style={{ cursor: 'pointer' }}><MdLogout style={{ paddingBottom: '2px' }} size={'1.5em'} className='icon ms-auto' />Выход</div>
-        </Stack>
-        <div className='content'>
-          {activeComponent === "NewOrder" ? <NewOrder order={newOrder} PORT={PORT} setOrder={setNewOrder} selectListsData={selectListsData} logOut={logOut} token={token} user={user} setActiveComponent={setActiveComponent} /> : ""}
-          {activeComponent === "AllOrders" ? <AllOrders PORT={PORT} selectListsData={selectListsData} logOut={logOut} token={token} user={user} /> : ""}
-          {activeComponent === "Menu" ? <Menu /> : ""}
+    <userContext.Provider value={{token, logOut, user, setUser, PORT}}>
+      {!token && <Login setToken={setToken} />}
+      {token && <div style={{ height: `${height}vh` }}>
+        <div className='app' >
+          <Stack direction="horizontal" gap={3} className='activeComponentHeader'>
+            <Stack style={{ userSelect: 'none', cursor: 'pointer' }} direction="horizontal" gap={1}><div className='logo'></div>Santo</Stack >
+            <div className='p-2 ms-auto noselect' style={{ cursor: 'pointer' }}>{user.name}  <FaCircleUser style={{ paddingBottom: '2px' }} size={'1.5em'} /></div>
+            <div onClick={logOut} className="p-2 noselect" style={{ cursor: 'pointer' }}><MdLogout style={{ paddingBottom: '2px' }} size={'1.5em'} className='icon ms-auto' />Выход</div>
+          </Stack>
+          <div className='content'>
+            {activeComponent === "NewOrder" ? <NewOrder order={newOrder} setOrder={setNewOrder} setActiveComponent={setActiveComponent} /> : ""}
+            {activeComponent === "AllOrders" ? <AllOrders  /> : ""}
+            {activeComponent === "Menu" ? <Menu /> : ""}
+          </div>
+          <FooterApp setActiveComponent={setActiveComponent}/>
         </div>
-        <FooterApp setActiveComponent={setActiveComponent} activeComponent={activeComponent} />
-      </div>
-    </div>
+      </div>}
+    </userContext.Provider>
   );
 }
 
-export default App;
+export { App as default };
 
 
 

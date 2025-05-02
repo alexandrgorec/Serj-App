@@ -2,7 +2,7 @@ import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import "./Login.css";
 import axios from 'axios';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Alert } from 'react-bootstrap';
 
 const PORT = window.location.port === '3000' ? 3001 : window.location.port;
@@ -11,7 +11,7 @@ const PORT = window.location.port === '3000' ? 3001 : window.location.port;
 
 
 
-function Login({ setToken, setUser }) {
+function Login({ setToken }) {
     const refUser = useRef(null);
     const refPassword = useRef(null);
     const [alert, setAlert] = useState("");

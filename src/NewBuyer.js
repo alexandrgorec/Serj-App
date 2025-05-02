@@ -4,23 +4,18 @@ import Button from 'react-bootstrap/Button';
 import Offcanvas from 'react-bootstrap/Offcanvas';
 import ComboBox from './ComboBox';
 import { Alert } from 'react-bootstrap';
-import { useRef, useState } from 'react';
+import { useRef, useState, useContext } from 'react';
 import axios from 'axios';
+import { userContext } from './App';
 
 
 const verifyBuyerData = (Buyer) => {
   let verify = false;
   let errorVerifyMessage = "";
-  if (Buyer.manager === "")
-    errorVerifyMessage = "менеджер не выбран";
-  if (Buyer.liters === "")
-    errorVerifyMessage = "Литры не указаны";
   if (Buyer.typeOfProduct === "")
     errorVerifyMessage = "Тип продукта не выбран";
   if (Buyer.name === "")
     errorVerifyMessage = "Покупатель не выбран";
-  if (Buyer.liters === 0)
-    errorVerifyMessage = "Количество литров не может быть равно 0";
   if (errorVerifyMessage === "")
     verify = true;
 
@@ -35,12 +30,13 @@ const getBuyerData = () => {
   result.tons = document.querySelector("#newBuyer-tons").value;
   result.price = document.querySelector("#newBuyer-price").value;
   result.manager = document.querySelector("#newBuyer-manager").value;
-  result.otk = document.querySelector("#newBuyer-otk").value;
+  // result.otk = document.querySelector("#newBuyer-otk").value;
   return (result);
 }
 
 
-function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, selectListsData, litersForSale, currentBuyer = null, editBuyerInDB = false, PORT = 3001, logOut, token, user = '', buttonH }) {
+function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, litersForSale, currentBuyer = null, editBuyerInDB = false, buttonH }) {
+  const {logOut, token, user, setUser, PORT} = useContext(userContext);
   const [message, setMessage] = useState("");
   const refLiters = useRef(null);
   const refTons = useRef(null);
@@ -49,8 +45,13 @@ function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, selectLi
   const refReady = useRef(null);
   const index = currentBuyer;
 
+  let displayComboBoxManager='none';
+
   if (currentBuyer !== null)
+  {
     currentBuyer = order.buyers[currentBuyer];
+    displayComboBoxManager=''
+}
 
 
 
@@ -102,18 +103,19 @@ function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, selectLi
     }
   }
   let TYPE_OF_PRODUCT = [];
-  if (!editBuyerInDB) {
-    let set = new Set();
-    order.suppliers.forEach(supplier => {
-      if (litersForSale[supplier.typeOfProduct] !== undefined && litersForSale[supplier.typeOfProduct] > 0)
-        set.add(supplier.typeOfProduct)
-    })
-    TYPE_OF_PRODUCT = [...set];
-  }
-  else {
-    TYPE_OF_PRODUCT = selectListsData.TYPE_OF_PRODUCT;
-  }
+  // if (!editBuyerInDB) {
+  //   let set = new Set();
+  //   order.suppliers.forEach(supplier => {
+  //     if (litersForSale[supplier.typeOfProduct] !== undefined && litersForSale[supplier.typeOfProduct] > 0)
+  //       set.add(supplier.typeOfProduct)
+  //   })
+  //   TYPE_OF_PRODUCT = [...set];
+  // }
+  // else {
+  //   TYPE_OF_PRODUCT = user.selectListsData.TYPE_OF_PRODUCT;
+  // }
 
+  TYPE_OF_PRODUCT = user.selectListsData.TYPE_OF_PRODUCT;
 
 
 
@@ -150,22 +152,27 @@ function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, selectLi
         <Offcanvas.Title >{`${currentBuyer === null ? 'Добавить покупателя' : 'Редактировать покупателя'}`}</Offcanvas.Title>
       </Offcanvas.Header>
       <Offcanvas.Body>
-        <ComboBox
-          data={selectListsData.MANAGERS}
+        <ComboBox 
+          display={displayComboBoxManager}
+          data={user.selectListsData.MANAGERS}
           defaultValue={`${currentBuyer ? currentBuyer.manager : user.name}`}
           label="Менеджер" id="newBuyer-manager"
+          nameDataList={'MANAGERS'}
         />
         <ComboBox
-          data={selectListsData.BUYERS}
+          data={user.selectListsData.BUYERS}
           defaultValue={`${currentBuyer ? currentBuyer.name : ''}`}
           label="Покупатель" id="newBuyer-name"
+          nameDataList={'BUYERS'}
         />
         <ComboBox
           data={TYPE_OF_PRODUCT}
           defaultValue={`${currentBuyer ? currentBuyer.typeOfProduct : ''}`}
           label="Тип продукта"
           id="newBuyer-typeOfProduct"
-          relationship='#newBuyer-liters' />
+          relationship='#newBuyer-liters' 
+          nameDataList={'TYPE_OF_PRODUCT'}
+          />
 
         <FloatingLabel
           label="Литры"
@@ -202,14 +209,14 @@ function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, selectLi
             onKeyUp={nextFocus} />
         </FloatingLabel>
 
-        <FloatingLabel
+        {/* <FloatingLabel
           label="ОТК"
           className="mb-3">
           <Form.Control
             as="input"
             defaultValue={`${currentBuyer ? currentBuyer.otk : ''}`}
             id="newBuyer-otk" ref={refOtk} onKeyUp={nextFocus} />
-        </FloatingLabel>
+        </FloatingLabel> */}
         <Button
           style={{ float: 'left' }}
           variant="danger"
