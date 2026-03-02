@@ -2,7 +2,6 @@
     display: flex;
     background-color: rgba(31, 60, 247, 0.172);
     user-select: none;
-    /* height: 5%; */
     width: 100%;
 }
 
@@ -25,12 +24,8 @@
     padding: 0;
 }
 
-/* .desktop{
-    grid-template-rows: 5% 85% 10%;
-} */
 
 .content{
     position: relative;
-    /* height: 80%; */
     overflow-y: scroll;
 }

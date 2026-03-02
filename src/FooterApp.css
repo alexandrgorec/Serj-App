@@ -24,12 +24,17 @@
 .footerButton{
   text-align: center;
   user-select: none;
+  text-decoration: none;
 }
 
 .footerButton:hover{
   cursor: pointer;
 }
 
-.activeButton{
+.footer a{
+  color:rgba(142, 146, 151, 0.8)
+}
+
+.footer a.active{
   color:rgba(0, 132, 255, 0.61)
 }

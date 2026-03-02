@@ -5,7 +5,6 @@ import Offcanvas from 'react-bootstrap/Offcanvas';
 import ComboBox from './ComboBox';
 import { Alert } from 'react-bootstrap';
 import { useRef, useState, useContext } from 'react';
-import axios from 'axios';
 import { userContext } from './App';
 
 
@@ -34,7 +33,7 @@ const getSupplierData = () => {
 }
 
 function NewSupplier({ setOrder, handleCloseNewSupplier, showNewSupplier, order, currentSupplier = null, editSupplierInDB = false}) {
-  const {logOut, token, user, setUser, PORT} = useContext(userContext);
+  const { user, aAxios} = useContext(userContext);
   const [message, setMessage] = useState("");
   const refLiters = useRef(null);
   const refTons = useRef(null);
@@ -69,9 +68,8 @@ function NewSupplier({ setOrder, handleCloseNewSupplier, showNewSupplier, order,
           order.orderjson.suppliers[index] = supplier;
           return (order);
         });
-        axios.post(`http://${window.location.hostname}:${PORT}/editorder`, {
+        aAxios.post(`/user/editorder`, {
           order,
-          token,
         })
           .then(function (response) {
             if (response.status === 202) {
@@ -79,10 +77,7 @@ function NewSupplier({ setOrder, handleCloseNewSupplier, showNewSupplier, order,
             }
           })
           .catch(function (error) {
-            console.log(error);
-            if (error.response.status === 999) {
-              logOut();
-            }
+         
           })
           .finally( () => {handleCloseNewSupplier()});
       }
@@ -119,9 +114,9 @@ function NewSupplier({ setOrder, handleCloseNewSupplier, showNewSupplier, order,
         <Offcanvas.Title>{`${currentSupplier === null ? 'Добавить поставщика' : 'Редактировать поставщика'}`}</Offcanvas.Title>
       </Offcanvas.Header>
       <Offcanvas.Body>
-        <ComboBox data={user.selectListsData.SUPPLIERS} user={user} token={token} logOut={logOut} nameDataList={'SUPPLIERS'} setUser={setUser} defaultValue={`${currentSupplier ? currentSupplier.name : ''}`} label="Поставщик" id="newSupplier-name" />
-        <ComboBox data={user.selectListsData.TYPE_OF_PRODUCT} user={user} token={token} logOut={logOut} nameDataList={'TYPE_OF_PRODUCT'} setUser={setUser} defaultValue={`${currentSupplier ? currentSupplier.typeOfProduct : ''}`} label="Тип продукта" id="newSupplier-typeOfProduct" />
-        {/* <ComboBox data={user.selectListsData.DRIVERS} user={user} token={token} logOut={logOut} nameDataList={'DRIVERS'} setUser={setUser} defaultValue={`${currentSupplier ? currentSupplier.driver : ''}`} label="Водитель" id="newSupplier-driver" /> */}
+        <ComboBox data={user.selectListsData.SUPPLIERS}  nameDataList={'SUPPLIERS'} defaultValue={`${currentSupplier ? currentSupplier.name : ''}`} label="Поставщик" id="newSupplier-name" />
+        <ComboBox data={user.selectListsData.TYPE_OF_PRODUCT} nameDataList={'TYPE_OF_PRODUCT'} defaultValue={`${currentSupplier ? currentSupplier.typeOfProduct : ''}`} label="Тип продукта" id="newSupplier-typeOfProduct" />
+        {/* <ComboBox data={user.selectListsData.DRIVERS} nameDataList={'DRIVERS'} defaultValue={`${currentSupplier ? currentSupplier.driver : ''}`} label="Водитель" id="newSupplier-driver" /> */}
 
         <FloatingLabel label="Литры" className="mb-3" >
           <Form.Control as="input" type='number' defaultValue={`${currentSupplier ? currentSupplier.liters : ''}`} id="newSupplier-liters" ref={refLiters} onKeyUp={nextFocus} />

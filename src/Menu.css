@@ -13,3 +13,7 @@
     flex-wrap: wrap;
     row-gap: 30px;
 }
+
+.menu a{
+    color:rgb(17, 17, 18);
+  }

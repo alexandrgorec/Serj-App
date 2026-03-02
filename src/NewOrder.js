@@ -1,77 +1,23 @@
-import NewSupplier from './NewSupplier';
+
 import OrderTable from './OrderTable';
-import NewBuyer from './NewBuyer';
 import Button from 'react-bootstrap/Button';
-import { useEffect, useState, useContext } from 'react';
+import { useState, useContext } from 'react';
 import { Alert } from 'react-bootstrap';
-import axios from 'axios';
 import { userContext } from './App';
+import { useNavigate } from 'react-router-dom';
 
 
-function NewOrder({ order, setOrder, setActiveComponent }) {
-  const {logOut, token, PORT} = useContext(userContext);
 
 
+
+function NewOrder({ order, setOrder }) {
+  
+
+  const redirect = useNavigate();
+  const { aAxios } = useContext(userContext);
   const [message, setMessage] = useState("");
   const [alertVariant, setAlertVariant] = useState("");
-  const [litersForSale, setLiterForSale] = useState({});
-  const [currentBuyer, setCurrentBuyer] = useState(null);
-  const [currentSupplier, setCurrentSupplier] = useState(null);
-  const [buttonH, setButtonH] = useState(false);
 
-  const handleRefreshLitersForSale = () => {
-    let result = {};
-    order.suppliers.forEach((elem) => {
-      result[elem.typeOfProduct] = (result[elem.typeOfProduct] || 0) + (+elem.liters);
-    })
-    order.buyers.forEach((elem) => {
-      result[elem.typeOfProduct] = (result[elem.typeOfProduct] || 0) - (+elem.liters);
-    })
-    setLiterForSale(() => { return result });
-  }
-
-
-  const [showNewSupplier, setShowNewSupplier] = useState(false);
-  const handleCloseNewSupplier = () => {
-    setShowNewSupplier(false);
-    handleRefreshLitersForSale();
-  };
-  const handleShowNewSupplier = () => {
-    setCurrentSupplier(null);
-    setMessage("");
-    setShowNewSupplier(true);
-
-  };
-
-  const handleEditSupplier = (index) => {
-    setCurrentSupplier(index);
-    setMessage("");
-    setShowNewSupplier(true);
-
-  };
-
-  const [showNewBuyer, setShowNewBuyer] = useState(false);
-  const handleCloseNewBuyer = () => {
-    handleRefreshLitersForSale();
-    setShowNewBuyer(false)
-  };
-  const handleShowNewBuyer = (H = false) => {
-    handleRefreshLitersForSale();
-    setButtonH(H);
-    setCurrentBuyer(null);
-    setMessage("");
-    setShowNewBuyer(true);
-
-  };
-
-  const handleEditBuyer = (index, buttonH) => {
-    handleRefreshLitersForSale();
-    setButtonH(buttonH);
-    setCurrentBuyer(index);
-    setMessage("");
-    setShowNewBuyer(true);
-
-  };
 
   const clearData = () => {
     setMessage("");
@@ -79,9 +25,6 @@ function NewOrder({ order, setOrder, setActiveComponent }) {
       suppliers: [],
       buyers: [],
     });
-    setCurrentBuyer(null);
-    setCurrentSupplier(null);
-    setLiterForSale({});
   }
   const sendData = () => {
     let alertMessage = '';
@@ -90,11 +33,12 @@ function NewOrder({ order, setOrder, setActiveComponent }) {
       alertMessage = 'Заполните раздел Покупатели'
     if (order.suppliers.length === 0)
       alertMessage = 'Заполните раздел Поставщики'
+    let buyersH = document.querySelectorAll(".buyerH") || [];
+    order.haveEmptyBuyerH = false;
+    buyersH.forEach(buyerH => buyerH.value == '' ? order.haveEmptyBuyerH = true : '')
     if (alertMessage === '') {
-    // if (false) {
-      axios.post(`http://${window.location.hostname}:${PORT}/neworder`, {
+      aAxios.post(`/user/neworder`, {
         order,
-        token,
       })
         .then(function (response) {
           if (response.status === 202) {
@@ -102,15 +46,12 @@ function NewOrder({ order, setOrder, setActiveComponent }) {
             setAlertVariant("success");
             sessionStorage.createdOrderId = response.data;
             sessionStorage.bgColor = 'rgba(61, 174, 12, 0.44)';
-            setActiveComponent('AllOrders')
+            redirect('/allorders');
             // setMessage("Заявка создана")  //id = response.data
           }
         })
         .catch(function (error) {
-          console.log(error);
-          if (error.response.status === 999) {
-            logOut();
-          }
+
         });
     }
     else {
@@ -122,32 +63,10 @@ function NewOrder({ order, setOrder, setActiveComponent }) {
 
   return (
     <>
-    {}
+      { }
       <OrderTable
-        handleShowNewSupplier={handleShowNewSupplier}
-        handleShowNewBuyer={handleShowNewBuyer}
-        handleEditSupplier={handleEditSupplier}
-        handleEditBuyer={handleEditBuyer}
-        handleRefreshLitersForSale={handleRefreshLitersForSale}
         order={order}
         setOrder={setOrder}
-      />
-      <NewSupplier
-        order={order}
-        setOrder={setOrder}
-        handleCloseNewSupplier={handleCloseNewSupplier}
-        showNewSupplier={showNewSupplier}
-        currentSupplier={currentSupplier}
-
-      />
-      <NewBuyer
-        order={order}
-        setOrder={setOrder}
-        handleCloseNewBuyer={handleCloseNewBuyer}
-        showNewBuyer={showNewBuyer}
-        litersForSale={litersForSale}
-        currentBuyer={currentBuyer}
-        buttonH={buttonH}
       />
       {message !== ""
         ? <Alert key={alertVariant} variant={alertVariant}> {message} </Alert>
@@ -155,7 +74,6 @@ function NewOrder({ order, setOrder, setActiveComponent }) {
       }
       <Button variant="danger " onClick={clearData} style={{ marginRight: "15px" }}>Очистить</Button>
       <Button variant="success" onClick={() => {
-        console.log(litersForSale);
         sendData();
       }}>Создать заявку</Button>
     </>

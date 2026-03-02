@@ -1,44 +1,54 @@
 import "./ComboBox.css";
-import ButtonGroup from 'react-bootstrap/ButtonGroup';
 import Dropdown from 'react-bootstrap/Dropdown';
 import Button from 'react-bootstrap/Button';
-import Stack from 'react-bootstrap/Stack';
 import Form from 'react-bootstrap/Form';
 import FloatingLabel from 'react-bootstrap/FloatingLabel';
-import { useRef, useState, useContext } from "react";
+import { useRef, useContext, useState } from "react";
 import InputGroup from 'react-bootstrap/InputGroup';
 import { FaSave } from "react-icons/fa";
 import { MdDelete } from "react-icons/md";
-import axios from "axios";
 import { userContext } from "./App";
 
 
 
-function ComboBox({ data = [], label = '', id, nameDataList, defaultValue = undefined, display = '' }) {
-    const { logOut, token, user, setUser, PORT } = useContext(userContext);
-    const [state, reload] = useState(null);
+function ComboBox({ label = '', isBuyerH = '', iconSize = '2em', fontSize = '16px', id, object, nameDataList, field = '', display = '' }) {
+    const { user, setUser, aAxios } = useContext(userContext);
+    let tabIndex = sessionStorage.tabIndex++;
     const ref = useRef(null);
     const handleClick = (value) => {
         ref.current.value = value;
-        let event = new Event('change')
+        let event = new Event('input')
         ref.current.dispatchEvent(event);
+        object[field] = ref.current.value;
     }
+    if (window.innerWidth < 850) {
+        fontSize = '10px';
+        iconSize='1em'
+    }
+    const data = user?.selectListsData?.[nameDataList] || [];
     return (
         <div style={{ display: display }}>
-            <InputGroup size='lg'>
-                <FloatingLabel label={label}>
-                    <Form.Control as='input' type="text" defaultValue={defaultValue} autoComplete="off" ref={ref} id={id} />
-                </FloatingLabel>
+            <InputGroup size='sm'>
+                <Form.Control style={{ fontSize: fontSize }} className={`tabIndex-${tabIndex} ${isBuyerH}`} as='input' type="text" defaultValue={object[field]} autoComplete="off" ref={ref} id={id}
+                    onKeyDown={(evt) => {
+                        if (evt.key == 'Enter') {
+                            let nextElem = document.querySelector(`.tabIndex-${tabIndex + 1}`)
+                            if (nextElem) {
+                                nextElem.focus();
+                            }
+                        }
+                    }}
+                    onInput={() => {
+                        object[field] = ref.current.value;
+                    }} />
+
                 <InputGroup.Text style={{ cursor: 'pointer' }} onClick={() => {
                     const selectListsDataEdited = user.selectListsData;
-                    console.log("selectListsDataEdited:", selectListsDataEdited);
-                    console.log("nameDataList:", nameDataList);
                     if (!selectListsDataEdited[nameDataList].includes(ref.current.value) && ref.current.value !== '') {
                         selectListsDataEdited[nameDataList].push(ref.current.value);
 
-                        axios.post(`http://${window.location.hostname}:${PORT}/editSelectListsData`, {
+                        aAxios.post(`/user/editSelectListsData`, {
                             selectListsData: selectListsDataEdited,
-                            token,
                         })
                             .then(function (response) {
                                 if (response.status === 202) {
@@ -46,10 +56,7 @@ function ComboBox({ data = [], label = '', id, nameDataList, defaultValue = unde
                                 }
                             })
                             .catch(function (error) {
-                                console.log(error);
-                                if (error.response.status === 999) {
-                                    logOut();
-                                }
+
                             })
                     }
                     setUser(user => {
@@ -63,8 +70,8 @@ function ComboBox({ data = [], label = '', id, nameDataList, defaultValue = unde
 
                 </InputGroup.Text>
 
-                <Dropdown>
-                    <Dropdown.Toggle size="lg" split variant={'secondary'} />
+                <Dropdown >
+                    <Dropdown.Toggle size="lg" split variant={'secondary'} tabIndex={-1} />
                     <Dropdown.Menu >
                         {
                             data.map(item =>
@@ -77,9 +84,8 @@ function ComboBox({ data = [], label = '', id, nameDataList, defaultValue = unde
                                                 return { ...user };
 
                                             })
-                                            axios.post(`http://${window.location.hostname}:${PORT}/editSelectListsData`, {
+                                            aAxios.post(`/user/editSelectListsData`, {
                                                 selectListsData: user.selectListsData,
-                                                token,
                                             })
                                                 .then(function (response) {
                                                     if (response.status === 202) {
@@ -87,14 +93,11 @@ function ComboBox({ data = [], label = '', id, nameDataList, defaultValue = unde
                                                     }
                                                 })
                                                 .catch(function (error) {
-                                                    console.log(error);
-                                                    if (error.response.status === 999) {
-                                                        logOut();
-                                                    }
+
                                                 })
 
                                         }
-                                        }><MdDelete className="icon" size={'2em'} style={{ color: 'rgba(194, 65, 65, 0.82)' }} /></InputGroup.Text>
+                                        }><MdDelete className="icon" size={iconSize} style={{ color: 'rgba(194, 65, 65, 0.82)' }} /></InputGroup.Text>
                                     </InputGroup>
                                 </Dropdown.Item>
                             )
@@ -102,21 +105,9 @@ function ComboBox({ data = [], label = '', id, nameDataList, defaultValue = unde
                     </Dropdown.Menu>
                 </Dropdown>
 
-                {/* <div className="vr" />
-                    <div className="vr" />
-                    <div className="vr" />
-                    <Dropdown as={ButtonGroup} >
-                    <Dropdown.Toggle size="lg" split variant={'secondary'} />
-                    <Dropdown.Menu>
-                        {
-                            data.map(item =>
-                                <Dropdown.Item as={Button} key={item} size="lg" onClick={() => handleClick(item)} >{item}</Dropdown.Item>
-                            )
-                        }
-                    </Dropdown.Menu>
-                </Dropdown> */}
+
             </InputGroup>
-            <br />
+
         </div>
     )
 }

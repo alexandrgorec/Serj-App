@@ -5,7 +5,6 @@ import Offcanvas from 'react-bootstrap/Offcanvas';
 import ComboBox from './ComboBox';
 import { Alert } from 'react-bootstrap';
 import { useRef, useState, useContext } from 'react';
-import axios from 'axios';
 import { userContext } from './App';
 
 
@@ -14,8 +13,6 @@ const verifyBuyerData = (Buyer) => {
   let errorVerifyMessage = "";
   if (Buyer.typeOfProduct === "")
     errorVerifyMessage = "Тип продукта не выбран";
-  if (Buyer.name === "")
-    errorVerifyMessage = "Покупатель не выбран";
   if (errorVerifyMessage === "")
     verify = true;
 
@@ -35,8 +32,8 @@ const getBuyerData = () => {
 }
 
 
-function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, litersForSale, currentBuyer = null, editBuyerInDB = false, buttonH }) {
-  const {logOut, token, user, setUser, PORT} = useContext(userContext);
+function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, litersForSale, currentBuyer = null, buyerHIndex = null, editBuyerInDB = false }) {
+  const { user, aAxios } = useContext(userContext);
   const [message, setMessage] = useState("");
   const refLiters = useRef(null);
   const refTons = useRef(null);
@@ -45,19 +42,21 @@ function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, litersFo
   const refReady = useRef(null);
   const index = currentBuyer;
 
-  let displayComboBoxManager='none';
+  let displayComboBoxManager = 'none';
 
-  if (currentBuyer !== null)
-  {
+  if (currentBuyer !== null) {
     currentBuyer = order.buyers[currentBuyer];
-    displayComboBoxManager=''
-}
+    displayComboBoxManager = ''
+  }
+
+  if (currentBuyer !== null && buyerHIndex !== null) {
+    currentBuyer = currentBuyer.buyersH[buyerHIndex];
+  }
 
 
 
   const saveBuyer = () => {
     const buyer = getBuyerData();
-    buyer.buttonH = buttonH;
     const [verify, errorVerifyMessage] = verifyBuyerData(buyer);
     if (verify) {
       if (!editBuyerInDB) {
@@ -68,10 +67,19 @@ function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, litersFo
           })
         }
         else { // Редактируем имеющегося покупателя
-          setOrder((order) => {
-            order.buyers[index] = buyer;
-            return (order);
-          })
+          if (buyerHIndex === null) {
+            setOrder((order) => {
+              buyer.buyersH = order.buyers[index].buyersH || [];
+              order.buyers[index] = buyer;
+              return (order);
+            })
+          }
+          else {
+            setOrder((order) => {
+              order.buyers[index].buyersH[buyerHIndex] = buyer;
+              return (order);
+            })
+          }
         }
       }
       if (editBuyerInDB) {
@@ -79,9 +87,8 @@ function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, litersFo
           order.orderjson.buyers[index] = buyer;
           return (order);
         });
-        axios.post(`http://${window.location.hostname}:${PORT}/editorder`, {
+        aAxios.post(`/user/editorder`, {
           order,
-          token,
         })
           .then(function (response) {
             if (response.status === 202) {
@@ -89,10 +96,7 @@ function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, litersFo
             }
           })
           .catch(function (error) {
-            console.log(error);
-            if (error.response.status === 999) {
-              logOut();
-            }
+          
           })
           .finally(() => { handleCloseNewBuyer() });
       }
@@ -152,7 +156,7 @@ function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, litersFo
         <Offcanvas.Title >{`${currentBuyer === null ? 'Добавить покупателя' : 'Редактировать покупателя'}`}</Offcanvas.Title>
       </Offcanvas.Header>
       <Offcanvas.Body>
-        <ComboBox 
+        <ComboBox
           display={displayComboBoxManager}
           data={user.selectListsData.MANAGERS}
           defaultValue={`${currentBuyer ? currentBuyer.manager : user.name}`}
@@ -170,9 +174,9 @@ function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, litersFo
           defaultValue={`${currentBuyer ? currentBuyer.typeOfProduct : ''}`}
           label="Тип продукта"
           id="newBuyer-typeOfProduct"
-          relationship='#newBuyer-liters' 
+          relationship='#newBuyer-liters'
           nameDataList={'TYPE_OF_PRODUCT'}
-          />
+        />
 
         <FloatingLabel
           label="Литры"
@@ -226,7 +230,7 @@ function NewBuyer({ order, setOrder, handleCloseNewBuyer, showNewBuyer, litersFo
         </Button>
         <Button
           style={{ float: 'right' }}
-          variant={buttonH ? "warning" : "success"}
+          variant="success"
           onClick={saveBuyer}
           ref={refReady}
         >

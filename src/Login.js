@@ -2,16 +2,13 @@ import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import "./Login.css";
 import axios from 'axios';
-import { useState, useRef } from 'react';
+import { useState, useRef, useContext } from 'react';
 import { Alert } from 'react-bootstrap';
-
-const PORT = window.location.port === '3000' ? 3001 : window.location.port;
-
-
-
+import { userContext } from './App';
 
 
 function Login({ setToken }) {
+    const { PORT } = useContext(userContext);
     const refUser = useRef(null);
     const refPassword = useRef(null);
     const [alert, setAlert] = useState("");
@@ -27,23 +24,24 @@ function Login({ setToken }) {
                 refUser.current.focus();
         }
         else {
-            axios.post(`http://${window.location.hostname}:${PORT}/getAccessToken`, {
-                u,
-                p,
-            })
-                .then(function (response) {
-                    if (response.status === 202) {
-                        window.localStorage.token = response.data;
-                        setToken(response.data);
-                    }
-                    else {
-                        setAlert(response.data);
-                    }
+                axios.post(`http://${window.location.hostname}:${PORT}/guest/getAccessToken`, {
+                    u,
+                    p,
                 })
-                .catch(function (error) {
-                    if (error.request)
-                        setAlert("Нет соединения")
-                });
+                    .then(function (response) {
+                        if (response.status === 202) {
+                         
+                            window.localStorage.token = response.data;
+                            setToken(response.data);
+                        }
+                        else {
+                            setAlert(response.data);
+                        }
+                    })
+                    .catch(function (error) {
+                        if (error.request)
+                            setAlert("Нет соединения")
+                    });
         }
     }
 
@@ -54,9 +52,7 @@ function Login({ setToken }) {
                 <Form>
                     <Form.Group className="mb-3" controlId="formBasicEmail">
                         <h1><Form.Label className='h1'>Авторизация</Form.Label></h1>
-                        <Form.Label>Менеджер: Логин и пароль - 111</Form.Label>
-                        <br/>
-                        <Form.Label>Бухгалтер: Логин и пароль - 123</Form.Label>
+                        
                         <Form.Control type="text" autoFocus placeholder="Логин" ref={refUser} onChange={(evt) => setUserName(evt.target.value)} />
                         <Form.Text className="text-muted">
                         </Form.Text>

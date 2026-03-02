@@ -3,12 +3,11 @@ import FloatingLabel from 'react-bootstrap/FloatingLabel';
 import Button from 'react-bootstrap/Button';
 import Offcanvas from 'react-bootstrap/Offcanvas';
 import { useEffect, useRef, useContext } from 'react';
-import axios from 'axios';
 import { userContext } from './App';
 
 
 function FinBlockEdit({ setOrder, handleCloseFinBlock, showFinBlock, order, current, suppliersOrBuyers = null }) {
-    const {logOut, token, PORT} = useContext(userContext);
+    const { aAxios} = useContext(userContext);
     const refSf = useRef(null);
     const refDate = useRef(null);
     const refSumma = useRef(null);
@@ -27,9 +26,8 @@ function FinBlockEdit({ setOrder, handleCloseFinBlock, showFinBlock, order, curr
             order[suppliersOrBuyers][index].akt = document.querySelector("#finBlock-akt").value;
             return (order);
         });
-        axios.post(`http://${window.location.hostname}:${PORT}/editorder`, {
+        aAxios.post(`/editorder`, {
             order,
-            token,
         })
             .then(function (response) {
                 if (response.status === 202) {
@@ -37,10 +35,7 @@ function FinBlockEdit({ setOrder, handleCloseFinBlock, showFinBlock, order, curr
                 }
             })
             .catch(function (error) {
-                console.log(error);
-                if (error.response.status === 999) {
-                    logOut();
-                  }
+             
             })
             .finally(() => { handleCloseFinBlock() });
     }

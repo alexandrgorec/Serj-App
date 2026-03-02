@@ -7,7 +7,6 @@ function Select({ data, label, id, ref = null }) {
     <>
       <FloatingLabel label={label} >
         <Form.Select id={id} ref={ref}>
-          <option value="">Не выбрано</option>
           {data.sort().map(item => (
             <option key={item} value={item} >{item}</option>
           ))}
@@ -19,4 +18,3 @@ function Select({ data, label, id, ref = null }) {
 }
 
 export default Select;
-// onChange={onChangeFunc}

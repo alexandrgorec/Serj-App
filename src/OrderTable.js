@@ -1,6 +1,8 @@
 import './OrderTable.css';
 import Table from 'react-bootstrap/Table';
 import Button from 'react-bootstrap/Button';
+import NewSupplier from './NewSupplier';
+import NewBuyer from './NewBuyer';
 import Stack from 'react-bootstrap/Stack';
 import { BiEditAlt } from "react-icons/bi";
 import { useState, useContext } from 'react';
@@ -8,20 +10,39 @@ import { MdDelete } from "react-icons/md";
 import FinBlockEdit from './FinBlockEdit';
 import Modal from 'react-bootstrap/Modal';
 import { userContext } from './App';
+import ComboBox from './ComboBox';
+import TDInput from './TDInput';
+import TDSumma from './TDSumma';
 
 
-function OrderTable({ handleShowNewSupplier, handleShowNewBuyer, handleEditSupplier, handleEditBuyer, handleRefreshLitersForSale, setOrder, order }) {
-  const { user } = useContext(userContext);
-  const [suppliersOrBuyers, setSuppliersOrBuyers] = useState(null);
+
+function OrderTable({ setOrder, order }) {
+  sessionStorage.tabIndex = 0;
+  const { user, size, display } = useContext(userContext);
   const [state, reload] = useState(false);
-  const [currentFinBlock, setCurrentFinBlock] = useState(null);
-  const [showFinBlock, setShowFinBlock] = useState(false);
   const bgColorH = 'rgba(127, 244, 166, 0.49)';
-  const handleEditFinBlock = (finBlockIndex, suppliersOrBuyers) => {
-    setCurrentFinBlock(finBlockIndex);
-    setSuppliersOrBuyers(suppliersOrBuyers);
-    setShowFinBlock(true);
-  };
+
+
+  // const [litersForSale, setLiterForSale] = useState({});
+  // const handleRefreshLitersForSale = () => {
+  //   let result = {};
+  //   order.suppliers.forEach((elem) => {
+  //     result[elem.typeOfProduct] = (result[elem.typeOfProduct] || 0) + (+elem.liters);
+  //   })
+  //   order.buyers.forEach((elem) => {
+  //     result[elem.typeOfProduct] = (result[elem.typeOfProduct] || 0) - (+elem.liters);
+  //   })
+  //   setLiterForSale(() => { return result });
+  // }
+
+  if (order.manager === undefined) {
+    if (order.buyers.length > 0)
+      if (order.buyers[0].manager != undefined)
+        order.manager = order.buyers[0].manager;
+      else
+        order.manager = '';
+  }
+
 
 
   const [deleteElement, setDeleteElement] = useState(null);
@@ -29,45 +50,39 @@ function OrderTable({ handleShowNewSupplier, handleShowNewBuyer, handleEditSuppl
   const handleCloseModal = () => setShow(false);
   const handleShowModal = () => setShow(true);
 
-  const handleCloseFinBlock = () => {
-    setShowFinBlock(false);
-  }
-
-  let size = '';
-  let display = '';
-  if (window.innerWidth < 850) {
-    display = 'none';
-    size = 'sm'
-  }
-  const NumberFormat = (num) => {
-    let res = new Intl.NumberFormat().format(num);
-    if (!num)
-      res = '';
-    return res;
-  }
 
 
 
   return (
     <>
-      <div className='newOrderTable noselect'>
+      <div className='noselect'>
         <Table striped bordered hover responsive="sm">
           <thead>
             <tr>
-              <th> <Button variant="primary" size={size} onClick={handleShowNewSupplier}>+</Button> Поставщик </th>
-              <th>Вид продукта</th>
-              <th>Литры</th>
-              <th>Тонны</th>
-              <th>Цена</th>
-              <th></th>
-              {/* <th>Водитель</th> */}
-              {/* <th>ОТК</th> */}
+              <th width='1%'>
+                <Button tabIndex={-1} variant="primary" size={size} className='col-12' onClick={() => {
+                  setOrder(orderHandle => {
+                    orderHandle.suppliers.push({
+                      liters: '',
+                      name: '',
+                      price: '',
+                      tons: '',
+                      typeOfProduct: '',
+                    })
+                    return ({ ...orderHandle })
+                  })
+                }}>+</Button> </th>
+              <th width='16%'>Поставщик </th>
+              <th width='18%'>Вид продукта</th>
+              <th width='6%'>Литры</th>
+              <th width='6%'>Тонны</th>
+              <th width='6%'>Цена</th>
               {user.rights.finBlockAccess &&
                 <>
                   <th width='6%' style={{ display: display }}>С/Ф</th>
-                  <th width='6%' style={{ display: display }}>Дата</th>
-                  <th width='6%' style={{ display: display }}>Сумма</th>
-                  <th width='6%' style={{ display: display }}>Акт транспорт</th>
+                  <th width='1%' style={{ display: display }}>Дата</th>
+                  <th width='8%' style={{ display: display }}>Сумма</th>
+                  <th width='3%' style={{ display: display }}>Акт транспорт</th>
                 </>
               }
             </tr>
@@ -75,45 +90,37 @@ function OrderTable({ handleShowNewSupplier, handleShowNewBuyer, handleEditSuppl
           <tbody>
             {order.suppliers.map((supplier, index) => {
               return (
-                <tr key={index} onDoubleClick={() => handleEditSupplier(index)}>
-                  <td>
-                    <Stack gap={1} direction='horizontal'>
-                      {supplier.name}
-                      <BiEditAlt style={{ color: 'rgba(1, 87, 248, 0.85)' }} className='icon ms-auto' size="2em" onClick={() => handleEditSupplier(index)} />
-                      {/* <Button size="sm" variant="warning" >н</Button> */}
-                      <div className="vr" />
-                      <MdDelete size='1.7em' className='icon' style={{ color: 'rgb(194, 65, 65)' }} onClick={() => {
+                <tr key={index} className='suppliers-tr'>
+                  <td className='p-0 pt-1 pr-1'>
+                    <Stack direction='horizontal'>
+                      <MdDelete size='1.7em' className='icon ms-auto' style={{ color: 'rgb(194, 65, 65)' }} onClick={() => {
                         setDeleteElement({
                           element: 'suppliers',
                           index,
                         })
                         handleShowModal();
                       }}
-
-
                       />
                     </Stack>
                   </td>
-                  <td>{supplier.typeOfProduct}</td>
-                  <td>{supplier.liters}</td>
-                  <td>{supplier.tons}</td>
-                  <td>{supplier.price}</td>
-                  <td></td>
-                  {/* <td>{supplier.driver}</td> */}
-                  {/* <td>{supplier.otk}</td> */}
+                  <td className='m-0 p-0' >
+                    <ComboBox object={supplier} nameDataList={'SUPPLIERS'} field={'name'}/>
+                  </td>
+                  <td className='m-0 p-0'                   >
+                    <ComboBox object={supplier} nameDataList={'TYPE_OF_PRODUCT'} field={'typeOfProduct'} />
+                  </td>
+                  <TDInput object={supplier} field={'liters'} type={'number'} />
+                  <TDInput object={supplier} field={'tons'} type={'number'} />
+                  <TDInput object={supplier} field={'price'} type={'number'} />
                   {user.rights.finBlockAccess &&
                     <>
-                      <td style={{ display: display }}>
-                        <Stack gap={1} direction='horizontal'>
-                          {supplier.sf}
-                          <BiEditAlt style={{ color: 'rgba(1, 87, 248, 0.85)' }} className='icon ms-auto' size="2em" onClick={() => { handleEditFinBlock(index, 'suppliers') }} />
-                        </Stack>
-                      </td>
-                      <td style={{ display: display }}>{supplier.date}</td>
-                      <td style={{ display: display }}>{NumberFormat(supplier.summa)}</td>
-                      <td style={{ display: display }}>{supplier.akt}</td>
+                      <TDInput object={supplier} field={'sf'} type={'text'} display={display} />
+                      <TDInput object={order} field={'date'} type={'date'} disabled={true} value={true} display={display} />
+                       <TDSumma object={supplier} field={'summa'} display={display}/>
+                      <TDInput object={supplier} field={'akt'} type={'text'} display={display}/>
                     </>
                   }
+
                 </tr>
               )
             })}
@@ -121,29 +128,49 @@ function OrderTable({ handleShowNewSupplier, handleShowNewBuyer, handleEditSuppl
           </tbody>
           <thead>
             <tr>
-              <th colSpan='5'>
-                <Stack gap={2} direction='horizontal'>
-                  <Button variant="primary" size={size} onClick={() => handleShowNewBuyer(false)}>+</Button>
-                  {/* <Button size={size} variant="warning" onClick={() => handleShowNewBuyer(true)}>н</Button> */}
-                  Покупатель
-                </Stack>
+              <th><Button tabIndex={-1} variant="primary" className='col-12' size={size} onClick={() => {
+                setOrder(orderHandle => {
+                  orderHandle.buyers.push({
+                    liters: '',
+                    name: '',
+                    price: '',
+                    tons: '',
+                    typeOfProduct: '',
+                  })
+                  return ({ ...orderHandle })
+                })
+              }}>+</Button></th>
+              <th colSpan={3}>
+                <Stack gap={2} direction='horizontal'>   Покупатель  </Stack>
               </th>
-              <th colSpan={2} >Менеджер</th>
+              <th style={{ borderRight: 'none', textAlign: 'right' }}  >Менеджер:  </th>
+             <TDInput object={order} field={'manager'} type={'text'} fontSize='12px'/>
+              {user.rights.finBlockAccess &&
+                <>
+                  <th style={{ display: display }} colSpan={3}></th>
+                  <th style={{ display: display }}></th>
+                </>}
 
-              {user.rights.finBlockAccess && <th style={{ display: display }} colSpan={4}></th>}
             </tr>
           </thead>
           <tbody>
             {order.buyers.map((buyer, index) => {
               return (
-                <>                 
-                  <tr key={index} >
-                    <td style={{ backgroundColor: buyer.buttonH ? bgColorH : '' }}>
-                      <Stack gap={1} direction='horizontal'>
-                        {buyer.name}
-                        <BiEditAlt style={{ color: 'rgba(1, 87, 248, 0.85)' }} className='icon ms-auto' size="2em" onClick={() => handleEditBuyer(index, buyer.buttonH)} />
-                        {/* <Button size="sm" variant="warning" >н</Button> */}
-                        <div className="vr" />
+                <>
+
+                  <tr key={index} className='buyers-tr' style={{ borderTop: '2px solid pink' }}>
+                    <td className='p-0 pt-1 pr-1'>
+                      <Stack gap={1} direction='horizontal' >
+                        <Button className='m-1 mt-0 mb-0 p-2 pt-0 pb-0 ' tabIndex={-1} variant="warning" style={{ backgroundColor: buyer.buyersH?.length > 0 ? bgColorH : '' }} onClick={() => {
+                          const orderSave = order;
+                          orderSave.buyers[index].buyersH = orderSave.buyers[index].buyersH || [];
+                          const copyBuyer = { ...orderSave.buyers[index] };
+                          delete copyBuyer.buyersH;
+                          copyBuyer.name = '';
+                          orderSave.buyers[index].buyersH.push(copyBuyer);
+                          setOrder({ ...orderSave });
+
+                        }}>н</Button>
                         <MdDelete size='1.7em' className='icon' style={{ color: 'rgb(194, 65, 65)' }} onClick={() => {
                           setDeleteElement({
                             element: 'buyers',
@@ -151,111 +178,76 @@ function OrderTable({ handleShowNewSupplier, handleShowNewBuyer, handleEditSuppl
                           })
                           handleShowModal();
                         }}
-
-
                         />
-                        <div className="vr" />
-                        <Button variant="warning"  style={{ backgroundColor: buyer.buyersH?.length > 0 ?  bgColorH : '' }} onClick={() => {
-                          const orderSave = order;
-                          orderSave.buyers[index].buyersH = orderSave.buyers[index].buyersH || [];
-                          const copyBuyer = { ...orderSave.buyers[index] };
-                          delete copyBuyer.buyersH;
-                          copyBuyer.name = '';
-                          orderSave.buyers[index].buyersH.push(copyBuyer);
-                          setOrder({...orderSave});
-                          console.log("order", order);
-                        }}>н</Button>
+
                       </Stack>
                     </td>
-                    <td style={{ backgroundColor: buyer.buttonH ? bgColorH : '' }}>{buyer.typeOfProduct}</td>
-                    <td style={{ backgroundColor: buyer.buttonH ? bgColorH : '' }}>{buyer.liters}</td>
-                    <td style={{ backgroundColor: buyer.buttonH ? bgColorH : '' }}>{buyer.tons}</td>
-                    <td style={{ backgroundColor: buyer.buttonH ? bgColorH : '' }}>{buyer.price}</td>
-                    <td style={{ backgroundColor: buyer.buttonH ? bgColorH : '' }}>{buyer.manager}</td>
-
+                    <td className='m-0 p-0'  >
+                      <ComboBox object={buyer} nameDataList={'BUYERS'} field={'name'} />
+                    </td>
+                    <td className='m-0 p-0' >
+                      <ComboBox object={buyer} nameDataList={'TYPE_OF_PRODUCT'} field={'typeOfProduct'} />
+                    </td>
+                    <TDInput object={buyer} field={'liters'} type={'number'} />
+                    <TDInput object={buyer} field={'tons'} type={'number'} />
+                    <TDInput object={buyer} field={'price'} type={'number'} />
                     {user.rights.finBlockAccess &&
                       <>
-                        <td style={{ display: display, backgroundColor: buyer.buttonH ? bgColorH : '' }}>
-                          <Stack gap={1} direction='horizontal'>
-                            {buyer.sf}
-                            <BiEditAlt style={{ color: 'rgba(1, 87, 248, 0.85)' }} className='icon ms-auto' size="2em" onClick={() => { handleEditFinBlock(index, 'buyers') }} />
-
-                          </Stack>
-                        </td>
-                        <td style={{ display: display, backgroundColor: buyer.buttonH ? bgColorH : '' }}>{buyer.date}</td>
-                        <td style={{ display: display, backgroundColor: buyer.buttonH ? bgColorH : '' }}>{NumberFormat(buyer.summa)}</td>
-                        <td style={{ display: display, backgroundColor: buyer.buttonH ? bgColorH : '' }}>{buyer.akt}</td>
+                        <TDInput object={buyer} field={'sf'} type={'text'} display={display} />
+                        <TDInput object={order} field={'date'} type={'date'} disabled={true} value={true} display={display} />
+                        <TDInput object={buyer} field={'summa'} type={'number'} display={display} />
+                        <TDInput object={buyer} field={'akt'} type={'number'} display={display} />
                       </>
                     }
                   </tr>
-
-
-
                   {
-                  buyer.buyersH && buyer.buyersH.map((buyerH, indexBuyerH) => {
-                    return (
-                      <tr>
-                        <td style={{ backgroundColor: bgColorH }}>
-                          <Stack gap={1} direction='horizontal'>
-                            {buyerH.name}
-                            <BiEditAlt style={{ color: 'rgba(1, 87, 248, 0.85)' }} className='icon ms-auto' size="2em" onClick={() => { }} />
-                            {/* <Button size="sm" variant="warning" >н</Button> */}
-                            <div className="vr" />
-                            <MdDelete size='1.7em' className='icon' style={{ color: 'rgb(194, 65, 65)' }} onClick={() => {
+                    buyer.buyersH && buyer.buyersH.map((buyerH, indexBuyerH, arr) => {
+                      return (
+                        <tr className={`buyersH-tr-${index}`}>
+                          <td style={{ backgroundColor: bgColorH }} className='p-0 pt-1'>
+                            <Stack gap={1} direction='horizontal'>
+                              <MdDelete size='1.7em' className='icon ms-auto' style={{ color: 'rgb(194, 65, 65)' }} onClick={() => {
+                                setDeleteElement({
+                                  element: 'buyerH',
+                                  index,
+                                  indexBuyerH: indexBuyerH,
+                                })
+                                handleShowModal();
+                              }}
+                              />
+                            </Stack>
+                          </td>
+                          <td className='m-0 p-0'  >
+                            <ComboBox object={buyerH} nameDataList={'BUYERS'} field={'name'} isBuyerH={'buyerH'} />
+                          </td>
+                          <td className='m-0 p-0' >
+                            <ComboBox object={buyerH} nameDataList={'TYPE_OF_PRODUCT'} field={'typeOfProduct'} />
+                          </td>
+                          <TDInput object={buyerH} field={'liters'} type={'number'} />
+                          <TDInput object={buyerH} field={'tons'} type={'number'} />
+                          <TDInput object={buyerH} field={'price'} type={'number'} />
+                          {user.rights.finBlockAccess &&
+                            <>
+                              <TDInput object={buyerH} field={'sf'} type={'text'} display={display} />
+                              <TDInput object={order} field={'date'} type={'date'} disabled={true} display={display} />
+                              <TDInput object={buyerH} field={'summa'} type={'number'} display={display} />
+                              <TDInput object={buyerH} field={'akt'} type={'number'} display={display} />
+                            </>
+                          }
 
-                            }}
-                            />
-                            <div className="vr" />
-                          </Stack>
-                        </td>
-                        <td style={{ backgroundColor: bgColorH }}>{buyerH.typeOfProduct}</td>
-                        <td style={{ backgroundColor: bgColorH }}>{buyerH.liters}</td>
-                        <td style={{ backgroundColor: bgColorH }}>{buyerH.tons}</td>
-                        <td style={{ backgroundColor: bgColorH }}>{buyerH.price}</td>
-                        <td style={{ backgroundColor: bgColorH }}>{buyerH.manager}</td>
-
-                        {user.rights.finBlockAccess &&
-                          <>
-                            <td style={{ display: display, backgroundColor: bgColorH }}>
-                              <Stack gap={1} direction='horizontal'>
-                                {buyerH.sf}
-                                {/* <BiEditAlt style={{ color: 'rgba(1, 87, 248, 0.85)' }} className='icon ms-auto' size="2em" onClick={() => { handleEditFinBlock(index, 'buyers') }} /> */}
-
-                              </Stack>
-                            </td>
-                            <td style={{ display: display, backgroundColor: bgColorH }}>{buyerH.date}</td>
-                            <td style={{ display: display, backgroundColor: bgColorH }}>{NumberFormat(buyerH.summa)}</td>
-                            <td style={{ display: display, backgroundColor: bgColorH }}>{buyerH.akt}</td>
-                          </>
-                        }
-                      </tr>
-                    )
-                  }
-                  )}
+                        </tr>
 
 
-
-
-
-
-
-
-
-
+                      )
+                    }
+                    )}
+                  <tr style={{ border: "2px solid pink" }}></tr>
                 </>
               )
             })}
           </tbody>
         </Table>
       </div>
-      <FinBlockEdit
-        setOrder={setOrder}
-        order={order}
-        handleCloseFinBlock={handleCloseFinBlock}
-        showFinBlock={showFinBlock}
-        current={currentFinBlock}
-        suppliersOrBuyers={suppliersOrBuyers}
-      />
       <Modal centered show={show} onHide={handleCloseModal} animation={true} >
         <Modal.Header closeButton>
           <Modal.Title>Подтверждение удаления</Modal.Title>
@@ -269,13 +261,21 @@ function OrderTable({ handleShowNewSupplier, handleShowNewBuyer, handleEditSuppl
           <Button variant="primary" className='col-3' onClick={() => {
 
             if (deleteElement) {
-              setOrder((order) => {
-                order[deleteElement.element] = order[deleteElement.element].filter((item, ind) => ind != [deleteElement.index])
-                return (order);
-              })
+              if (deleteElement.element !== 'buyerH') {
+                setOrder((order) => {
+                  order[deleteElement.element] = order[deleteElement.element].filter((item, ind) => ind != [deleteElement.index])
+                  return (order);
+                })
+              }
+              if (deleteElement.element === 'buyerH') {
+                setOrder((order) => {
+                  order.buyers[deleteElement.index].buyersH = order.buyers[deleteElement.index].buyersH.filter((item, ind) => ind != [deleteElement.indexBuyerH])
+                  return (order);
+                })
+              }
               setDeleteElement(null);
               reload(!state);
-              handleRefreshLitersForSale();
+              // handleRefreshLitersForSale();
             }
             handleCloseModal();
           }}>
@@ -284,6 +284,7 @@ function OrderTable({ handleShowNewSupplier, handleShowNewBuyer, handleEditSuppl
 
         </Modal.Footer>
       </Modal>
+
     </>
   );
 }

@@ -4,36 +4,30 @@ import { FaRegEdit } from "react-icons/fa";
 import { MdOutlineLibraryBooks } from "react-icons/md";
 import { LuWarehouse } from "react-icons/lu";
 import { GiHamburgerMenu } from "react-icons/gi";
+import { NavLink } from 'react-router-dom';
 
 
-
-
-
-
-function FooterApp({ setActiveComponent }) {
+function FooterApp() {
 
   return (
     <div className='footer'>
-      <div variant="outline-secondary" className='footerButton divNewOrder activeButton' onClick={ () => {setActiveComponent((active) => active = "NewOrder");}} >
+      <NavLink tabIndex={-1} to="/neworder" className='footerButton'  >
         <FaRegEdit size="3em" /><br />
         Новая заявка
-      </div>
-      <div variant="outline-secondary" className='footerButton divAllOrders' onClick={ () => {setActiveComponent((active) => active = "AllOrders");}} >
+      </NavLink>
+      <NavLink tabIndex={-1}  to="/allorders" className='footerButton'  >
         <MdOutlineLibraryBooks size="3em" /><br />
         Все заявки
-      </div>
-      <div variant="outline-secondary" className='footerButton divWareHouse' onClick={ () => {setActiveComponent((active) => active = "WareHouse");}} >
+      </NavLink>
+      <NavLink tabIndex={-1}  to="/warehouse" className='footerButton'  >
         <LuWarehouse size="3em" /><br />
         Склад
-      </div>
-      <div variant="outline-secondary" className='footerButton divMenu' onClick={ () => {setActiveComponent((active) => active = "Menu");}} >
+      </NavLink>
+      <NavLink tabIndex={-1}  to="/menu" className='footerButton' >
         <GiHamburgerMenu size="3em" /><br />
         Меню
-      </div>
-     
+      </NavLink>
     </div>
-
-
   );
 }
 
