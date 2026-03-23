@@ -1,0 +1,668 @@
+import './OrderTable.css';
+import Table from 'react-bootstrap/Table';
+import Button from 'react-bootstrap/Button';
+import NewSupplier from './NewSupplier';
+import NewBuyer from './NewBuyer';
+import Stack from 'react-bootstrap/Stack';
+import { BiEditAlt } from "react-icons/bi";
+import { useState, useContext } from 'react';
+import { MdDelete } from "react-icons/md";
+import FinBlockEdit from './FinBlockEdit';
+import Modal from 'react-bootstrap/Modal';
+import { userContext } from './App';
+
+
+
+function OrderTable({ setOrder, order }) {
+  const { user } = useContext(userContext);
+  const [suppliersOrBuyers, setSuppliersOrBuyers] = useState(null);
+  const [state, reload] = useState(false);
+  const [currentFinBlock, setCurrentFinBlock] = useState(null);
+  const [showFinBlock, setShowFinBlock] = useState(false);
+  const bgColorH = 'rgba(127, 244, 166, 0.49)';
+
+
+  const [litersForSale, setLiterForSale] = useState({});
+  const [currentBuyer, setCurrentBuyer] = useState(null);
+  const [buyerHIndex, setBuyerHIndex] = useState(null);
+  const [currentSupplier, setCurrentSupplier] = useState(null);
+  const handleRefreshLitersForSale = () => {
+    let result = {};
+    order.suppliers.forEach((elem) => {
+      result[elem.typeOfProduct] = (result[elem.typeOfProduct] || 0) + (+elem.liters);
+    })
+    order.buyers.forEach((elem) => {
+      result[elem.typeOfProduct] = (result[elem.typeOfProduct] || 0) - (+elem.liters);
+    })
+    setLiterForSale(() => { return result });
+  }
+
+  if (order.manager === undefined) {
+    if (order.buyers.length > 0)
+      if (order.buyers[0].manager != undefined)
+        order.manager = order.buyers[0].manager;
+      else
+        order.manager = '';
+  }
+
+
+  const [showNewSupplier, setShowNewSupplier] = useState(false);
+  const handleCloseNewSupplier = () => {
+    setShowNewSupplier(false);
+    handleRefreshLitersForSale();
+  };
+  const handleShowNewSupplier = () => {
+    setCurrentSupplier(null);
+    setShowNewSupplier(true);
+
+  };
+
+  const handleEditSupplier = (index) => {
+    setCurrentSupplier(index);
+    setShowNewSupplier(true);
+
+  };
+
+  const [showNewBuyer, setShowNewBuyer] = useState(false);
+  const handleCloseNewBuyer = () => {
+    handleRefreshLitersForSale();
+    setShowNewBuyer(false)
+  };
+  const handleShowNewBuyer = (H = false) => {
+    handleRefreshLitersForSale();
+    setCurrentBuyer(null);
+    setShowNewBuyer(true);
+
+  };
+
+  const handleEditBuyer = (index, indexBuyerH = null) => {
+    setBuyerHIndex(indexBuyerH);
+    handleRefreshLitersForSale();
+    setCurrentBuyer(index);
+    setShowNewBuyer(true);
+
+  };
+
+  const handleEditFinBlock = (finBlockIndex, suppliersOrBuyers) => {
+    setCurrentFinBlock(finBlockIndex);
+    setSuppliersOrBuyers(suppliersOrBuyers);
+    setShowFinBlock(true);
+  };
+
+
+  const [deleteElement, setDeleteElement] = useState(null);
+  const [show, setShow] = useState(false);
+  const handleCloseModal = () => setShow(false);
+  const handleShowModal = () => setShow(true);
+
+  const handleCloseFinBlock = () => {
+    setShowFinBlock(false);
+  }
+
+  let size = '';
+  let display = '';
+  if (window.innerWidth < 850) {
+    display = 'none';
+    size = 'sm'
+  }
+  const NumberFormat = (num) => {
+    let res = new Intl.NumberFormat().format(num);
+    if (!num)
+      res = '';
+    return res;
+  }
+
+
+
+  return (
+    <>
+      <div className='newOrderTable noselect'>
+        <Table striped bordered hover responsive="sm">
+          <thead>
+            <tr>
+              <th width='1%'><Button variant="primary" size={size} className='col-12' onClick={handleShowNewSupplier}>+</Button> </th>
+              <th >Поставщик </th>
+              <th>Вид продукта</th>
+              <th>Литры</th>
+              <th>Тонны</th>
+              <th>Цена</th>
+              {/* <th></th> */}
+              {/* <th>Водитель</th> */}
+              {/* <th>ОТК</th> */}
+              {user.rights.finBlockAccess &&
+                <>
+                  <th width='6%' style={{ display: display }}>С/Ф</th>
+                  <th width='6%' style={{ display: display }}>Дата</th>
+                  <th width='6%' style={{ display: display }}>Сумма</th>
+                  <th width='6%' style={{ display: display }}>Акт транспорт</th>
+                </>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            {order.suppliers.map((supplier, index) => {
+              return (
+                <tr key={index} className='suppliers-tr'>
+                  <td>
+                    <Stack direction='horizontal'>
+                      <MdDelete size='1.7em' className='icon ms-auto' style={{ color: 'rgb(194, 65, 65)' }} onClick={() => {
+                        setDeleteElement({
+                          element: 'suppliers',
+                          index,
+                        })
+                        handleShowModal();
+                      }}
+                      />
+                    </Stack>
+                  </td>
+                  <td spellCheck='false'
+                    onInput={() => {
+                      supplier.name = document.querySelectorAll(".suppliers-tr")[index].childNodes[1].innerText;
+
+                    }}
+                    onDoubleClick={() => {
+                      document.querySelectorAll(".suppliers-tr")[index].childNodes[1].contentEditable = true;
+                      document.querySelectorAll(".suppliers-tr")[index].childNodes[1].focus();
+                    }}
+                    onBlur={() => { document.querySelectorAll(".suppliers-tr")[index].childNodes[1].contentEditable = false; }}
+                  >
+                    {/* <Stack gap={1} direction='horizontal'> */}
+                    {/* <Button size="sm" variant="warning" >н</Button> */}
+                    {supplier.name}
+                    {/* <BiEditAlt style={{ color: 'rgba(1, 87, 248, 0.85)' }} className='icon ms-auto' size="2em" onClick={() => handleEditSupplier(index)} /> */}
+                    {/* </Stack> */}
+                  </td>
+                  <td spellCheck='false'
+                    onInput={() => {
+                      supplier.typeOfProduct = document.querySelectorAll(".suppliers-tr")[index].childNodes[2].innerText;
+                    }}
+                    onDoubleClick={() => {
+                      document.querySelectorAll(".suppliers-tr")[index].childNodes[2].contentEditable = true;
+                      document.querySelectorAll(".suppliers-tr")[index].childNodes[2].focus();
+                    }}
+                    onBlur={() => { document.querySelectorAll(".suppliers-tr")[index].childNodes[2].contentEditable = false; }}>
+                    {supplier.typeOfProduct}
+                  </td>
+                  <td spellCheck='false'
+                    onInput={() => {
+                      supplier.liters = document.querySelectorAll(".suppliers-tr")[index].childNodes[3].innerText;
+                    }}
+                    onDoubleClick={() => {
+                      document.querySelectorAll(".suppliers-tr")[index].childNodes[3].contentEditable = true;
+                      document.querySelectorAll(".suppliers-tr")[index].childNodes[3].focus();
+                    }}
+                    onBlur={() => { document.querySelectorAll(".suppliers-tr")[index].childNodes[3].contentEditable = false; }}>
+                    {supplier.liters}
+                  </td>
+                  <td spellCheck='false'
+                    onInput={() => {
+                      supplier.tons = document.querySelectorAll(".suppliers-tr")[index].childNodes[4].innerText;
+                    }}
+                    onDoubleClick={() => {
+                      document.querySelectorAll(".suppliers-tr")[index].childNodes[4].contentEditable = true;
+                      document.querySelectorAll(".suppliers-tr")[index].childNodes[4].focus();
+                    }}
+                    onBlur={() => { document.querySelectorAll(".suppliers-tr")[index].childNodes[4].contentEditable = false; }}>
+                    {supplier.tons}
+                  </td>
+                  <td spellCheck='false'
+                    onInput={() => {
+                      supplier.price = document.querySelectorAll(".suppliers-tr")[index].childNodes[5].innerText;
+                    }}
+                    onDoubleClick={() => {
+                      document.querySelectorAll(".suppliers-tr")[index].childNodes[5].contentEditable = true;
+                      document.querySelectorAll(".suppliers-tr")[index].childNodes[5].focus();
+                    }}
+                    onBlur={() => { document.querySelectorAll(".suppliers-tr")[index].childNodes[5].contentEditable = false; }}>
+                    {supplier.price}
+                  </td>
+                  {/* <td></td> */}
+                  {/* <td>{supplier.driver}</td> */}
+                  {/* <td>{supplier.otk}</td> */}
+                  {user.rights.finBlockAccess &&
+                    <>
+                      <td style={{ display: display }} spellCheck='false'
+                        onInput={() => {
+                          supplier.sf = document.querySelectorAll(".suppliers-tr")[index].childNodes[6].innerText;
+                        }}
+                        onDoubleClick={() => {
+                          document.querySelectorAll(".suppliers-tr")[index].childNodes[6].contentEditable = true;
+                          document.querySelectorAll(".suppliers-tr")[index].childNodes[6].focus();
+                        }}
+                        onBlur={() => { document.querySelectorAll(".suppliers-tr")[index].childNodes[6].contentEditable = false; }}>
+                        {/* <Stack gap={1} direction='horizontal'> */}
+                        {supplier.sf}
+                        {/* <BiEditAlt style={{ color: 'rgba(1, 87, 248, 0.85)' }} className='icon ms-auto' size="2em" onClick={() => { handleEditFinBlock(index, 'suppliers') }} /> */}
+                        {/* </Stack> */}
+                      </td>
+                      <td style={{ display: display }} spellCheck='false'
+                        onInput={() => {
+                          supplier.date = document.querySelectorAll(".suppliers-tr")[index].childNodes[7].innerText;
+                        }}
+                        onDoubleClick={() => {
+                          document.querySelectorAll(".suppliers-tr")[index].childNodes[7].contentEditable = true;
+                          document.querySelectorAll(".suppliers-tr")[index].childNodes[7].focus();
+                        }}
+                        onBlur={() => { document.querySelectorAll(".suppliers-tr")[index].childNodes[7].contentEditable = false; }}>
+                        {supplier.date}
+                      </td>
+                      <td style={{ display: display }} spellCheck='false'
+                        onInput={() => {
+                          supplier.summa = document.querySelectorAll(".suppliers-tr")[index].childNodes[8].innerText;
+                        }}
+                        onDoubleClick={() => {
+                          document.querySelectorAll(".suppliers-tr")[index].childNodes[8].contentEditable = true;
+                          document.querySelectorAll(".suppliers-tr")[index].childNodes[8].focus();
+                        }}
+                        onBlur={() => { document.querySelectorAll(".suppliers-tr")[index].childNodes[8].contentEditable = false; }}>
+                        {NumberFormat(supplier.summa)}
+                      </td>
+                      <td style={{ display: display }} spellCheck='false'
+                        onInput={() => {
+                          supplier.akt = document.querySelectorAll(".suppliers-tr")[index].childNodes[9].innerText;
+                        }}
+                        onDoubleClick={() => {
+                          document.querySelectorAll(".suppliers-tr")[index].childNodes[9].contentEditable = true;
+                          document.querySelectorAll(".suppliers-tr")[index].childNodes[9].focus();
+                        }}
+                        onBlur={() => { document.querySelectorAll(".suppliers-tr")[index].childNodes[9].contentEditable = false; }}>
+                        {supplier.akt}
+                      </td>
+                    </>
+                  }
+
+                </tr>
+              )
+            })}
+
+          </tbody>
+          <thead>
+            <tr>
+              <th><Button variant="primary" className='col-12' size={size} onClick={() => handleShowNewBuyer(false)}>+</Button></th>
+              <th colSpan={3}>
+                <Stack gap={2} direction='horizontal'>
+
+                  {/* <Button size={size} variant="warning" onClick={() => handleShowNewBuyer(true)}>н</Button> */}
+                  Покупатель
+                </Stack>
+              </th>
+              <th>Менеджер</th>
+              <th>{order.manager}</th>
+              {user.rights.finBlockAccess && <th style={{ display: display }} colSpan={3}></th>}
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {order.buyers.map((buyer, index) => {
+              return (
+                <>
+                  <tr key={index} className='buyers-tr'>
+                    <td>
+                      <Stack gap={1} direction='horizontal'>
+                        <Button variant="warning" style={{ backgroundColor: buyer.buyersH?.length > 0 ? bgColorH : '' }} onClick={() => {
+                          const orderSave = order;
+                          orderSave.buyers[index].buyersH = orderSave.buyers[index].buyersH || [];
+                          const copyBuyer = { ...orderSave.buyers[index] };
+                          delete copyBuyer.buyersH;
+                          copyBuyer.name = '';
+                          orderSave.buyers[index].buyersH.push(copyBuyer);
+                          setOrder({ ...orderSave });
+                          console.log("order", order);
+                        }}>н</Button>
+                        <MdDelete size='1.7em' className='icon' style={{ color: 'rgb(194, 65, 65)' }} onClick={() => {
+                          setDeleteElement({
+                            element: 'buyers',
+                            index,
+                          })
+                          handleShowModal();
+                        }}
+                        />
+
+                      </Stack>
+                    </td>
+                    <td spellCheck='false'
+                      onInput={() => {
+                        buyer.name = document.querySelectorAll(".buyers-tr")[index].childNodes[1].innerText;
+                      }}
+                      onDoubleClick={() => {
+                        document.querySelectorAll(".buyers-tr")[index].childNodes[1].contentEditable = true;
+                        document.querySelectorAll(".buyers-tr")[index].childNodes[1].focus();
+                      }}
+                      onBlur={() => { document.querySelectorAll(".buyers-tr")[index].childNodes[1].contentEditable = false; }}
+
+
+                    >
+                      {/* <Stack gap={1} direction='horizontal'> */}
+                      {buyer.name}
+                      {/* <BiEditAlt style={{ color: 'rgba(1, 87, 248, 0.85)' }} className='icon ms-auto' size="2em" onClick={() => handleEditBuyer(index)} /> */}
+                      {/* <Button size="sm" variant="warning" >н</Button> */}
+
+                      {/* </Stack> */}
+                    </td>
+                    <td spellCheck='false'
+                      onInput={() => {
+                        buyer.typeOfProduct = document.querySelectorAll(".buyers-tr")[index].childNodes[2].innerText;
+                      }}
+                      onDoubleClick={() => {
+                        document.querySelectorAll(".buyers-tr")[index].childNodes[2].contentEditable = true;
+                        document.querySelectorAll(".buyers-tr")[index].childNodes[2].focus();
+                      }}
+                      onBlur={() => { document.querySelectorAll(".buyers-tr")[index].childNodes[2].contentEditable = false; }}>
+                      {buyer.typeOfProduct}
+                    </td>
+                    <td spellCheck='false'
+                      onInput={() => {
+                        buyer.liters = document.querySelectorAll(".buyers-tr")[index].childNodes[3].innerText;
+                      }}
+                      onDoubleClick={() => {
+                        document.querySelectorAll(".buyers-tr")[index].childNodes[3].contentEditable = true;
+                        document.querySelectorAll(".buyers-tr")[index].childNodes[3].focus();
+                      }}
+                      onBlur={() => { document.querySelectorAll(".buyers-tr")[index].childNodes[3].contentEditable = false; }}>
+                      {buyer.liters}
+                    </td>
+                    <td spellCheck='false'
+                      onInput={() => {
+                        buyer.tons = document.querySelectorAll(".buyers-tr")[index].childNodes[4].innerText;
+                      }}
+                      onDoubleClick={() => {
+                        document.querySelectorAll(".buyers-tr")[index].childNodes[4].contentEditable = true;
+                        document.querySelectorAll(".buyers-tr")[index].childNodes[4].focus();
+                      }}
+                      onBlur={() => { document.querySelectorAll(".buyers-tr")[index].childNodes[4].contentEditable = false; }}>
+                      {buyer.tons}
+                    </td>
+                    <td spellCheck='false'
+                      onInput={() => {
+                        buyer.price = document.querySelectorAll(".buyers-tr")[index].childNodes[5].innerText;
+                      }}
+                      onDoubleClick={() => {
+                        document.querySelectorAll(".buyers-tr")[index].childNodes[5].contentEditable = true;
+                        document.querySelectorAll(".buyers-tr")[index].childNodes[5].focus();
+                      }}
+                      onBlur={() => { document.querySelectorAll(".buyers-tr")[index].childNodes[5].contentEditable = false; }}>
+                      {buyer.price
+                      }</td>
+
+                    {user.rights.finBlockAccess &&
+                      <>
+                        <td style={{ display: display }} spellCheck='false'
+                          onInput={() => {
+                            buyer.sf = document.querySelectorAll(".buyers-tr")[index].childNodes[6].innerText;
+                          }}
+                          onDoubleClick={() => {
+                            document.querySelectorAll(".buyers-tr")[index].childNodes[6].contentEditable = true;
+                            document.querySelectorAll(".buyers-tr")[index].childNodes[6].focus();
+                          }}
+                          onBlur={() => { document.querySelectorAll(".buyers-tr")[index].childNodes[6].contentEditable = false; }}>
+                          {/* <Stack gap={1} direction='horizontal'> */}
+                          {buyer.sf}
+                          {/* <BiEditAlt style={{ color: 'rgba(1, 87, 248, 0.85)' }} className='icon ms-auto' size="2em" onClick={() => { handleEditFinBlock(index, 'buyers') }} /> */}
+
+                          {/* </Stack> */}
+                        </td>
+                        <td style={{ display: display }} spellCheck='false'
+                          onInput={() => {
+                            buyer.date = document.querySelectorAll(".buyers-tr")[index].childNodes[7].innerText;
+                          }}
+                          onDoubleClick={() => {
+                            document.querySelectorAll(".buyers-tr")[index].childNodes[7].contentEditable = true;
+                            document.querySelectorAll(".buyers-tr")[index].childNodes[7].focus();
+                          }}
+                          onBlur={() => { document.querySelectorAll(".buyers-tr")[index].childNodes[7].contentEditable = false; }}>
+                          {buyer.date}
+                        </td>
+                        <td style={{ display: display }} spellCheck='false'
+                          onInput={() => {
+                            buyer.summa = document.querySelectorAll(".buyers-tr")[index].childNodes[8].innerText;
+                          }}
+                          onDoubleClick={() => {
+                            document.querySelectorAll(".buyers-tr")[index].childNodes[8].contentEditable = true;
+                            document.querySelectorAll(".buyers-tr")[index].childNodes[8].focus();
+                          }}
+                          onBlur={() => { document.querySelectorAll(".buyers-tr")[index].childNodes[8].contentEditable = false; }}
+                        >{NumberFormat(buyer.summa)
+                          }</td>
+                        <td style={{ display: display }} spellCheck='false'
+                          onInput={() => {
+                            buyer.akt = document.querySelectorAll(".buyers-tr")[index].childNodes[9].innerText;
+                          }}
+                          onDoubleClick={() => {
+                            document.querySelectorAll(".buyers-tr")[index].childNodes[9].contentEditable = true;
+                            document.querySelectorAll(".buyers-tr")[index].childNodes[9].focus();
+                          }}
+                          onBlur={() => { document.querySelectorAll(".buyers-tr")[index].childNodes[9].contentEditable = false; }}>
+                          {buyer.akt}
+                        </td>
+                      </>
+                    }
+
+                  </tr>
+
+
+
+                  {
+                    buyer.buyersH && buyer.buyersH.map((buyerH, indexBuyerH) => {
+                      return (
+
+                        <tr className={`buyersH-tr-${index}`}>
+
+                          <td style={{ backgroundColor: bgColorH }}>
+                            <Stack gap={1} direction='horizontal'>
+                              {/* {buyerH.name} */}
+                              {/* <BiEditAlt style={{ color: 'rgba(1, 87, 248, 0.85)' }} className='icon ms-auto' size="2em" onClick={() => handleEditBuyer(index, indexBuyerH)} /> */}
+                              {/* <Button size="sm" variant="warning" >н</Button> */}
+                              {/* <div className="vr" /> */}
+                              <MdDelete size='1.7em' className='icon ms-auto' style={{ color: 'rgb(194, 65, 65)' }} onClick={() => {
+                                setDeleteElement({
+                                  element: 'buyerH',
+                                  index,
+                                  indexBuyerH: indexBuyerH,
+                                })
+                                handleShowModal();
+                              }}
+                              />
+                              {/* <div className="vr" /> */}
+                            </Stack>
+                          </td>
+                          <td style={{ backgroundColor: bgColorH }} spellCheck='false'
+                            onInput={() => {
+                              buyerH.name = document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[1].innerText;
+                            }}
+                            onDoubleClick={() => {
+                              document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[1].contentEditable = true;
+                              document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[1].focus();
+                            }}
+                            onBlur={() => { document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[1].contentEditable = false; }}
+                          >
+                            {buyerH.name}
+                          </td>
+                          <td style={{ backgroundColor: bgColorH }} spellCheck='false'
+                            onInput={() => {
+                              buyerH.typeOfProduct = document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[2].innerText;
+                            }}
+                            onDoubleClick={() => {
+                              document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[2].contentEditable = true;
+                              document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[2].focus();
+                            }}
+                            onBlur={() => { document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[2].contentEditable = false; }}>
+                            {buyerH.typeOfProduct}
+                          </td>
+                          <td style={{ backgroundColor: bgColorH }} spellCheck='false'
+                            onInput={() => {
+                              buyerH.liters = document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[3].innerText;
+                            }}
+                            onDoubleClick={() => {
+                              document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[3].contentEditable = true;
+                              document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[3].focus();
+                            }}
+                            onBlur={() => { document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[3].contentEditable = false; }}>
+                            {buyerH.liters}
+                          </td>
+                          <td style={{ backgroundColor: bgColorH }} spellCheck='false'
+                            onInput={() => {
+                              buyerH.tons = document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[4].innerText;
+                            }}
+                            onDoubleClick={() => {
+                              document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[4].contentEditable = true;
+                              document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[4].focus();
+                            }}
+                            onBlur={() => { document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[4].contentEditable = false; }}>
+                            {buyerH.tons}
+                          </td>
+                          <td style={{ backgroundColor: bgColorH }} spellCheck='false'
+                            onInput={() => {
+                              buyerH.price = document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[5].innerText;
+                            }}
+                            onDoubleClick={() => {
+                              document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[5].contentEditable = true;
+                              document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[5].focus();
+                            }}
+                            onBlur={() => { document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[5].contentEditable = false; }}>
+                            {buyerH.price}
+                          </td>
+
+
+                          {user.rights.finBlockAccess &&
+                            <>
+                              <td style={{ display: display, backgroundColor: bgColorH }} spellCheck='false'
+                                onInput={() => {
+                                  buyerH.sf = document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[6].innerText;
+                                }}
+                                onDoubleClick={() => {
+                                  document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[6].contentEditable = true;
+                                  document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[6].focus();
+                                }}
+                                onBlur={() => { document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[6].contentEditable = false; }}>
+                                {/* <Stack gap={1} direction='horizontal'> */}
+                                {buyerH.sf}
+                                {/* <BiEditAlt style={{ color: 'rgba(1, 87, 248, 0.85)' }} className='icon ms-auto' size="2em" onClick={() => { handleEditFinBlock(index, 'buyers') }} /> */}
+
+                                {/* </Stack> */}
+                              </td>
+                              <td style={{ display: display, backgroundColor: bgColorH }} spellCheck='false'
+                                onInput={() => {
+                                  buyerH.date = document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[7].innerText;
+                                }}
+                                onDoubleClick={() => {
+                                  document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[7].contentEditable = true;
+                                  document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[7].focus();
+                                }}
+                                onBlur={() => { document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[7].contentEditable = false; }}>
+                                {buyerH.date}
+                              </td>
+                              <td style={{ display: display, backgroundColor: bgColorH }} spellCheck='false'
+                                onInput={() => {
+                                  buyerH.summa = document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[8].innerText;
+                                }}
+                                onDoubleClick={() => {
+                                  document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[8].contentEditable = true;
+                                  document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[8].focus();
+                                }}
+                                onBlur={() => { document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[8].contentEditable = false; }}>
+                                {NumberFormat(buyerH.summa)}
+                              </td>
+                              <td style={{ display: display, backgroundColor: bgColorH }} spellCheck='false'
+                                onInput={() => {
+                                  buyerH.akt = document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[9].innerText;
+                                }}
+                                onDoubleClick={() => {
+                                  document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[9].contentEditable = true;
+                                  document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[9].focus();
+                                }}
+                                onBlur={() => { document.querySelectorAll(`.buyersH-tr-${index}`)[indexBuyerH].childNodes[9].contentEditable = false; }}>
+                                {buyerH.akt}
+                              </td>
+                            </>
+                          }
+
+                        </tr>
+
+
+                      )
+                    }
+                    )}
+
+
+
+
+
+
+
+
+
+
+                </>
+              )
+            })}
+          </tbody>
+        </Table>
+      </div>
+      <FinBlockEdit
+        setOrder={setOrder}
+        order={order}
+        handleCloseFinBlock={handleCloseFinBlock}
+        showFinBlock={showFinBlock}
+        current={currentFinBlock}
+        suppliersOrBuyers={suppliersOrBuyers}
+      />
+      <NewSupplier
+        order={order}
+        setOrder={setOrder}
+        handleCloseNewSupplier={handleCloseNewSupplier}
+        showNewSupplier={showNewSupplier}
+        currentSupplier={currentSupplier}
+
+      />
+      <NewBuyer
+        order={order}
+        setOrder={setOrder}
+        handleCloseNewBuyer={handleCloseNewBuyer}
+        showNewBuyer={showNewBuyer}
+        litersForSale={litersForSale}
+        currentBuyer={currentBuyer}
+        buyerHIndex={buyerHIndex}
+      />
+      <Modal centered show={show} onHide={handleCloseModal} animation={true} >
+        <Modal.Header closeButton>
+          <Modal.Title>Подтверждение удаления</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>Точно удаляем?</Modal.Body>
+        <Modal.Footer>
+
+          <Button variant="secondary" onClick={handleCloseModal}>
+            Еще подумаю
+          </Button>
+          <Button variant="primary" className='col-3' onClick={() => {
+
+            if (deleteElement) {
+              if (deleteElement.element !== 'buyerH') {
+                setOrder((order) => {
+                  order[deleteElement.element] = order[deleteElement.element].filter((item, ind) => ind != [deleteElement.index])
+                  return (order);
+                })
+              }
+              if (deleteElement.element === 'buyerH') {
+                setOrder((order) => {
+                  order.buyers[deleteElement.index].buyersH = order.buyers[deleteElement.index].buyersH.filter((item, ind) => ind != [deleteElement.indexBuyerH])
+                  return (order);
+                })
+              }
+              setDeleteElement(null);
+              reload(!state);
+              handleRefreshLitersForSale();
+            }
+            handleCloseModal();
+          }}>
+            Да
+          </Button>
+
+        </Modal.Footer>
+      </Modal>
+
+    </>
+  );
+}
+
+
+export default OrderTable;

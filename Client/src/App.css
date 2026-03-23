@@ -1,0 +1,31 @@
+.activeComponentHeader {
+    display: flex;
+    background-color: rgba(31, 60, 247, 0.172);
+    user-select: none;
+    width: 100%;
+}
+
+.app {
+    padding: 1px;
+    height: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 5% 85% 10%;
+    background-color: aliceblue;
+   
+}
+
+.logo{
+    background-image: url('../public/logo.jpg');
+    background-size: cover;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    padding: 0;
+}
+
+
+.content{
+    position: relative;
+    overflow-y: scroll;
+}

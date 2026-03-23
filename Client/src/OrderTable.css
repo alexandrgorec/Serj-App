@@ -1,0 +1,14 @@
+@media (max-width: 480px) {
+    .newOrderTable{
+        font-size: 10px;
+    }
+}
+
+.icon{
+    transition-duration: 0.15s;
+}
+
+.icon:hover{
+    cursor: pointer;
+    transform: scale(1.15);
+}
