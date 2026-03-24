@@ -5,7 +5,7 @@ import { userContext } from './App';
 
 
 
-function TDInput({ object, value = '', disabled = false, fontSize = '14px', type, field = '', display = '' }) {
+function TDInput({ object, value = '', disabled = false, fontSize = '14px', type, field = '', display = '', onChangeExtra = null }) {
     const ref = useRef(null);
     const isNumber = type === 'number' ? true : false;
     let tabIndex = -1;
@@ -38,6 +38,10 @@ function TDInput({ object, value = '', disabled = false, fontSize = '14px', type
                                 nextElem.focus();
                             }
                         }
+                    }}
+                    onChange={() => {
+                        object[field] = ref.current.value;
+                        if (onChangeExtra) onChangeExtra();
                     }}
                     onBlur={() => {
                         if (isNumber) {

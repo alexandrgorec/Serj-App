@@ -29,7 +29,7 @@ function ComboBox({ isBuyerH = '', iconSize = '2em', fontSize = '16px', id, obje
     return (
         <div style={{ display: display }}>
             <InputGroup size='sm'>
-                <Typeahead className={`col-9`} id={id} ref={typeaheadRef}
+                <Typeahead className={`flex-grow-1`} id={id} ref={typeaheadRef}
                     inputProps={{
                         className: `tabIndex-${tabIndex} ${isBuyerH}`
                     }}
@@ -58,19 +58,40 @@ function ComboBox({ isBuyerH = '', iconSize = '2em', fontSize = '16px', id, obje
                     }}
                     options={data}
                     placeholder={associations[nameDataList]}
+                    renderMenuItemChildren={(option) => (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span>{option}</span>
+                            <MdDelete
+                                className="icon"
+                                size={iconSize}
+                                style={{ color: 'rgba(194, 65, 65, 0.82)', flexShrink: 0 }}
+                                onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    const updated = user.selectListsData[nameDataList].filter(item => item !== option);
+                                    setUser(user => {
+                                        user.selectListsData[nameDataList] = updated;
+                                        return { ...user };
+                                    });
+                                    aAxios.post(`/user/editSelectListsData`, {
+                                        selectListsData: { ...user.selectListsData, [nameDataList]: updated },
+                                    });
+                                    if (typeaheadRef.current) typeaheadRef.current.hideMenu();
+                                }}
+                            />
+                        </div>
+                    )}
                 />
-                <InputGroup.Text className="col-1" style={{ cursor: 'pointer' }} onClick={() => {
+                <InputGroup.Text className="col-1 p-0" style={{ cursor: 'pointer' }} onClick={() => {
                     if (typeaheadRef.current) {
                         typeaheadRef.current.clear();
                     }
-
-                }
-                }>
-                    <MdClear className="icon" />
-
+                }}>
+                    <MdClear className="combobox-btn-icon" style={{ width: '100%', height: '100%' }} />
                 </InputGroup.Text>
 
-                <InputGroup.Text className="col-1" style={{ cursor: 'pointer' }} onClick={() => { //save
+                <InputGroup.Text className="col-1 p-0 d-flex justify-content-center align-items-center" style={{ cursor: 'pointer' }} onClick={() => {
                     const selectListsDataEdited = user.selectListsData;
                     if (!selectListsDataEdited[nameDataList].includes(object[field]) && object[field] !== '') {
                         selectListsDataEdited[nameDataList].push(object[field]);
@@ -90,35 +111,8 @@ function ComboBox({ isBuyerH = '', iconSize = '2em', fontSize = '16px', id, obje
                         user.selectListsData = selectListsDataEdited;
                         return { ...user };
                     })
-
-                }
-                }>
-                    <FaSave className="icon" />
-
-                </InputGroup.Text>
-
-
-                <InputGroup.Text style={{ cursor: 'pointer' }} className="col-1 p-0 pt-0" onClick={() => {
-                    setUser(user => {
-                        user.selectListsData[nameDataList] = user.selectListsData[nameDataList].filter(item => object[field] !== item)
-                        return { ...user };
-
-                    })
-                    aAxios.post(`/user/editSelectListsData`, {
-                        selectListsData: user.selectListsData,
-                    })
-                        .then(function (response) {
-                            if (response.status === 202) {
-                                console.log("edited");
-                            }
-                        })
-                        .catch(function (error) {
-
-                        })
-
-                }
-
-                }><MdDelete className="icon" size={iconSize} style={{ color: 'rgba(194, 65, 65, 0.82)' }} />
+                }}>
+                    <FaSave className="combobox-btn-icon" style={{ width: '70%', height: '70%' }} />
                 </InputGroup.Text>
 
 

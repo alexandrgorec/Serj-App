@@ -45,6 +45,11 @@ function OrderTable({ setOrder, order }) {
 
 
 
+  const [summaKeys, setSummaKeys] = useState({});
+  const triggerSummaCalc = (index) => {
+    setSummaKeys(prev => ({ ...prev, [index]: (prev[index] || 0) + 1 }));
+  };
+
   const [deleteElement, setDeleteElement] = useState(null);
   const [show, setShow] = useState(false);
   const handleCloseModal = () => setShow(false);
@@ -109,14 +114,14 @@ function OrderTable({ setOrder, order }) {
                   <td className='m-0 p-0'                   >
                     <ComboBox object={supplier} nameDataList={'TYPE_OF_PRODUCT'} field={'typeOfProduct'} />
                   </td>
-                  <TDInput object={supplier} field={'liters'} type={'number'} />
-                  <TDInput object={supplier} field={'tons'} type={'number'} />
-                  <TDInput object={supplier} field={'price'} type={'number'} />
+                  <TDInput object={supplier} field={'liters'} type={'number'} onChangeExtra={() => triggerSummaCalc(index)} />
+                  <TDInput object={supplier} field={'tons'} type={'number'} onChangeExtra={() => triggerSummaCalc(index)} />
+                  <TDInput object={supplier} field={'price'} type={'number'} onChangeExtra={() => triggerSummaCalc(index)} />
                   {user.rights.finBlockAccess &&
                     <>
                       <TDInput object={supplier} field={'sf'} type={'text'} display={display} />
                       <TDInput object={order} field={'date'} type={'date'} disabled={true} value={true} display={display} />
-                       <TDSumma object={supplier} field={'summa'} display={display}/>
+                      <TDSumma object={supplier} field={'summa'} display={display} calcTrigger={summaKeys[index] || 0} />
                       <TDInput object={supplier} field={'akt'} type={'text'} display={display}/>
                     </>
                   }

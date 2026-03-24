@@ -17,6 +17,7 @@ function EditOrder() {
     const navigate = useNavigate();
     const [message, setMessage] = useState("");
     const [alertVariant, setAlertVariant] = useState("");
+    const [cost, setCost] = useState(editingOrder.cost || 0);
     const refComments = useRef(null);
     const refIp = useRef(null);
     const refDriver = useRef(null);
@@ -91,10 +92,10 @@ function EditOrder() {
                 setOrder={setEditingOrder}
             />
 
-            <Stack direction='horizontal' className='mt-0'>
+            <Stack direction='horizontal' className='mt-0 align-items-stretch'>
 
-                <div className='mb-3 col-6 px-2' >
-                    <Form.Control as='textarea' placeholder='Комментарии' rows={10} ref={refComments} defaultValue={editingOrder.comments ? editingOrder.comments : ''} />
+                <div className='mb-3 col-6 px-2 d-flex' >
+                    <Form.Control as='textarea' placeholder='Комментарии' ref={refComments} defaultValue={editingOrder.comments ? editingOrder.comments : ''} style={{ resize: 'none', height: '100%' }} />
                 </div>
                 <div className='mb-3 col-6'>
 
@@ -106,10 +107,13 @@ function EditOrder() {
                             <Form.Control as="input" type='text' ref={refDriver} defaultValue={editingOrder.driver} />
                         </FloatingLabel>
                         <FloatingLabel label="Стоимость доставки" className="mb-2 col-11" >
-                            <Form.Control as="input" type='number' ref={refCost} defaultValue={editingOrder.cost} />
+                            <Form.Control as="input" type='number' ref={refCost} defaultValue={editingOrder.cost} onChange={() => setCost(refCost.current.value)} />
                         </FloatingLabel>
-                        <FloatingLabel label="ОТК" className="mb-0 col-11" >
-                            <Form.Control as="input" type='text' ref={refOtk} defaultValue={editingOrder.cost} />
+                        <FloatingLabel label="ОТК" className="mb-2 col-11" >
+                            <Form.Control as="input" type='text' ref={refOtk} defaultValue={editingOrder.otk} />
+                        </FloatingLabel>
+                        <FloatingLabel label="Налог (40% от доставки)" className="mb-0 col-11" >
+                            <Form.Control as="input" type='number' readOnly value={Math.round(cost * 0.4)} />
                         </FloatingLabel>
                     </center>
                 </div>

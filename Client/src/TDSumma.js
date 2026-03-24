@@ -1,29 +1,49 @@
-import Dropdown from 'react-bootstrap/Dropdown';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
-import FloatingLabel from 'react-bootstrap/FloatingLabel';
-import { useRef, useContext, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import InputGroup from 'react-bootstrap/InputGroup';
-import { FaSave } from "react-icons/fa";
-import { MdDelete } from "react-icons/md";
-import { userContext } from "./App";
 
 
 
-function TDSumma({ object, field = '', fontSize = '16px', display = '' }) {
+function TDSumma({ object, field = '', fontSize = '16px', display = '', calcTrigger = 0 }) {
     let tabIndex = sessionStorage.tabIndex++;
     const ref = useRef(null);
-    const handleClick = (value) => {
-        ref.current.value = value;
-        let event = new Event('input')
-        ref.current.dispatchEvent(event);
-        object[field] = ref.current.value;
-    }
+    const [mode, setMode] = useState(object.summaMode || 'liters');
+
+    const calculate = (currentMode) => {
+        const m = currentMode !== undefined ? currentMode : mode;
+        const raw = m === 'liters' ? object['liters'] : object['tons'];
+        const price = object['price'];
+        if (!raw && !price) return;
+        const num1 = Number(String(raw || '0').replace(/\s/g, '').replace(/,/g, '.'));
+        const num2 = Number(String(price || '0').replace(/\s/g, '').replace(/,/g, '.'));
+        const formatted = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(num1 * num2);
+        if (ref.current) ref.current.value = formatted;
+        object[field] = formatted;
+    };
+
+    useEffect(() => {
+        if (calcTrigger > 0) calculate(object.summaMode || 'liters');
+    }, [calcTrigger]);
+
+    const toggleMode = () => {
+        const newMode = mode === 'liters' ? 'tons' : 'liters';
+        object.summaMode = newMode;
+        setMode(newMode);
+        calculate(newMode);
+    };
 
     return (
         <td className='m-0 p-0' style={{ display: display }}>
             <InputGroup size='sm'>
-                <Form.Control className={`tabIndex-${tabIndex}`} style={{ fontSize: fontSize }} as='input' type={'text'} defaultValue={object[field]} autoComplete="off" ref={ref}
+                <Form.Control
+                    className={`tabIndex-${tabIndex}`}
+                    style={{ fontSize: fontSize }}
+                    as='input'
+                    type='text'
+                    defaultValue={object[field]}
+                    autoComplete="off"
+                    ref={ref}
                     onKeyDown={(evt) => {
                         if (!(evt.key.match(/\d/)
                             || evt.key == 'Backspace'
@@ -37,46 +57,27 @@ function TDSumma({ object, field = '', fontSize = '16px', display = '' }) {
                         }
                         if (evt.key == 'Enter') {
                             let nextElem = document.querySelector(`.tabIndex-${tabIndex + 1}`)
-                            if (nextElem) {
-                                nextElem.focus();
-                            }
+                            if (nextElem) nextElem.focus();
                         }
                     }}
                     onBlur={() => {
                         const inputWithOutSpace = ref.current.value.replace(/\s/g, '').replace(/,/g, '.');
                         ref.current.value = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(inputWithOutSpace);
                         object[field] = ref.current.value;
-                    }} />
-
-
-                <Dropdown >
-                    <Dropdown.Toggle size="lg" split variant={'secondary'} tabIndex={-1} />
-                    <Dropdown.Menu >
-                        <Dropdown.Item as={Button} size="lg" variant='outline-light' className="pb-1 pt-0 px-1" onClick={() => {
-                            ref.current.value = Number(object['liters'].replace(/\s/g, '')) * object['price'];
-                            let event = new Event('input');
-                            ref.current.value = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(ref.current.value);
-                            ref.current.dispatchEvent(event);
-                            object[field] = ref.current.value;
-                        }}>
-                            <InputGroup.Text className="pb-0 pt-0" onClick={() => { }} >Литры х Цена</InputGroup.Text>
-                        </Dropdown.Item>
-                        <Dropdown.Item as={Button} size="lg" variant='outline-light' className="pb-1 pt-0 px-1" onClick={() => {
-                            ref.current.value = Number(Number(object['tons'].replace(/\s/g, '').replace(/,/g, '.'))) * object['price'];
-                            let event = new Event('input');
-                            ref.current.value = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(ref.current.value);
-                            ref.current.dispatchEvent(event);
-                            object[field] = ref.current.value;
-                        }} >
-                            <InputGroup.Text className="pb-0 pt-0" >Тонны х Цена</InputGroup.Text>
-                        </Dropdown.Item>
-
-                    </Dropdown.Menu>
-                </Dropdown>
+                    }}
+                />
+                <Button
+                    tabIndex={-1}
+                    variant={mode === 'liters' ? 'info' : 'warning'}
+                    size="sm"
+                    onClick={toggleMode}
+                    title={mode === 'liters' ? 'Литры × Цена' : 'Тонны × Цена'}
+                >
+                    {mode === 'liters' ? 'ЛхЦ' : 'ТхЦ'}
+                </Button>
             </InputGroup>
-
         </td>
-    )
+    );
 }
 
 export default TDSumma;

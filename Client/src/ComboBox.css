@@ -1,3 +1,17 @@
 .comboBox{
     padding: 10px 0;
 }
+
+.rbt-menu .dropdown-item {
+    padding-top: 3px;
+    padding-bottom: 3px;
+    font-size: 13px;
+}
+
+.combobox-btn-icon {
+    transition: transform 0.15s ease;
+}
+
+.combobox-btn-icon:hover {
+    transform: scale(1.3);
+}
