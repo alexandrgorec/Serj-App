@@ -16,7 +16,7 @@ class UserController {
 
                 const userInfo = result.rows[0].userinfo;
                 userInfo.selectListsData = selectListsData;
-                console.log("userInfo:", userInfo);
+                // console.log("userInfo:", userInfo);
                 // res.sendStatus(202);
                 pool.query("UPDATE users SET userinfo = $1 where id = $2", [userInfo, userId], (err, result) => {
                     if (err) {
@@ -100,7 +100,7 @@ class UserController {
     }
     async getData(req, res) {
         res.status(202);
-        console.log("GET DATA")
+        // console.log("GET DATA")
         const user = {
             name: req.body.user,
             rights: req.body.rights,
@@ -122,7 +122,7 @@ class UserController {
                 res.sendStatus(401);
             }
             else {
-                console.log("result:", result)
+                // console.log("result:", result)
                 req.body.rights = result.user.rights;
                 req.body.user = result?.user?.name || '';
                 req.body.userId = result?.user?.userId;

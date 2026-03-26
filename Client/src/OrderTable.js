@@ -50,6 +50,17 @@ function OrderTable({ setOrder, order }) {
     setSummaKeys(prev => ({ ...prev, [index]: (prev[index] || 0) + 1 }));
   };
 
+  const [buyerSummaKeys, setBuyerSummaKeys] = useState({});
+  const triggerBuyerSummaCalc = (index) => {
+    setBuyerSummaKeys(prev => ({ ...prev, [index]: (prev[index] || 0) + 1 }));
+  };
+
+  const [buyerHSummaKeys, setBuyerHSummaKeys] = useState({});
+  const triggerBuyerHSummaCalc = (index, indexBuyerH) => {
+    const key = `${index}-${indexBuyerH}`;
+    setBuyerHSummaKeys(prev => ({ ...prev, [key]: (prev[key] || 0) + 1 }));
+  };
+
   const [deleteElement, setDeleteElement] = useState(null);
   const [show, setShow] = useState(false);
   const handleCloseModal = () => setShow(false);
@@ -193,14 +204,14 @@ function OrderTable({ setOrder, order }) {
                     <td className='m-0 p-0' >
                       <ComboBox object={buyer} nameDataList={'TYPE_OF_PRODUCT'} field={'typeOfProduct'} />
                     </td>
-                    <TDInput object={buyer} field={'liters'} type={'number'} />
-                    <TDInput object={buyer} field={'tons'} type={'number'} />
-                    <TDInput object={buyer} field={'price'} type={'number'} />
+                    <TDInput object={buyer} field={'liters'} type={'number'} onChangeExtra={() => triggerBuyerSummaCalc(index)} />
+                    <TDInput object={buyer} field={'tons'} type={'number'} onChangeExtra={() => triggerBuyerSummaCalc(index)} />
+                    <TDInput object={buyer} field={'price'} type={'number'} onChangeExtra={() => triggerBuyerSummaCalc(index)} />
                     {user.rights.finBlockAccess &&
                       <>
                         <TDInput object={buyer} field={'sf'} type={'text'} display={display} />
                         <TDInput object={order} field={'date'} type={'date'} disabled={true} value={true} display={display} />
-                        <TDInput object={buyer} field={'summa'} type={'number'} display={display} />
+                        <TDSumma object={buyer} field={'summa'} display={display} calcTrigger={buyerSummaKeys[index] || 0} />
                         <TDInput object={buyer} field={'akt'} type={'number'} display={display} />
                       </>
                     }
@@ -228,14 +239,14 @@ function OrderTable({ setOrder, order }) {
                           <td className='m-0 p-0' >
                             <ComboBox object={buyerH} nameDataList={'TYPE_OF_PRODUCT'} field={'typeOfProduct'} />
                           </td>
-                          <TDInput object={buyerH} field={'liters'} type={'number'} />
-                          <TDInput object={buyerH} field={'tons'} type={'number'} />
-                          <TDInput object={buyerH} field={'price'} type={'number'} />
+                          <TDInput object={buyerH} field={'liters'} type={'number'} onChangeExtra={() => triggerBuyerHSummaCalc(index, indexBuyerH)} />
+                          <TDInput object={buyerH} field={'tons'} type={'number'} onChangeExtra={() => triggerBuyerHSummaCalc(index, indexBuyerH)} />
+                          <TDInput object={buyerH} field={'price'} type={'number'} onChangeExtra={() => triggerBuyerHSummaCalc(index, indexBuyerH)} />
                           {user.rights.finBlockAccess &&
                             <>
                               <TDInput object={buyerH} field={'sf'} type={'text'} display={display} />
                               <TDInput object={order} field={'date'} type={'date'} disabled={true} display={display} />
-                              <TDInput object={buyerH} field={'summa'} type={'number'} display={display} />
+                              <TDSumma object={buyerH} field={'summa'} display={display} calcTrigger={buyerHSummaKeys[`${index}-${indexBuyerH}`] || 0} />
                               <TDInput object={buyerH} field={'akt'} type={'number'} display={display} />
                             </>
                           }

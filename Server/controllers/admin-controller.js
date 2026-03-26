@@ -58,7 +58,7 @@ class AdminController {
     }
     async deleteuser(req, res) {
         const id = +req.body.deleteUser.id;
-        console.log("userIdDelete:", id);
+       
         pool.query("delete from users where id = $1", [id], (err, result) => {
             if (err) {
                 console.error('Error delete order', err.stack);

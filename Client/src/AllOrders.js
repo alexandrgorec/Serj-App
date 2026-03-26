@@ -8,8 +8,6 @@ import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import Stack from 'react-bootstrap/Stack';
 import { BiEditAlt } from "react-icons/bi";
-import { FaEye } from "react-icons/fa";
-import { FaEyeSlash } from "react-icons/fa6";
 import { MdDelete } from "react-icons/md";
 import { userContext } from './App';
 import { FaPeopleArrows } from "react-icons/fa6";
@@ -95,6 +93,7 @@ function AllOrders() {
     size = 'sm'
   }
   const [state, reload] = useState(false);
+  const [allExpanded, setAllExpanded] = useState(false);
 
 
 
@@ -156,29 +155,18 @@ function AllOrders() {
       <Stack direction='horizontal' gap={2}>
         <Button style={{ margin: '5px', marginLeft: '0' }}
           onClick={() => {
+            const next = !allExpanded;
             setOrders((orders) => {
               orders.map(order => {
-                order.open = true;
+                order.open = next;
                 return (order)
               })
               return (orders);
             })
+            setAllExpanded(next);
             reload(!state);
           }}
-        > Развернуть все
-        </Button>
-        <Button style={{ marginTop: '5px', marginBottom: '5px' }}
-          onClick={() => {
-            setOrders((orders) => {
-              orders.map(order => {
-                order.open = false;
-                return (order)
-              })
-              return (orders);
-            })
-            reload(!state);
-          }}
-        > Свернуть все
+        > {allExpanded ? 'Свернуть все' : 'Развернуть все'}
         </Button>
         <Form.Check className='noselect' ref={refFilter} onClick={() => { reload(!state) }}
           type="switch"
@@ -243,9 +231,6 @@ function AllOrders() {
                       </td>
                       <td style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
                         <Stack direction="horizontal" gap={3} >
-                          {!orders[num].open && <FaEye size='1.7em' className='ms-auto icon clickable' style={{ color: 'rgba(1, 87, 248, 0.85)' }} />}
-                          {orders[num].open && <FaEyeSlash size='1.7em' className='ms-auto icon clickable' style={{ color: 'rgba(1, 87, 248, 0.28)' }} />}
-                          <div className="vr" />
                           <BiEditAlt size='1.7em' className='clickable icon' style={{ color: 'rgba(1, 87, 248, 0.85)' }} onClick={() => {
                             showHideOrder(num);
                             setEditingOrder(() => order.orderjson);

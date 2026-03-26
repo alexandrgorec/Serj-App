@@ -59,7 +59,7 @@ class OrderController {
                 console.error('Error connecting to the database', err.stack);
                 res.send('ошибка доступа к базе данных');
             } else {
-                console.log('EDIT ORDER');
+                // console.log('EDIT ORDER');
 
                 res.sendStatus(202);
             }

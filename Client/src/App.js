@@ -1,7 +1,7 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
 import { useState, useEffect, createContext } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import NewOrder from "./NewOrder";
 import FooterApp from './FooterApp';
 import AllOrders from './AllOrders';
@@ -118,7 +118,7 @@ function App() {
                   <Route path='/menu/profile' element={'profile'}></Route>
                 </Route>
                 <Route path='/warehouse' element={'Компонент не создан'}></Route>
-                <Route path='/*' element={<AllOrders />}></Route>
+                <Route path='/*' element={<Navigate to="/allorders" replace />}></Route>
               </Routes>
             </section>
             <FooterApp />
