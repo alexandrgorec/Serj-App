@@ -72,7 +72,7 @@ function AllOrders() {
   const [orders, setOrders] = useState([]);
 
 
-
+  console.log(orders);
   const [idForDeleteOrder, setIdForDeleteOrder] = useState(null);
   const [show, setShow] = useState(false);
   const handleCloseModal = () => setShow(false);
@@ -146,6 +146,8 @@ function AllOrders() {
 
 
   const NumberFormat = (num) => {
+    if (typeof (num) == 'string')
+      num = num.replace(/\s/g, '').replace(/,/g, '.')
     let res = new Intl.NumberFormat().format(num);
     if (!num)
       res = '';
