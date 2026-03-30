@@ -11,6 +11,7 @@ import { BiEditAlt } from "react-icons/bi";
 import { MdDelete } from "react-icons/md";
 import { userContext } from './App';
 import { FaPeopleArrows } from "react-icons/fa6";
+import { FormLabel } from 'react-bootstrap';
 
 
 function spisok(array) {
@@ -168,10 +169,16 @@ function AllOrders() {
           }}
         > {allExpanded ? 'Свернуть все' : 'Развернуть все'}
         </Button>
-        <Form.Check className='noselect' ref={refFilter} onClick={() => { reload(!state) }}
-          type="switch"
-          label="Фильтр"
-        />
+
+        <FormLabel className='noselect clickable'>
+          <Stack direction='horizontal' gap={2}>
+            <Form.Check className='noselect' ref={refFilter} onClick={() => { reload(!state) }}
+              type="switch"
+            />
+            Фильтр <FaPeopleArrows style={{ color: 'rgba(16, 188, 45, 0.79)' }} />
+          </Stack>
+        </FormLabel>
+
       </Stack>
       <div className='allOrdersTable noselect'>
         <Table style={{ padding: '0', margin: '0' }} striped bordered hover>
@@ -186,7 +193,7 @@ function AllOrders() {
           </thead>
         </Table>
         {
-          orders.filter((order => { 
+          orders.filter((order => {
             if (refFilter.current.checked) {
               if (order.orderjson.haveEmptyBuyerH)
                 return true
@@ -197,7 +204,7 @@ function AllOrders() {
             else {
               return true;
             }
-          })).map((order, num) => { 
+          })).map((order, num) => {
             return (
               <>
                 <Table style={{ tableLayout: "fixed" }} key={num} className='colorborder clickable' striped bordered hover onClick={() => {
@@ -422,7 +429,7 @@ function AllOrders() {
         }
       </div >
 
-      <Modal centered show={show} onHide={handleCloseModal} 
+      <Modal centered show={show} onHide={handleCloseModal}
         animation={true} >
         <Modal.Header closeButton>
           <Modal.Title>Подтверждение удаления заявки № {idForDeleteOrder}</Modal.Title>

@@ -32,10 +32,6 @@ app.get("/test", (req, res) => {
             }
         });
 
-
-
-
-
 })
 app.use(express.static(STATIC_PATH));
 app.use("/guest", guestRouter);

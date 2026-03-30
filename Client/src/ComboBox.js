@@ -88,7 +88,7 @@ function ComboBox({ isBuyerH = '', iconSize = '2em', fontSize = '16px', id, obje
                         typeaheadRef.current.clear();
                     }
                 }}>
-                    <MdClear className="combobox-btn-icon" style={{ width: '100%', height: '100%' }} />
+                    <MdClear className="combobox-btn-icon" style={{ width: '100%', height: '100%'}} />
                 </InputGroup.Text>
 
                 <InputGroup.Text className="col-1 p-0 d-flex justify-content-center align-items-center" style={{ cursor: 'pointer' }} onClick={() => {
