@@ -63,7 +63,7 @@ function ComboBox({ isBuyerH = '', iconSize = '2em', fontSize = '16px', id, obje
                     defaultInputValue={object[field]}
                     labelKey="name"
                     onChange={(selected) => {
-                        object[field] = selected[0];
+                        object[field] = selected.length ? selected[0] : '';
                     }}
                     onInputChange={(text) => {
                         object[field] = text;
@@ -111,6 +111,7 @@ function ComboBox({ isBuyerH = '', iconSize = '2em', fontSize = '16px', id, obje
                         justifyContent: 'center',
                     }}
                     onClick={() => {
+                    object[field] = '';
                     if (typeaheadRef.current) {
                         typeaheadRef.current.clear();
                     }
