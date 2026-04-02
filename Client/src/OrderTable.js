@@ -96,8 +96,8 @@ function OrderTable({ setOrder, order }) {
               {user.rights.finBlockAccess &&
                 <>
                   <th width='6%' style={{ display: display }}>С/Ф</th>
-                  <th width='1%' style={{ display: display }}>Дата</th>
-                  <th width='8%' style={{ display: display }}>Сумма</th>
+                  <th width='1%' style={{ display: display }} className='th-date'>Дата</th>
+                  <th width='8%' style={{ display: display }} className='th-summa'>Сумма</th>
                   <th width='3%' style={{ display: display }}>Акт транспорт</th>
                 </>
               }
@@ -131,7 +131,7 @@ function OrderTable({ setOrder, order }) {
                   {user.rights.finBlockAccess &&
                     <>
                       <TDInput object={supplier} field={'sf'} type={'text'} display={display} />
-                      <TDInput object={order} field={'date'} type={'date'} disabled={true} value={true} display={display} />
+                      <TDInput object={order} field={'date'} type={'date'} disabled={true} value={true} display={display} tdClassName="td-date" inputClassName="date-input" fontSize="12px" />
                       <TDSumma object={supplier} field={'summa'} display={display} calcTrigger={summaKeys[index] || 0} />
                       <TDInput object={supplier} field={'akt'} type={'text'} display={display}/>
                     </>
@@ -210,7 +210,7 @@ function OrderTable({ setOrder, order }) {
                     {user.rights.finBlockAccess &&
                       <>
                         <TDInput object={buyer} field={'sf'} type={'text'} display={display} />
-                        <TDInput object={order} field={'date'} type={'date'} disabled={true} value={true} display={display} />
+                        <TDInput object={order} field={'date'} type={'date'} disabled={true} value={true} display={display} tdClassName="td-date" inputClassName="date-input" fontSize="12px" />
                         <TDSumma object={buyer} field={'summa'} display={display} calcTrigger={buyerSummaKeys[index] || 0} />
                         <TDInput object={buyer} field={'akt'} type={'number'} display={display} />
                       </>
@@ -245,7 +245,7 @@ function OrderTable({ setOrder, order }) {
                           {user.rights.finBlockAccess &&
                             <>
                               <TDInput object={buyerH} field={'sf'} type={'text'} display={display} />
-                              <TDInput object={order} field={'date'} type={'date'} disabled={true} display={display} />
+                              <TDInput object={order} field={'date'} type={'date'} disabled={true} display={display} tdClassName="td-date" inputClassName="date-input" fontSize="12px" />
                               <TDSumma object={buyerH} field={'summa'} display={display} calcTrigger={buyerHSummaKeys[`${index}-${indexBuyerH}`] || 0} />
                               <TDInput object={buyerH} field={'akt'} type={'number'} display={display} />
                             </>

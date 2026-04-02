@@ -23,8 +23,18 @@ function TDSumma({ object, field = '', fontSize = '16px', display = '', calcTrig
     };
 
     useEffect(() => {
-        if (calcTrigger > 0) calculate(object.summaMode || 'liters');
-    }, [calcTrigger]);
+        if (calcTrigger > 0) {
+            const m = object?.summaMode || 'liters';
+            const raw = m === 'liters' ? object?.liters : object?.tons;
+            const price = object?.price;
+            if (!raw && !price) return;
+            const num1 = Number(String(raw || '0').replace(/\s/g, '').replace(/,/g, '.'));
+            const num2 = Number(String(price || '0').replace(/\s/g, '').replace(/,/g, '.'));
+            const formatted = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(num1 * num2);
+            if (ref.current) ref.current.value = formatted;
+            object[field] = formatted;
+        }
+    }, [calcTrigger, field, object, object?.summaMode]);
 
     const toggleMode = () => {
         const newMode = mode === 'liters' ? 'tons' : 'liters';
@@ -34,28 +44,29 @@ function TDSumma({ object, field = '', fontSize = '16px', display = '', calcTrig
     };
 
     return (
-        <td className='m-0 p-0' style={{ display: display }}>
-            <InputGroup size='sm'>
+        <td className='m-0 p-0 td-summa' style={{ display: display }}>
+            <InputGroup size='sm' className='summa-input-group'>
                 <Form.Control
-                    className={`tabIndex-${tabIndex}`}
+                    className={`tabIndex-${tabIndex} summa-input`}
                     style={{ fontSize: fontSize }}
                     as='input'
                     type='text'
                     defaultValue={object[field]}
                     autoComplete="off"
                     ref={ref}
+                    inputMode="decimal"
                     onKeyDown={(evt) => {
                         if (!(evt.key.match(/\d/)
-                            || evt.key == 'Backspace'
-                            || evt.key == ','
-                            || evt.key == '.'
-                            || evt.key == 'Tab'
-                            || evt.key == 'ArrowLeft'
-                            || evt.key == 'ArrowRight'
-                            || evt.key == 'Delete')) {
+                            || evt.key === 'Backspace'
+                            || evt.key === ','
+                            || evt.key === '.'
+                            || evt.key === 'Tab'
+                            || evt.key === 'ArrowLeft'
+                            || evt.key === 'ArrowRight'
+                            || evt.key === 'Delete')) {
                             evt.preventDefault();
                         }
-                        if (evt.key == 'Enter') {
+                        if (evt.key === 'Enter') {
                             let nextElem = document.querySelector(`.tabIndex-${tabIndex + 1}`)
                             if (nextElem) nextElem.focus();
                         }

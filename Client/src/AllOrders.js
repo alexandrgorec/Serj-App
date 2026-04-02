@@ -72,7 +72,7 @@ function AllOrders() {
   const [orders, setOrders] = useState([]);
 
 
-  console.log(orders);
+
   const [idForDeleteOrder, setIdForDeleteOrder] = useState(null);
   const [show, setShow] = useState(false);
   const handleCloseModal = () => setShow(false);

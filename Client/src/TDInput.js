@@ -5,7 +5,7 @@ import { userContext } from './App';
 
 
 
-function TDInput({ object, value = '', disabled = false, fontSize = '14px', type, field = '', display = '', onChangeExtra = null }) {
+function TDInput({ object, value = '', disabled = false, fontSize = '14px', type, field = '', display = '', onChangeExtra = null, tdClassName = '', inputClassName = '' }) {
     const ref = useRef(null);
     const isNumber = type === 'number' ? true : false;
     let tabIndex = -1;
@@ -18,9 +18,9 @@ function TDInput({ object, value = '', disabled = false, fontSize = '14px', type
             ref.current.value = object[field];
     }, [object])
     return (
-        <td className='m-0 p-0' style={{display:display}}>
+        <td className={`m-0 p-0 ${tdClassName}`} style={{display:display}}>
             <div>
-                <Form.Control className={`tabIndex-${tabIndex}`}  disabled={disabled} style={{ fontSize: fontSize}} as='input' type={type} defaultValue={object[field]} autoComplete="off" ref={ref}
+                <Form.Control className={`tabIndex-${tabIndex} ${inputClassName}`}  disabled={disabled} style={{ fontSize: fontSize}} as='input' type={type} defaultValue={object[field]} autoComplete="off" ref={ref}
                     onKeyDown={(evt) => {
                         if (isNumber && !(evt.key.match(/\d/)
                             || evt.key == 'Backspace'

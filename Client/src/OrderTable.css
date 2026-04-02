@@ -12,3 +12,40 @@
     cursor: pointer;
     transform: scale(1.15);
 }
+
+/* Tablet: keep "Сумма" fully visible (input + button) */
+@media (max-width: 1024px) {
+    .td-summa .summa-input-group {
+        flex-wrap: nowrap;
+    }
+
+    .td-summa .summa-input {
+        min-width: 8.5rem;
+        padding-left: 6px;
+        padding-right: 6px;
+    }
+
+    .td-summa .btn {
+        min-width: 3.1rem;
+        padding-left: 6px;
+        padding-right: 6px;
+        white-space: nowrap;
+    }
+
+    th.th-summa {
+        min-width: 9.5rem;
+    }
+
+    th.th-date {
+        min-width: 6.5rem;
+        width: 6.5rem;
+    }
+
+    td.td-date .date-input {
+        min-width: 6.5rem;
+        width: 6.5rem;
+        padding-left: 4px;
+        padding-right: 4px;
+        font-size: 12px;
+    }
+}

@@ -1,10 +1,5 @@
 import "./ComboBox.css";
-import Dropdown from 'react-bootstrap/Dropdown';
-import Button from 'react-bootstrap/Button';
-import Form from 'react-bootstrap/Form';
-import FloatingLabel from 'react-bootstrap/FloatingLabel';
-import { useRef, useContext, useState } from "react";
-import InputGroup from 'react-bootstrap/InputGroup';
+import { useRef, useContext } from "react";
 import { FaSave } from "react-icons/fa";
 import { MdDelete, MdClear } from "react-icons/md";
 import { userContext } from "./App";
@@ -26,16 +21,39 @@ function ComboBox({ isBuyerH = '', iconSize = '2em', fontSize = '16px', id, obje
         iconSize = '1em'
     }
     const data = user?.selectListsData?.[nameDataList] || [];
+    const isTablet = window.innerWidth <= 1024;
+    const btnSize = isTablet ? 28 : 36;
     return (
         <div style={{ display: display }}>
-            <InputGroup size='sm'>
-                <Typeahead className={`flex-grow-1`} id={id} ref={typeaheadRef}
+            <div
+                className="combobox-row"
+                style={{
+                    display: 'flex',
+                    flexWrap: 'nowrap',
+                    alignItems: 'stretch',
+                    width: '100%',
+                }}
+            >
+                <div
+                    className="combobox-typeahead-wrap"
+                    style={{
+                        flex: '1 1 0',
+                        minWidth: 0,
+                        overflow: 'hidden',
+                    }}
+                >
+                    <Typeahead className="combobox-typeahead" id={id} ref={typeaheadRef}
                     inputProps={{
-                        className: `tabIndex-${tabIndex} ${isBuyerH}`
+                        className: `tabIndex-${tabIndex} ${isBuyerH}`,
+                        style: {
+                            fontSize: isTablet ? '12px' : fontSize,
+                            paddingTop: isTablet ? '2px' : undefined,
+                            paddingBottom: isTablet ? '2px' : undefined,
+                        }
                     }}
                     onKeyDown={(evt) => {
 
-                        if (evt.key == 'Enter') {
+                        if (evt.key === 'Enter') {
                             let nextElem = document.querySelector(`.tabIndex-${tabIndex + 1}`)
                             console.log(nextElem)
                             if (nextElem) {
@@ -82,16 +100,44 @@ function ComboBox({ isBuyerH = '', iconSize = '2em', fontSize = '16px', id, obje
                             />
                         </div>
                     )}
-                />
-                <InputGroup.Text className="col-1 p-0" style={{ cursor: 'pointer' }} onClick={() => {
+                    />
+                </div>
+
+                <button
+                    type="button"
+                    className="combobox-btn combobox-btn-clear"
+                    style={{
+                        cursor: 'pointer',
+                        flex: '0 0 auto',
+                        width: `${btnSize}px`,
+                        minWidth: `${btnSize}px`,
+                        padding: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}
+                    onClick={() => {
                     if (typeaheadRef.current) {
                         typeaheadRef.current.clear();
                     }
                 }}>
                     <MdClear className="combobox-btn-icon" style={{ width: '100%', height: '100%'}} />
-                </InputGroup.Text>
+                </button>
 
-                <InputGroup.Text className="col-1 p-0 d-flex justify-content-center align-items-center" style={{ cursor: 'pointer' }} onClick={() => {
+                <button
+                    type="button"
+                    className="combobox-btn combobox-btn-save d-flex justify-content-center align-items-center"
+                    style={{
+                        cursor: 'pointer',
+                        flex: '0 0 auto',
+                        width: `${btnSize}px`,
+                        minWidth: `${btnSize}px`,
+                        padding: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}
+                    onClick={() => {
                     const selectListsDataEdited = user.selectListsData;
                     if (!selectListsDataEdited[nameDataList].includes(object[field]) && object[field] !== '') {
                         selectListsDataEdited[nameDataList].push(object[field]);
@@ -113,12 +159,8 @@ function ComboBox({ isBuyerH = '', iconSize = '2em', fontSize = '16px', id, obje
                     })
                 }}>
                     <FaSave className="combobox-btn-icon" style={{ width: '70%', height: '70%' }} />
-                </InputGroup.Text>
-
-
-
-
-            </InputGroup>
+                </button>
+            </div>
 
         </div>
     )
