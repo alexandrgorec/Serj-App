@@ -4,6 +4,37 @@
     }
 }
 
+/* Одна общая таблица: ширины колонок задаём через colgroup */
+.allOrders-main-table col.allOrders-col-num { width: 2.5%; }
+.allOrders-main-table col.allOrders-col-date { width: 6%; }
+.allOrders-main-table col.allOrders-col-buyers { width: 29%; }
+.allOrders-main-table col.allOrders-col-hsum { width: 14%; }
+.allOrders-main-table col.allOrders-col-suppliers { width: 29%; }
+.allOrders-main-table col.allOrders-col-menu {
+    width: 6%;
+    min-width: 5.75rem;
+}
+
+.allOrders-th-menu {
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.allOrders-td-menu {
+    vertical-align: middle;
+    padding: 4px 6px !important;
+    white-space: nowrap;
+    min-width: 5.5rem;
+}
+
+.allOrders-menu-stack {
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+}
+
 .clickable{
     cursor: pointer;
 }

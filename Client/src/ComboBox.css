@@ -22,12 +22,18 @@
     flex-wrap: nowrap;
     align-items: stretch;
     width: 100%;
+    overflow: visible;
 }
 
+/* Не используем overflow:hidden — иначе обрезается выпадающий .rbt-menu */
 .combobox-typeahead-wrap {
     flex: 1 1 0;
     min-width: 0;
-    overflow: hidden;
+    position: relative;
+}
+
+.combobox-typeahead-wrap .rbt-menu {
+    z-index: 1060;
 }
 
 .combobox-typeahead,

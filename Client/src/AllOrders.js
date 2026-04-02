@@ -1,7 +1,7 @@
 import './AllOrders.css';
 import Table from 'react-bootstrap/Table';
 import Modal from 'react-bootstrap/Modal';
-import { useState, useEffect, useContext, useRef } from 'react';
+import { useState, useEffect, useContext, useRef, Fragment } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Collapse from 'react-bootstrap/Collapse';
 import Button from 'react-bootstrap/Button';
@@ -31,6 +31,30 @@ function spisok(array) {
   }
 }
 
+/** Суммы из buyerH, у которых имя подпокупателя не заполнено (как в списке заявок). */
+function formatSummaCell(num) {
+  if (num === undefined || num === null || num === '') return '';
+  let n = num;
+  if (typeof n === 'string')
+    n = n.replace(/\s/g, '').replace(/,/g, '.');
+  if (n === '' || Number.isNaN(Number(n))) return '';
+  return new Intl.NumberFormat().format(Number(n));
+}
+
+function emptyBuyerHSummasDisplay(buyers) {
+  if (!buyers?.length) return '';
+  const parts = [];
+  buyers.forEach((buyer) => {
+    if (!buyer.buyersH?.length) return;
+    buyer.buyersH.forEach((h) => {
+      if (h.name != null && String(h.name).trim() !== '') return;
+      const formatted = formatSummaCell(h.summa);
+      if (formatted !== '') parts.push(formatted);
+    });
+  });
+  return parts.join('; ');
+}
+
 
 function formatDate(date) {
   date = new Date(Date.parse(date));
@@ -52,6 +76,7 @@ function AllOrders() {
   const { user, setToast, aAxios, setEditingOrder } = useContext(userContext);
   const navigate = useNavigate();
   const refFilter = useRef(null);
+  const refFilterSumH = useRef(null);
   const openEditedOrder = () => {
     setOrders((orders) => {
       if (sessionStorage.createdOrderId) {
@@ -181,50 +206,75 @@ function AllOrders() {
           </Stack>
         </FormLabel>
 
+        <FormLabel className='noselect clickable'>
+          <Stack direction='horizontal' gap={2}>
+            <Form.Check className='noselect' ref={refFilterSumH} onClick={() => { reload(!state) }}
+              type="switch"
+            />
+            Фильтр суммы &quot;H&quot;
+          </Stack>
+        </FormLabel>
+
       </Stack>
       <div className='allOrdersTable noselect'>
-        <Table style={{ padding: '0', margin: '0' }} striped bordered hover>
+        <Table
+          className="allOrders-main-table"
+          striped
+          bordered
+          hover
+          style={{ tableLayout: 'fixed', width: '100%', margin: 0 }}
+        >
+          <colgroup>
+            <col className="allOrders-col-num" />
+            <col className="allOrders-col-date" />
+            <col className="allOrders-col-buyers" />
+            <col className="allOrders-col-hsum" />
+            <col className="allOrders-col-suppliers" />
+            <col className="allOrders-col-menu" />
+          </colgroup>
           <thead>
             <tr>
-              <th width='2%' style={{ textAlign: 'center' }}>№</th>
-              <th width='5%'>Дата</th>
-              <th width='41%'>Покупатели</th>
-              <th width='41%'>Поставщики</th>
-              <th >Меню</th>
+              <th style={{ textAlign: 'center' }}>№</th>
+              <th>Дата</th>
+              <th>Покупатели</th>
+              <th title='Суммы подпокупателей (buyerH) без заполненного имени'>Суммы &quot;H&quot;</th>
+              <th>Поставщики</th>
+              <th className="allOrders-th-menu">Меню</th>
             </tr>
           </thead>
-        </Table>
+          <tbody>
         {
-          orders.filter((order => {
-            if (refFilter.current.checked) {
-              if (order.orderjson.haveEmptyBuyerH)
-                return true
-              else {
-                return false
-              }
-            }
-            else {
-              return true;
-            }
-          })).map((order, num) => {
+          orders.filter((order) => {
+            const filterEmptyBuyerH = refFilter.current?.checked;
+            const filterSumH = refFilterSumH.current?.checked;
+            if (!filterEmptyBuyerH && !filterSumH) return true;
+            const matchEmptyBuyerH = !!order.orderjson.haveEmptyBuyerH;
+            const matchSumH = emptyBuyerHSummasDisplay(order.orderjson.buyers) !== '';
+            if (filterEmptyBuyerH && !filterSumH) return matchEmptyBuyerH;
+            if (!filterEmptyBuyerH && filterSumH) return matchSumH;
+            return matchEmptyBuyerH && matchSumH;
+          }).map((order, num) => {
+            const emptyHSummas = emptyBuyerHSummasDisplay(order.orderjson.buyers);
+            const orderIndex = orders.findIndex((o) => o.id === order.id);
+            const toggleRow = () => {
+              if (orderIndex >= 0) showHideOrder(orderIndex);
+            };
             return (
-              <>
-                <Table style={{ tableLayout: "fixed" }} key={num} className='colorborder clickable' striped bordered hover onClick={() => {
-
-                  showHideOrder(num);
-                }}
+              <Fragment key={order.id}>
+                <tr
+                  id={`order-${order.id}`}
+                  className='colorborder clickable'
+                  onClick={toggleRow}
                   onDoubleClick={() => {
-                    showHideOrder(num);
+                    toggleRow();
                     setEditingOrder(() => order.orderjson);
                     navigate("/editorder");
                   }}
                 >
-                  <tbody >
-                    <tr id={`order-${order.id}`} >
 
-                      <td width='2%' style={{ overflow: "hidden", textAlign: 'center', backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>{order.id}</td>
-                      <td style={{ width: '5%', maxWidth: "5%", minWidth: "5%", overflow: "hidden", backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }} >{formatDate(order.orderjson.date)}</td>
-                      <td style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }} width='41%'>{
+                      <td style={{ overflow: "hidden", textAlign: 'center', backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>{order.id}</td>
+                      <td style={{ overflow: "hidden", backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }} >{formatDate(order.orderjson.date)}</td>
+                      <td style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>{
                         <Stack direction="horizontal" gap={3} >
                           {
                             order.orderjson.haveEmptyBuyerH && < FaPeopleArrows style={{ color: 'rgba(16, 188, 45, 0.79)' }} />
@@ -235,19 +285,25 @@ function AllOrders() {
                         </Stack>
                       }</td>
 
-                      <td style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }} width='41%'>
+                      <td style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '', overflow: 'hidden', fontSize: '0.9em' }} title={emptyHSummas}>
+                        {emptyHSummas}
+                      </td>
+
+                      <td style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
                         {spisok(order.orderjson.suppliers)}
                       </td>
-                      <td style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
-                        <Stack direction="horizontal" gap={3} >
-                          <BiEditAlt size='1.7em' className='clickable icon' style={{ color: 'rgba(1, 87, 248, 0.85)' }} onClick={() => {
-                            showHideOrder(num);
+                      <td className="allOrders-td-menu" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
+                        <Stack direction="horizontal" gap={1} className="allOrders-menu-stack">
+                          <BiEditAlt size='1.7em' className='clickable icon' style={{ color: 'rgba(1, 87, 248, 0.85)' }} onClick={(e) => {
+                            e.stopPropagation();
+                            if (orderIndex >= 0) showHideOrder(orderIndex);
                             setEditingOrder(() => order.orderjson);
                             navigate("/editorder");
                           }} />
                           <div className="vr" />
-                          <MdDelete size='1.7em' className='clickable icon' style={{ color: 'rgb(194, 65, 65)' }} onClick={() => {
-                            showHideOrder(num)
+                          <MdDelete size='1.7em' className='clickable icon' style={{ color: 'rgb(194, 65, 65)' }} onClick={(e) => {
+                            e.stopPropagation();
+                            if (orderIndex >= 0) showHideOrder(orderIndex)
                             setIdForDeleteOrder(order.id);
                             handleShowModal();
                           }} />
@@ -257,8 +313,8 @@ function AllOrders() {
                       </td>
 
                     </tr>
-                  </tbody>
-                </Table>
+                <tr className="allOrders-expand-row">
+                  <td colSpan={6} className="p-0 border-top-0">
                 <Collapse in={order.open}>
 
                   <div className='mb-3'>
@@ -426,9 +482,13 @@ function AllOrders() {
 
                   </div>
                 </Collapse >
-              </>);
-          })
-        }
+                  </td>
+                </tr>
+              </Fragment>
+            );
+          })}
+          </tbody>
+        </Table>
       </div >
 
       <Modal centered show={show} onHide={handleCloseModal}

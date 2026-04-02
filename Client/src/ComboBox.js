@@ -39,7 +39,6 @@ function ComboBox({ isBuyerH = '', iconSize = '2em', fontSize = '16px', id, obje
                     style={{
                         flex: '1 1 0',
                         minWidth: 0,
-                        overflow: 'hidden',
                     }}
                 >
                     <Typeahead className="combobox-typeahead" id={id} ref={typeaheadRef}
@@ -68,11 +67,6 @@ function ComboBox({ isBuyerH = '', iconSize = '2em', fontSize = '16px', id, obje
                     }}
                     onInputChange={(text) => {
                         object[field] = text;
-                    }}
-                    onBlur={() => {
-                        if (typeaheadRef.current) {
-                            typeaheadRef.current.hideMenu();
-                        }
                     }}
                     options={data}
                     placeholder={associations[nameDataList]}
