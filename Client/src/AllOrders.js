@@ -12,6 +12,7 @@ import { MdDelete } from "react-icons/md";
 import { userContext } from './App';
 import { FaPeopleArrows } from "react-icons/fa6";
 import { FormLabel } from 'react-bootstrap';
+import { Typeahead } from "react-bootstrap-typeahead";
 
 
 function spisok(array) {
@@ -55,6 +56,20 @@ function emptyBuyerHSummasDisplay(buyers) {
   return parts.join('; ');
 }
 
+function buyerNamesFromOrder(orderjson) {
+  const out = [];
+  const buyers = orderjson?.buyers || [];
+  buyers.forEach((b) => {
+    if (b?.name != null && String(b.name).trim() !== '') out.push(String(b.name).trim());
+    if (b?.buyersH?.length) {
+      b.buyersH.forEach((h) => {
+        if (h?.name != null && String(h.name).trim() !== '') out.push(String(h.name).trim());
+      });
+    }
+  });
+  return out;
+}
+
 
 function formatDate(date) {
   date = new Date(Date.parse(date));
@@ -77,6 +92,8 @@ function AllOrders() {
   const navigate = useNavigate();
   const refFilter = useRef(null);
   const refFilterSumH = useRef(null);
+  const [buyerFilter, setBuyerFilter] = useState('');
+  const buyerTypeaheadRef = useRef(null);
   const openEditedOrder = () => {
     setOrders((orders) => {
       if (sessionStorage.createdOrderId) {
@@ -95,6 +112,13 @@ function AllOrders() {
 
 
   const [orders, setOrders] = useState([]);
+
+  const buyerOptions = Array.from(new Set(
+    orders
+      .flatMap((o) => buyerNamesFromOrder(o?.orderjson))
+      .map((s) => String(s).trim())
+      .filter((s) => s !== '')
+  ));
 
 
 
@@ -171,12 +195,27 @@ function AllOrders() {
 
 
   const NumberFormat = (num) => {
-    if (typeof (num) == 'string')
-      num = num.replace(/\s/g, '').replace(/,/g, '.')
-    let res = new Intl.NumberFormat().format(num);
-    if (!num)
-      res = '';
-    return res;
+    if (num === undefined || num === null) return '';
+    let s = String(num).trim();
+    if (s === '') return '';
+
+    // normalize: remove spaces, unify decimal separator to "."
+    const originalHadComma = s.includes(',');
+    s = s.replace(/\s/g, '').replace(/,/g, '.');
+
+    // keep sign, and DO NOT round fractional part
+    const sign = s.startsWith('-') ? '-' : '';
+    if (sign) s = s.slice(1);
+
+    const [intRaw, fracRaw] = s.split('.');
+    if (!intRaw || !/^\d+$/.test(intRaw)) return '';
+
+    const intFormatted = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 }).format(Number(intRaw));
+    if (fracRaw === undefined) return sign + intFormatted;
+    if (!/^\d+$/.test(fracRaw)) return sign + intFormatted;
+
+    const decSep = originalHadComma ? ',' : '.';
+    return sign + intFormatted + decSep + fracRaw;
   }
   return (
     <>
@@ -205,6 +244,27 @@ function AllOrders() {
             Фильтр <FaPeopleArrows style={{ color: 'rgba(16, 188, 45, 0.79)' }} />
           </Stack>
         </FormLabel>
+
+        <div className="allOrders-buyerFilter" style={{ minWidth: 260, maxWidth: 420 }}>
+          <Typeahead
+            id="allorders-buyer-filter"
+            ref={buyerTypeaheadRef}
+            options={buyerOptions}
+            className="allOrders-buyerTypeahead"
+            selected={buyerFilter ? [buyerFilter] : []}
+            onChange={(selected) => {
+              const v = selected.length ? String(selected[0]) : '';
+              setBuyerFilter(v);
+              reload(!state);
+            }}
+            onInputChange={(text) => {
+              setBuyerFilter(text);
+            }}
+            placeholder="Фильтр покупатель…"
+            highlightOnlyResult
+            inputProps={{ type: 'text', style: { fontSize: window.innerWidth < 850 ? '12px' : '14px' } }}
+          />
+        </div>
 
         <FormLabel className='noselect clickable'>
           <Stack direction='horizontal' gap={2}>
@@ -247,6 +307,13 @@ function AllOrders() {
           orders.filter((order) => {
             const filterEmptyBuyerH = refFilter.current?.checked;
             const filterSumH = refFilterSumH.current?.checked;
+            const q = String(buyerFilter || '').trim().toLowerCase();
+            const matchBuyer =
+              q === '' ||
+              buyerNamesFromOrder(order.orderjson)
+                .some((n) => String(n).toLowerCase().includes(q));
+
+            if (!matchBuyer) return false;
             if (!filterEmptyBuyerH && !filterSumH) return true;
             const matchEmptyBuyerH = !!order.orderjson.haveEmptyBuyerH;
             const matchSumH = emptyBuyerHSummasDisplay(order.orderjson.buyers) !== '';

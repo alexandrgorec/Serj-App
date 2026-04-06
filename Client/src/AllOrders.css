@@ -35,6 +35,19 @@
     align-items: center;
 }
 
+.allOrders-buyerFilter {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+
+.allOrders-buyerTypeahead,
+.allOrders-buyerTypeahead .rbt {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+}
+
 .clickable{
     cursor: pointer;
 }

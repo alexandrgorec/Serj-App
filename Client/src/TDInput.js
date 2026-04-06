@@ -8,6 +8,28 @@ import { userContext } from './App';
 function TDInput({ object, value = '', disabled = false, fontSize = '14px', type, field = '', display = '', onChangeExtra = null, tdClassName = '', inputClassName = '' }) {
     const ref = useRef(null);
     const isNumber = type === 'number' ? true : false;
+
+    const formatPreserveFraction = (raw) => {
+        if (raw === undefined || raw === null) return '';
+        let s = String(raw).trim();
+        if (s === '') return '';
+
+        const hadComma = s.includes(',');
+        s = s.replace(/\s/g, '').replace(/,/g, '.');
+
+        const sign = s.startsWith('-') ? '-' : '';
+        if (sign) s = s.slice(1);
+
+        const [intRaw, fracRaw] = s.split('.');
+        if (!intRaw || !/^\d+$/.test(intRaw)) return '';
+
+        const intFormatted = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 }).format(Number(intRaw));
+        if (fracRaw === undefined) return sign + intFormatted;
+        if (!/^\d+$/.test(fracRaw)) return sign + intFormatted;
+
+        return sign + intFormatted + (hadComma ? ',' : '.') + fracRaw;
+    };
+
     let tabIndex = -1;
     if (!disabled)
         tabIndex = sessionStorage.tabIndex++;
@@ -45,8 +67,7 @@ function TDInput({ object, value = '', disabled = false, fontSize = '14px', type
                     }}
                     onBlur={() => {
                         if (isNumber) {
-                            const inputWithOutSpace = ref.current.value.replace(/\s/g, '').replace(/,/g, '.');
-                            ref.current.value = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(inputWithOutSpace);
+                            ref.current.value = formatPreserveFraction(ref.current.value);
                         }
                         object[field] = ref.current.value;
                     }} />

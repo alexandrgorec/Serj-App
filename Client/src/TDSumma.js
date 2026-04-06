@@ -10,14 +10,105 @@ function TDSumma({ object, field = '', fontSize = '16px', display = '', calcTrig
     const ref = useRef(null);
     const [mode, setMode] = useState(object.summaMode || 'liters');
 
+    const groupRuInt = (digits) => {
+        // digits: string of only [0-9], no sign
+        if (!digits) return '0';
+        let s = digits.replace(/^0+(?=\d)/, '');
+        let out = '';
+        for (let i = 0; i < s.length; i++) {
+            const posFromEnd = s.length - i;
+            out += s[i];
+            if (posFromEnd > 1 && posFromEnd % 3 === 1) out += ' ';
+        }
+        return out;
+    };
+
+    const parseDecimal = (raw) => {
+        if (raw === undefined || raw === null) return null;
+        let s = String(raw).trim();
+        if (s === '') return null;
+        s = s.replace(/\s/g, '').replace(/,/g, '.');
+        const sign = s.startsWith('-') ? -1 : 1;
+        if (sign === -1) s = s.slice(1);
+        const [intRaw, fracRaw = ''] = s.split('.');
+        if (!intRaw || !/^\d+$/.test(intRaw) || (fracRaw && !/^\d+$/.test(fracRaw))) return null;
+        const scale = fracRaw.length;
+        const digits = (intRaw + fracRaw).replace(/^0+(?=\d)/, '') || '0';
+        return { sign, digits, scale };
+    };
+
+    const multiplyDigits = (a, b) => {
+        // a,b: strings of digits [0-9], no sign. returns string digits.
+        if (a === '0' || b === '0') return '0';
+        const res = Array(a.length + b.length).fill(0);
+        for (let i = a.length - 1; i >= 0; i--) {
+            const ai = a.charCodeAt(i) - 48;
+            for (let j = b.length - 1; j >= 0; j--) {
+                const bj = b.charCodeAt(j) - 48;
+                const idx = i + j + 1;
+                const sum = res[idx] + ai * bj;
+                res[idx] = sum % 10;
+                res[idx - 1] += Math.floor(sum / 10);
+            }
+        }
+        // normalize carries (in case res[idx-1] exceeded 9 multiple times)
+        for (let k = res.length - 1; k > 0; k--) {
+            if (res[k] >= 10) {
+                const carry = Math.floor(res[k] / 10);
+                res[k] = res[k] % 10;
+                res[k - 1] += carry;
+            }
+        }
+        let out = res.join('').replace(/^0+(?=\d)/, '');
+        return out === '' ? '0' : out;
+    };
+
+    const multiplyDecimal = (a, b) => {
+        if (!a || !b) return '';
+        const sign = a.sign * b.sign;
+        const scale = a.scale + b.scale;
+        let digits = multiplyDigits(a.digits, b.digits);
+        if (scale > 0) {
+            if (digits.length <= scale) {
+                digits = digits.padStart(scale + 1, '0');
+            }
+            const cut = digits.length - scale;
+            const intPart = digits.slice(0, cut);
+            const fracPart = digits.slice(cut); // keep ALL digits, no rounding
+            const intGrouped = groupRuInt(intPart);
+            const res = intGrouped + ',' + fracPart;
+            return sign < 0 && digits !== '0' ? '-' + res : res;
+        }
+        const intGrouped = groupRuInt(digits);
+        return sign < 0 && digits !== '0' ? '-' + intGrouped : intGrouped;
+    };
+
+    const formatPreserveFraction = (raw) => {
+        if (raw === undefined || raw === null) return '';
+        let s = String(raw).trim();
+        if (s === '') return '';
+
+        const hadComma = s.includes(',');
+        s = s.replace(/\s/g, '').replace(/,/g, '.');
+
+        const sign = s.startsWith('-') ? '-' : '';
+        if (sign) s = s.slice(1);
+
+        const [intRaw, fracRaw] = s.split('.');
+        if (!intRaw || !/^\d+$/.test(intRaw)) return '';
+
+        const intFormatted = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 }).format(Number(intRaw));
+        if (fracRaw === undefined) return sign + intFormatted;
+        if (!/^\d+$/.test(fracRaw)) return sign + intFormatted;
+
+        return sign + intFormatted + (hadComma ? ',' : '.') + fracRaw;
+    };
+
     const calculate = (currentMode) => {
         const m = currentMode !== undefined ? currentMode : mode;
-        const raw = m === 'liters' ? object['liters'] : object['tons'];
-        const price = object['price'];
-        if (!raw && !price) return;
-        const num1 = Number(String(raw || '0').replace(/\s/g, '').replace(/,/g, '.'));
-        const num2 = Number(String(price || '0').replace(/\s/g, '').replace(/,/g, '.'));
-        const formatted = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(num1 * num2);
+        const raw = m === 'liters' ? object?.liters : object?.tons;
+        const price = object?.price;
+        const formatted = multiplyDecimal(parseDecimal(raw), parseDecimal(price));
         if (ref.current) ref.current.value = formatted;
         object[field] = formatted;
     };
@@ -27,10 +118,7 @@ function TDSumma({ object, field = '', fontSize = '16px', display = '', calcTrig
             const m = object?.summaMode || 'liters';
             const raw = m === 'liters' ? object?.liters : object?.tons;
             const price = object?.price;
-            if (!raw && !price) return;
-            const num1 = Number(String(raw || '0').replace(/\s/g, '').replace(/,/g, '.'));
-            const num2 = Number(String(price || '0').replace(/\s/g, '').replace(/,/g, '.'));
-            const formatted = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(num1 * num2);
+            const formatted = multiplyDecimal(parseDecimal(raw), parseDecimal(price));
             if (ref.current) ref.current.value = formatted;
             object[field] = formatted;
         }
@@ -72,8 +160,7 @@ function TDSumma({ object, field = '', fontSize = '16px', display = '', calcTrig
                         }
                     }}
                     onBlur={() => {
-                        const inputWithOutSpace = ref.current.value.replace(/\s/g, '').replace(/,/g, '.');
-                        ref.current.value = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(inputWithOutSpace);
+                        ref.current.value = formatPreserveFraction(ref.current.value);
                         object[field] = ref.current.value;
                     }}
                 />
