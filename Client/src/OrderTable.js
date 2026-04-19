@@ -72,7 +72,7 @@ function OrderTable({ setOrder, order }) {
   return (
     <>
       <div className='noselect'>
-        <Table striped bordered hover responsive="sm">
+        <Table className='orderTable-main' striped bordered hover responsive="sm">
           <thead>
             <tr>
               <th width='1%'>

@@ -84,3 +84,22 @@
         transform: scale(1.15);
     }
 }
+
+@media (max-width: 480px) {
+    .combobox-typeahead .rbt-input-main,
+    .combobox-typeahead .rbt-input,
+    .combobox-typeahead input {
+        font-size: 11px;
+        padding-top: 1px;
+        padding-bottom: 1px;
+    }
+
+    .combobox-btn {
+        width: 1.7rem;
+        min-width: 1.7rem;
+    }
+
+    .combobox-btn-icon:hover {
+        transform: none;
+    }
+}

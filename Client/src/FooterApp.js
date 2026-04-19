@@ -12,20 +12,20 @@ function FooterApp() {
   return (
     <div className='footer'>
       <NavLink tabIndex={-1} to="/neworder" className='footerButton'  >
-        <FaRegEdit size="3em" /><br />
-        Новая заявка
+        <FaRegEdit className="footerIcon" />
+        <span className="footerLabel">Новая заявка</span>
       </NavLink>
       <NavLink tabIndex={-1}  to="/allorders" className='footerButton'  >
-        <MdOutlineLibraryBooks size="3em" /><br />
-        Все заявки
+        <MdOutlineLibraryBooks className="footerIcon" />
+        <span className="footerLabel">Все заявки</span>
       </NavLink>
       <NavLink tabIndex={-1}  to="/warehouse" className='footerButton'  >
-        <LuWarehouse size="3em" /><br />
-        Склад
+        <LuWarehouse className="footerIcon" />
+        <span className="footerLabel">Склад</span>
       </NavLink>
       <NavLink tabIndex={-1}  to="/menu" className='footerButton' >
-        <GiHamburgerMenu size="3em" /><br />
-        Меню
+        <GiHamburgerMenu className="footerIcon" />
+        <span className="footerLabel">Меню</span>
       </NavLink>
     </div>
   );

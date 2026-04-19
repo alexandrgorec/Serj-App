@@ -1,9 +1,3 @@
-@media (max-width: 480px) {
-    .newOrderTable{
-        font-size: 10px;
-    }
-}
-
 .icon{
     transition-duration: 0.15s;
 }
@@ -13,8 +7,27 @@
     transform: scale(1.15);
 }
 
+.orderTable-main {
+    min-width: 980px;
+}
+
+.table-responsive-sm {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
 /* Tablet: keep "Сумма" fully visible (input + button) */
 @media (max-width: 1024px) {
+    .orderTable-main {
+        min-width: 900px;
+    }
+
+    .orderTable-main th,
+    .orderTable-main td {
+        font-size: 12px;
+        padding: 4px;
+    }
+
     .td-summa .summa-input-group {
         flex-wrap: nowrap;
     }
@@ -47,5 +60,40 @@
         padding-left: 4px;
         padding-right: 4px;
         font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .orderTable-main {
+        min-width: 760px;
+    }
+
+    .orderTable-main th,
+    .orderTable-main td {
+        font-size: 11px;
+        padding: 3px;
+    }
+
+    .orderTable-main .icon {
+        width: 1.1rem !important;
+        height: 1.1rem !important;
+    }
+
+    .td-summa .summa-input {
+        min-width: 6.2rem;
+        font-size: 11px;
+    }
+
+    .td-summa .btn {
+        min-width: 2.5rem;
+        font-size: 10px;
+        padding-left: 4px;
+        padding-right: 4px;
+    }
+
+    td.td-date .date-input {
+        min-width: 5.8rem;
+        width: 5.8rem;
+        font-size: 11px;
     }
 }

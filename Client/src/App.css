@@ -3,6 +3,8 @@
     background-color: rgba(31, 60, 247, 0.172);
     user-select: none;
     width: 100%;
+    min-height: 44px;
+    padding: 6px 10px;
 }
 
 .app {
@@ -10,7 +12,7 @@
     height: 100%;
     display: grid;
     grid-template-columns: 1fr;
-    grid-template-rows: 5% 85% 10%;
+    grid-template-rows: auto 1fr auto;
     background-color: aliceblue;
    
 }
@@ -27,5 +29,20 @@
 
 .content{
     position: relative;
-    overflow-y: scroll;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+    .activeComponentHeader {
+        min-height: 40px;
+        padding: 5px 8px;
+        font-size: 13px;
+    }
+
+    .logo {
+        width: 22px;
+        height: 22px;
+    }
 }

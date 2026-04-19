@@ -1,5 +1,6 @@
 
 import OrderTable from './OrderTable';
+import NewOrderMobile from './NewOrderMobile';
 import Button from 'react-bootstrap/Button';
 import { useState, useContext } from 'react';
 import { Alert } from 'react-bootstrap';
@@ -12,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 
 function NewOrder({ order, setOrder }) {
   
+  const isPhone = window.innerWidth <= 480;
 
   const redirect = useNavigate();
   const { aAxios } = useContext(userContext);
@@ -64,18 +66,27 @@ function NewOrder({ order, setOrder }) {
 
   return (
     <>
-      <OrderTable
-        order={order}
-        setOrder={setOrder}
-      />
+      {isPhone
+        ? <NewOrderMobile order={order} setOrder={setOrder} />
+        : <OrderTable order={order} setOrder={setOrder} />
+      }
       {message !== ""
         ? <Alert key={alertVariant} variant={alertVariant}> {message} </Alert>
         : ""
       }
-      <Button variant="danger " onClick={clearData} style={{ marginRight: "15px" }}>Очистить</Button>
-      <Button variant="success" onClick={() => {
-        sendData();
-      }}>Создать заявку</Button>
+      <div
+        style={{
+          marginTop: isPhone ? '14px' : '8px',
+          display: 'flex',
+          gap: '12px',
+          flexWrap: 'wrap',
+        }}
+      >
+        <Button variant="danger " onClick={clearData}>Очистить</Button>
+        <Button variant="success" onClick={() => {
+          sendData();
+        }}>Создать заявку</Button>
+      </div>
     </>
 
   );

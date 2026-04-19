@@ -142,6 +142,7 @@ function AllOrders() {
     display = 'none';
     size = 'sm'
   }
+  const isPhone = window.innerWidth <= 480;
   const [state, reload] = useState(false);
   const [allExpanded, setAllExpanded] = useState(false);
 
@@ -217,9 +218,26 @@ function AllOrders() {
     const decSep = originalHadComma ? ',' : '.';
     return sign + intFormatted + decSep + fracRaw;
   }
+  const filterEmptyBuyerH = !!refFilter.current?.checked;
+  const filterSumH = !!refFilterSumH.current?.checked;
+  const q = String(buyerFilter || '').trim().toLowerCase();
+  const filteredOrders = orders.filter((order) => {
+    const matchBuyer =
+      q === '' ||
+      buyerNamesFromOrder(order.orderjson)
+        .some((n) => String(n).toLowerCase().includes(q));
+
+    if (!matchBuyer) return false;
+    if (!filterEmptyBuyerH && !filterSumH) return true;
+    const matchEmptyBuyerH = !!order.orderjson.haveEmptyBuyerH;
+    const matchSumH = emptyBuyerHSummasDisplay(order.orderjson.buyers) !== '';
+    if (filterEmptyBuyerH && !filterSumH) return matchEmptyBuyerH;
+    if (!filterEmptyBuyerH && filterSumH) return matchSumH;
+    return matchEmptyBuyerH && matchSumH;
+  });
   return (
     <>
-      <Stack direction='horizontal' gap={2}>
+      <Stack direction='horizontal' gap={2} className='allOrders-toolbar'>
         <Button style={{ margin: '5px', marginLeft: '0' }}
           onClick={() => {
             const next = !allExpanded;
@@ -236,16 +254,26 @@ function AllOrders() {
         > {allExpanded ? 'Свернуть все' : 'Развернуть все'}
         </Button>
 
-        <FormLabel className='noselect clickable'>
-          <Stack direction='horizontal' gap={2}>
-            <Form.Check className='noselect' ref={refFilter} onClick={() => { reload(!state) }}
-              type="switch"
-            />
-            Фильтр <FaPeopleArrows style={{ color: 'rgba(16, 188, 45, 0.79)' }} />
-          </Stack>
-        </FormLabel>
+        <div className='allOrders-switches-row'>
+          <FormLabel className='noselect clickable mb-0'>
+            <Stack direction='horizontal' gap={2}>
+              <Form.Check className='noselect' ref={refFilter} onClick={() => { reload(!state) }}
+                type="switch"
+              />
+              Фильтр <FaPeopleArrows style={{ color: 'rgba(16, 188, 45, 0.79)' }} />
+            </Stack>
+          </FormLabel>
+          <FormLabel className='noselect clickable mb-0'>
+            <Stack direction='horizontal' gap={2}>
+              <Form.Check className='noselect' ref={refFilterSumH} onClick={() => { reload(!state) }}
+                type="switch"
+              />
+              Фильтр суммы &quot;H&quot;
+            </Stack>
+          </FormLabel>
+        </div>
 
-        <div className="allOrders-buyerFilter" style={{ minWidth: 260, maxWidth: 420 }}>
+        <div className="allOrders-buyerFilter">
           <Typeahead
             id="allorders-buyer-filter"
             ref={buyerTypeaheadRef}
@@ -266,61 +294,151 @@ function AllOrders() {
           />
         </div>
 
-        <FormLabel className='noselect clickable'>
-          <Stack direction='horizontal' gap={2}>
-            <Form.Check className='noselect' ref={refFilterSumH} onClick={() => { reload(!state) }}
-              type="switch"
-            />
-            Фильтр суммы &quot;H&quot;
-          </Stack>
-        </FormLabel>
-
       </Stack>
+      {isPhone &&
+        <div className='allOrdersCards noselect'>
+          {filteredOrders.map((order) => {
+            const emptyHSummas = emptyBuyerHSummasDisplay(order.orderjson.buyers);
+            const orderIndex = orders.findIndex((o) => o.id === order.id);
+            const toggleRow = () => {
+              if (orderIndex >= 0) showHideOrder(orderIndex);
+            };
+            return (
+              <div key={order.id} className={`allOrders-card ${order.orderjson.haveEmptyBuyerH ? 'allOrders-card-warning' : ''}`}>
+                <div className='allOrders-card-header clickable' onClick={toggleRow}>
+                  <div className='allOrders-card-meta'>
+                    <div className='allOrders-card-id'>Заявка №{order.id}</div>
+                    <div className='allOrders-card-date'>{formatDate(order.orderjson.date)}</div>
+                  </div>
+                  <Stack direction="horizontal" gap={2} className="allOrders-card-actions">
+                    <BiEditAlt size='1.3em' className='clickable icon' style={{ color: 'rgba(1, 87, 248, 0.85)' }} onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingOrder(() => order.orderjson);
+                      navigate("/editorder");
+                    }} />
+                    <MdDelete size='1.3em' className='clickable icon' style={{ color: 'rgb(194, 65, 65)' }} onClick={(e) => {
+                      e.stopPropagation();
+                      setIdForDeleteOrder(order.id);
+                      handleShowModal();
+                    }} />
+                  </Stack>
+                </div>
+
+                <div className='allOrders-card-body clickable' onClick={toggleRow}>
+                  <div className='allOrders-card-row'>
+                    <div className='allOrders-card-label'>Покупатели</div>
+                    <div className='allOrders-card-value'>{spisok(order.orderjson.buyers) || '—'}</div>
+                  </div>
+                  <div className='allOrders-card-row'>
+                    <div className='allOrders-card-label'>Поставщики</div>
+                    <div className='allOrders-card-value'>{spisok(order.orderjson.suppliers) || '—'}</div>
+                  </div>
+                  {emptyHSummas !== '' &&
+                    <div className='allOrders-card-row'>
+                      <div className='allOrders-card-label'>Суммы "H"</div>
+                      <div className='allOrders-card-value'>{emptyHSummas}</div>
+                    </div>
+                  }
+                </div>
+
+                <Collapse in={order.open}>
+                  <div className='allOrders-card-details'>
+                    <div className='allOrders-card-section'>
+                      <div className='allOrders-card-section-title'>Поставщики</div>
+                      {order.orderjson.suppliers.map((supplier, supplierIndex) => (
+                        <div className='allOrders-card-item' key={`sup-${order.id}-${supplierIndex}`}>
+                          <div className='allOrders-card-item-title'>{supplier.name || 'Без имени'}</div>
+                          <div className='allOrders-card-item-line'>{supplier.typeOfProduct || 'Без типа продукта'}</div>
+                          <div className='allOrders-card-item-line'>
+                            Л: {NumberFormat(supplier.liters) || '—'} | Т: {NumberFormat(supplier.tons) || '—'} | Цена: {NumberFormat(supplier.price) || '—'}
+                          </div>
+                          {user.rights.finBlockAccess &&
+                            <div className='allOrders-card-item-line'>
+                              С/Ф: {supplier.sf || '—'} | Сумма: {NumberFormat(supplier.summa) || '—'} | Акт: {supplier.akt || '—'}
+                            </div>
+                          }
+                          {supplierIndex === 0 &&
+                            <div className='allOrders-card-item-line allOrders-card-delivery'>
+                              ИП: {order.orderjson.ip || '—'} | Водитель: {order.orderjson.driver || '—'} | Доставка: {NumberFormat(order.orderjson.cost) || '—'} | ОТК: {order.orderjson.otk || '—'}
+                            </div>
+                          }
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className='allOrders-card-section'>
+                      <div className='allOrders-card-section-title'>Покупатели</div>
+                      {order.orderjson.buyers.map((buyer, buyerIndex) => (
+                        <div className='allOrders-card-item' key={`buy-${order.id}-${buyerIndex}`}>
+                          <div className='allOrders-card-item-title'>{buyer.name || 'Без имени'}</div>
+                          <div className='allOrders-card-item-line'>Тип: {buyer.typeOfProduct || '—'} | Менеджер: {buyer.manager || '—'}</div>
+                          <div className='allOrders-card-item-line'>
+                            Л: {NumberFormat(buyer.liters) || '—'} | Т: {NumberFormat(buyer.tons) || '—'} | Цена: {NumberFormat(buyer.price) || '—'}
+                          </div>
+                          {user.rights.finBlockAccess &&
+                            <div className='allOrders-card-item-line'>
+                              С/Ф: {buyer.sf || '—'} | Сумма: {NumberFormat(buyer.summa) || '—'} | Акт: {buyer.akt || '—'}
+                            </div>
+                          }
+                          {buyer.buyersH?.map((buyerH, indexBuyerH) => (
+                            <div className='allOrders-card-subitem' key={`bh-${order.id}-${buyerIndex}-${indexBuyerH}`}>
+                              <div className='allOrders-card-item-line'>
+                                H: {buyerH.name || 'Без имени'} | {buyerH.typeOfProduct || 'Без типа'}
+                              </div>
+                              <div className='allOrders-card-item-line'>
+                                Л: {NumberFormat(buyerH.liters) || '—'} | Т: {NumberFormat(buyerH.tons) || '—'} | Цена: {NumberFormat(buyerH.price) || '—'}
+                              </div>
+                              {user.rights.finBlockAccess &&
+                                <div className='allOrders-card-item-line'>
+                                  С/Ф: {buyerH.sf || '—'} | Сумма: {NumberFormat(buyerH.summa) || '—'} | Акт: {buyerH.akt || '—'}
+                                </div>
+                              }
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+
+                    {order.orderjson.comments &&
+                      <Form.Control className='allOrders-card-comments' as="textarea" rows={3} disabled type='number' defaultValue={order.orderjson.comments} />
+                    }
+                  </div>
+                </Collapse>
+              </div>
+            );
+          })}
+        </div>
+      }
+      {!isPhone &&
       <div className='allOrdersTable noselect'>
         <Table
-          className="allOrders-main-table"
+          className={`allOrders-main-table ${isPhone ? 'allOrders-main-table-compact' : ''}`}
           striped
           bordered
           hover
-          style={{ tableLayout: 'fixed', width: '100%', margin: 0 }}
+          style={{ width: '100%', margin: 0 }}
         >
           <colgroup>
             <col className="allOrders-col-num" />
             <col className="allOrders-col-date" />
             <col className="allOrders-col-buyers" />
-            <col className="allOrders-col-hsum" />
+            {!isPhone && <col className="allOrders-col-hsum" />}
             <col className="allOrders-col-suppliers" />
             <col className="allOrders-col-menu" />
           </colgroup>
           <thead>
             <tr>
-              <th style={{ textAlign: 'center' }}>№</th>
-              <th>Дата</th>
-              <th>Покупатели</th>
-              <th title='Суммы подпокупателей (buyerH) без заполненного имени'>Суммы &quot;H&quot;</th>
-              <th>Поставщики</th>
+              <th className="allOrders-head-num" style={{ textAlign: 'center' }}>№</th>
+              <th className="allOrders-head-date">Дата</th>
+              <th className="allOrders-head-buyers">Покупатели</th>
+              {!isPhone && <th className="allOrders-head-hsum" title='Суммы подпокупателей (buyerH) без заполненного имени'>Суммы &quot;H&quot;</th>}
+              <th className="allOrders-head-suppliers">Поставщики</th>
               <th className="allOrders-th-menu">Меню</th>
             </tr>
           </thead>
           <tbody>
         {
-          orders.filter((order) => {
-            const filterEmptyBuyerH = refFilter.current?.checked;
-            const filterSumH = refFilterSumH.current?.checked;
-            const q = String(buyerFilter || '').trim().toLowerCase();
-            const matchBuyer =
-              q === '' ||
-              buyerNamesFromOrder(order.orderjson)
-                .some((n) => String(n).toLowerCase().includes(q));
-
-            if (!matchBuyer) return false;
-            if (!filterEmptyBuyerH && !filterSumH) return true;
-            const matchEmptyBuyerH = !!order.orderjson.haveEmptyBuyerH;
-            const matchSumH = emptyBuyerHSummasDisplay(order.orderjson.buyers) !== '';
-            if (filterEmptyBuyerH && !filterSumH) return matchEmptyBuyerH;
-            if (!filterEmptyBuyerH && filterSumH) return matchSumH;
-            return matchEmptyBuyerH && matchSumH;
-          }).map((order, num) => {
+          filteredOrders.map((order) => {
             const emptyHSummas = emptyBuyerHSummasDisplay(order.orderjson.buyers);
             const orderIndex = orders.findIndex((o) => o.id === order.id);
             const toggleRow = () => {
@@ -339,10 +457,10 @@ function AllOrders() {
                   }}
                 >
 
-                      <td style={{ overflow: "hidden", textAlign: 'center', backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>{order.id}</td>
-                      <td style={{ overflow: "hidden", backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }} >{formatDate(order.orderjson.date)}</td>
-                      <td style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>{
-                        <Stack direction="horizontal" gap={3} >
+                      <td className="allOrders-cell-num" style={{ overflow: "hidden", textAlign: 'center', backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>{order.id}</td>
+                      <td className="allOrders-cell-date" style={{ overflow: "hidden", backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }} >{formatDate(order.orderjson.date)}</td>
+                      <td className="allOrders-cell-buyers" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>{
+                        <Stack direction="horizontal" gap={3} className="allOrders-buyers-stack" >
                           {
                             order.orderjson.haveEmptyBuyerH && < FaPeopleArrows style={{ color: 'rgba(16, 188, 45, 0.79)' }} />
                           }
@@ -352,11 +470,13 @@ function AllOrders() {
                         </Stack>
                       }</td>
 
-                      <td style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '', overflow: 'hidden', fontSize: '0.9em' }} title={emptyHSummas}>
-                        {emptyHSummas}
-                      </td>
+                      {!isPhone &&
+                        <td className="allOrders-cell-hsum" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '', overflow: 'hidden', fontSize: '0.9em' }} title={emptyHSummas}>
+                          {emptyHSummas}
+                        </td>
+                      }
 
-                      <td style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
+                      <td className="allOrders-cell-suppliers" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
                         {spisok(order.orderjson.suppliers)}
                       </td>
                       <td className="allOrders-td-menu" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
@@ -381,7 +501,7 @@ function AllOrders() {
 
                     </tr>
                 <tr className="allOrders-expand-row">
-                  <td colSpan={6} className="p-0 border-top-0">
+                  <td colSpan={isPhone ? 5 : 6} className="p-0 border-top-0">
                 <Collapse in={order.open}>
 
                   <div className='mb-3'>
@@ -474,15 +594,15 @@ function AllOrders() {
 
                                 {user.rights.finBlockAccess &&
                                   <>
-                                    <td >
+                                    <td style={{ display: display }}>
                                       <Stack gap={1} direction='horizontal'>
                                         {buyer.sf}
                                         {/* <BiEditAlt style={{ color: 'rgba(1, 87, 248, 0.85)' }} className='icon ms-auto' size="2em" onClick={() => { handleEditFinBlock(num, order.id, buyerIndex, 'buyers') }} /> */}
                                       </Stack>
                                     </td>
-                                    <td >{buyer.date}</td>
-                                    <td >{NumberFormat(buyer.summa)}</td>
-                                    <td >{buyer.akt}</td>
+                                    <td style={{ display: display }}>{buyer.date}</td>
+                                    <td style={{ display: display }}>{NumberFormat(buyer.summa)}</td>
+                                    <td style={{ display: display }}>{buyer.akt}</td>
                                   </>
                                 }
                               </tr>
@@ -511,15 +631,15 @@ function AllOrders() {
 
                                       {user.rights.finBlockAccess &&
                                         <>
-                                          <td style={{ backgroundColor: bgColorH }}>
+                                          <td style={{ backgroundColor: bgColorH, display: display }}>
                                             <Stack gap={1} direction='horizontal'>
                                               {buyerH.sf}
                                               {/* <BiEditAlt style={{ color: 'rgba(1, 87, 248, 0.85)' }} className='icon ms-auto' size="2em" onClick={() => { handleEditFinBlock(num, order.id, buyerIndex, 'buyers') }} /> */}
                                             </Stack>
                                           </td>
-                                          <td style={{ backgroundColor: bgColorH }}>{buyerH.date}</td>
-                                          <td style={{ backgroundColor: bgColorH }}>{NumberFormat(buyerH.summa)}</td>
-                                          <td style={{ backgroundColor: bgColorH }}>{buyerH.akt}</td>
+                                          <td style={{ backgroundColor: bgColorH, display: display }}>{buyerH.date}</td>
+                                          <td style={{ backgroundColor: bgColorH, display: display }}>{NumberFormat(buyerH.summa)}</td>
+                                          <td style={{ backgroundColor: bgColorH, display: display }}>{buyerH.akt}</td>
                                         </>
                                       }
                                     </tr>
@@ -557,6 +677,7 @@ function AllOrders() {
           </tbody>
         </Table>
       </div >
+      }
 
       <Modal centered show={show} onHide={handleCloseModal}
         animation={true} >
