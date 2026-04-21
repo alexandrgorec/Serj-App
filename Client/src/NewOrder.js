@@ -1,6 +1,7 @@
 
 import OrderTable from './OrderTable';
 import NewOrderMobile from './NewOrderMobile';
+import './NewOrder.css';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import FloatingLabel from 'react-bootstrap/FloatingLabel';
@@ -92,10 +93,10 @@ function NewOrder({ order, setOrder }) {
       {isPhone
         ? <NewOrderMobile order={order} setOrder={setOrder} />
         : <>
-            <Stack direction='horizontal' gap={2} className='orderTable-topActions noselect'>
+            <Stack direction='horizontal' gap={2} className='orderTable-topActions newOrderDesktop-topBar noselect'>
               <Button variant="primary" onClick={addSupplier}>Добавить поставщика</Button>
               <Button variant="success" onClick={addBuyer}>Добавить покупателя</Button>
-              <FloatingLabel label="Менеджер" className="p-0" style={{ minWidth: '220px' }}>
+              <FloatingLabel label="Менеджер" className="p-0 newOrderDesktop-manager">
                 <Form.Control
                   as="input"
                   type='text'

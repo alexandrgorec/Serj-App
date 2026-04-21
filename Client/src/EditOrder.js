@@ -1,5 +1,6 @@
 import OrderTable from './OrderTable';
 import EditOrderMobile from './EditOrderMobile';
+import './EditOrder.css';
 import Button from 'react-bootstrap/Button';
 import { useState, useRef, useContext } from 'react';
 import Form from 'react-bootstrap/Form';
@@ -105,42 +106,52 @@ function EditOrder() {
                     setCost={setCost}
                 />
                 : <>
-                    <Stack className='mb-2 noselect' gap={2} direction='horizontal' >
-                        <h4 className='m-3 mt-1 mb-1 p-0'>Заявка № {editingOrder.id}</h4>
-                        <FloatingLabel label="Дата" className="mt-1 p-0" >
-                            <Form.Control as="input" type='date' ref={refDate} defaultValue={editingOrder.date} onChange={() => {
-                                editingOrder.date = refDate.current.value;
-                                setEditingOrder({ ...editingOrder });
-                            }} />
-                        </FloatingLabel>
-                        <Button tabIndex={-1} variant="primary" className='mt-2 p-2' onClick={addSupplier}>
-                            Добавить поставщика
-                        </Button>
-                        <Button tabIndex={-1} variant="success" className='mt-2 p-2' onClick={addBuyer}>
-                            Добавить покупателя
-                        </Button>
-                        <FloatingLabel label="Менеджер" className="mt-1 p-0">
-                            <Form.Control
-                                as="input"
-                                type='text'
-                                ref={refManager}
-                                defaultValue={editingOrder.manager || ''}
-                                onChange={() => {
-                                    editingOrder.manager = refManager.current.value;
+                    <div className='mb-2 noselect editOrderDesktop-topBar'>
+                        <div className='editOrderDesktop-topBarLeft'>
+                            <Button tabIndex={-1} variant="primary" className='p-2' onClick={addSupplier}>
+                                Добавить поставщика
+                            </Button>
+                            <Button tabIndex={-1} variant="success" className='p-2' onClick={addBuyer}>
+                                Добавить покупателя
+                            </Button>
+                        </div>
+
+                        <div className='editOrderDesktop-topBarCenter'>
+                            <FloatingLabel label="Менеджер" className="p-0 editOrderDesktop-manager">
+                                <Form.Control
+                                    as="input"
+                                    type='text'
+                                    ref={refManager}
+                                    defaultValue={editingOrder.manager || ''}
+                                    onChange={() => {
+                                        editingOrder.manager = refManager.current.value;
+                                        setEditingOrder({ ...editingOrder });
+                                    }}
+                                />
+                            </FloatingLabel>
+                            <h4 className='m-0 p-0 editOrderDesktop-orderId'>Заявка № {editingOrder.id}</h4>
+                            <FloatingLabel label="Дата" className="p-0 editOrderDesktop-date" >
+                                <Form.Control as="input" type='date' ref={refDate} defaultValue={editingOrder.date} onChange={() => {
+                                    editingOrder.date = refDate.current.value;
                                     setEditingOrder({ ...editingOrder });
-                                }}
-                            />
-                        </FloatingLabel>
-                        <Button tabIndex={-1} variant="primary " className='mt-2 pt-2 pb-2 ms-auto' onClick={() => {
-                            navigate(-1);
-                        }}>
-                            Назад
-                        </Button>
-                        <Button tabIndex={-1} variant="success" className='mt-2 p-2' onClick={() => {
-                            sendData();
-                            // document.querySelector(".content").scrollTo(0, 9999);
-                        }}>Сохранить</Button>
-                    </Stack>
+                                }} />
+                            </FloatingLabel>
+                        </div>
+
+                        <div className='editOrderDesktop-topBarRight'>
+                            <Button tabIndex={-1} variant="primary" className='pt-2 pb-2' onClick={() => {
+                                navigate(-1);
+                            }}>
+                                Назад
+                            </Button>
+                            <Button tabIndex={-1} variant="success" className='p-2' onClick={() => {
+                                sendData();
+                                // document.querySelector(".content").scrollTo(0, 9999);
+                            }}>
+                                Сохранить
+                            </Button>
+                        </div>
+                    </div>
                     <OrderTable
                         order={editingOrder}
                         setOrder={setEditingOrder}

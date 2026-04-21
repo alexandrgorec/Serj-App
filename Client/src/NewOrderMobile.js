@@ -1,5 +1,5 @@
 import './NewOrderMobile.css';
-import { useContext, useState } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import { userContext } from './App';
 import ComboBox from './ComboBox';
 import Button from 'react-bootstrap/Button';
@@ -130,6 +130,41 @@ function NewOrderMobile({ order, setOrder }) {
     setDeleteElement(null);
     handleCloseModal();
   };
+
+  const handleModalKeyDown = (evt) => {
+    if (evt.key === 'Escape') {
+      evt.preventDefault();
+      handleCloseModal();
+      return;
+    }
+    if (evt.key === 'Enter') {
+      evt.preventDefault();
+      handleDeleteConfirmed();
+    }
+  };
+
+  useEffect(() => {
+    if (!show) return undefined;
+
+    const handleGlobalModalKeyDown = (evt) => {
+      if (evt.key === 'Escape') {
+        evt.preventDefault();
+        evt.stopPropagation();
+        handleCloseModal();
+        return;
+      }
+      if (evt.key === 'Enter') {
+        evt.preventDefault();
+        evt.stopPropagation();
+        handleDeleteConfirmed();
+      }
+    };
+
+    document.addEventListener('keydown', handleGlobalModalKeyDown, true);
+    return () => {
+      document.removeEventListener('keydown', handleGlobalModalKeyDown, true);
+    };
+  }, [show, deleteElement]);
 
   const NumberInput = ({ target, field, placeholder = '' }) => (
     <Form.Control
@@ -494,7 +529,7 @@ function NewOrderMobile({ order, setOrder }) {
         </div>
       </div>
 
-      <Modal centered show={show} onHide={handleCloseModal} animation={true} >
+      <Modal centered show={show} onHide={handleCloseModal} animation={true} onKeyDown={handleModalKeyDown}>
         <Modal.Header closeButton>
           <Modal.Title>Подтверждение удаления</Modal.Title>
         </Modal.Header>

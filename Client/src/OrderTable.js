@@ -5,7 +5,7 @@ import NewSupplier from './NewSupplier';
 import NewBuyer from './NewBuyer';
 import Stack from 'react-bootstrap/Stack';
 import { BiEditAlt } from "react-icons/bi";
-import { useState, useContext, useRef } from 'react';
+import { useState, useContext, useRef, useEffect } from 'react';
 import { MdDelete } from "react-icons/md";
 import FinBlockEdit from './FinBlockEdit';
 import Modal from 'react-bootstrap/Modal';
@@ -19,7 +19,7 @@ import TDSumma from './TDSumma';
 function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlineAddButtons = false, hideManagerInTable = false }) {
   sessionStorage.tabIndex = 0;
   const { user, size, display } = useContext(userContext);
-  const [state, reload] = useState(false);
+  const [, reload] = useState(false);
   const bgColorH = 'rgba(127, 244, 166, 0.49)';
 
 
@@ -105,6 +105,76 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
   };
 
   const useExternalAddLayout = showExternalAddButtons || hideInlineAddButtons;
+
+  const handleDeleteConfirmed = () => {
+    if (!deleteElement) return;
+
+    if (deleteElement.element !== 'buyerH') {
+      setOrder((prevOrder) => {
+        const nextOrder = { ...prevOrder };
+        const list = [...(nextOrder[deleteElement.element] || [])];
+        const removeIndex = deleteElement.item
+          ? list.findIndex((item) => item === deleteElement.item)
+          : deleteElement.index;
+        if (removeIndex > -1) list.splice(removeIndex, 1);
+        nextOrder[deleteElement.element] = list;
+        return nextOrder;
+      });
+    }
+    if (deleteElement.element === 'buyerH') {
+      setOrder((prevOrder) => {
+        const nextOrder = { ...prevOrder };
+        nextOrder.buyers = [...(nextOrder.buyers || [])];
+        const nextBuyer = { ...(nextOrder.buyers[deleteElement.index] || {}) };
+        const buyerHList = [...(nextBuyer.buyersH || [])];
+        const removeIndex = deleteElement.item
+          ? buyerHList.findIndex((item) => item === deleteElement.item)
+          : deleteElement.indexBuyerH;
+        if (removeIndex > -1) buyerHList.splice(removeIndex, 1);
+        nextBuyer.buyersH = buyerHList;
+        nextOrder.buyers[deleteElement.index] = nextBuyer;
+        return nextOrder;
+      });
+    }
+    setDeleteElement(null);
+    reload((prev) => !prev);
+    handleCloseModal();
+  };
+
+  const handleModalKeyDown = (evt) => {
+    if (evt.key === 'Escape') {
+      evt.preventDefault();
+      handleCloseModal();
+      return;
+    }
+    if (evt.key === 'Enter') {
+      evt.preventDefault();
+      handleDeleteConfirmed();
+    }
+  };
+
+  useEffect(() => {
+    if (!show) return undefined;
+
+    const handleGlobalModalKeyDown = (evt) => {
+      if (evt.key === 'Escape') {
+        evt.preventDefault();
+        evt.stopPropagation();
+        handleCloseModal();
+        return;
+      }
+      if (evt.key === 'Enter') {
+        evt.preventDefault();
+        evt.stopPropagation();
+        handleDeleteConfirmed();
+      }
+    };
+
+    document.addEventListener('keydown', handleGlobalModalKeyDown, true);
+    return () => {
+      document.removeEventListener('keydown', handleGlobalModalKeyDown, true);
+    };
+  }, [show, deleteElement]);
 
 
   return (
@@ -309,7 +379,7 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
           </tbody>
         </Table>
       </div>
-      <Modal centered show={show} onHide={handleCloseModal} animation={true} >
+      <Modal centered show={show} onHide={handleCloseModal} animation={true} onKeyDown={handleModalKeyDown}>
         <Modal.Header closeButton>
           <Modal.Title>Подтверждение удаления</Modal.Title>
         </Modal.Header>
@@ -319,42 +389,7 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
           <Button variant="secondary" onClick={handleCloseModal}>
             Еще подумаю
           </Button>
-          <Button variant="primary" className='col-3' onClick={() => {
-
-            if (deleteElement) {
-              if (deleteElement.element !== 'buyerH') {
-                setOrder((prevOrder) => {
-                  const nextOrder = { ...prevOrder };
-                  const list = [...(nextOrder[deleteElement.element] || [])];
-                  const removeIndex = deleteElement.item
-                    ? list.findIndex((item) => item === deleteElement.item)
-                    : deleteElement.index;
-                  if (removeIndex > -1) list.splice(removeIndex, 1);
-                  nextOrder[deleteElement.element] = list;
-                  return nextOrder;
-                });
-              }
-              if (deleteElement.element === 'buyerH') {
-                setOrder((prevOrder) => {
-                  const nextOrder = { ...prevOrder };
-                  nextOrder.buyers = [...(nextOrder.buyers || [])];
-                  const nextBuyer = { ...(nextOrder.buyers[deleteElement.index] || {}) };
-                  const buyerHList = [...(nextBuyer.buyersH || [])];
-                  const removeIndex = deleteElement.item
-                    ? buyerHList.findIndex((item) => item === deleteElement.item)
-                    : deleteElement.indexBuyerH;
-                  if (removeIndex > -1) buyerHList.splice(removeIndex, 1);
-                  nextBuyer.buyersH = buyerHList;
-                  nextOrder.buyers[deleteElement.index] = nextBuyer;
-                  return nextOrder;
-                });
-              }
-              setDeleteElement(null);
-              reload(!state);
-              // handleRefreshLitersForSale();
-            }
-            handleCloseModal();
-          }}>
+          <Button variant="primary" className='col-3' onClick={handleDeleteConfirmed}>
             Да
           </Button>
 

@@ -1,5 +1,5 @@
 import './EditOrderMobile.css';
-import { useContext, useState, useRef } from 'react';
+import { useContext, useState, useRef, useEffect } from 'react';
 import { userContext } from './App';
 import ComboBox from './ComboBox';
 import Button from 'react-bootstrap/Button';
@@ -152,6 +152,41 @@ function EditOrderMobile({ order, setOrder, onSave, onBack, cost, setCost }) {
     handleCloseModal();
   };
 
+  const handleModalKeyDown = (evt) => {
+    if (evt.key === 'Escape') {
+      evt.preventDefault();
+      handleCloseModal();
+      return;
+    }
+    if (evt.key === 'Enter') {
+      evt.preventDefault();
+      handleDeleteConfirmed();
+    }
+  };
+
+  useEffect(() => {
+    if (!show) return undefined;
+
+    const handleGlobalModalKeyDown = (evt) => {
+      if (evt.key === 'Escape') {
+        evt.preventDefault();
+        evt.stopPropagation();
+        handleCloseModal();
+        return;
+      }
+      if (evt.key === 'Enter') {
+        evt.preventDefault();
+        evt.stopPropagation();
+        handleDeleteConfirmed();
+      }
+    };
+
+    document.addEventListener('keydown', handleGlobalModalKeyDown, true);
+    return () => {
+      document.removeEventListener('keydown', handleGlobalModalKeyDown, true);
+    };
+  }, [show, deleteElement]);
+
   const NumberInput = ({ target, field, placeholder = '' }) => (
     <Form.Control
       type='text'
@@ -172,27 +207,29 @@ function EditOrderMobile({ order, setOrder, onSave, onBack, cost, setCost }) {
   return (
     <>
       <div className='editOrderMobile noselect'>
-        <Stack direction='horizontal' gap={2} className='editOrderMobile-topBar'>
-          <div className='editOrderMobile-orderId'>Заявка № {order.id}</div>
-          <div className='editOrderMobile-dateWrap'>
-            <Form.Control
-              as='input'
-              type='date'
-              value={order.date || ''}
-              onChange={(evt) => {
-                order.date = evt.target.value;
-                refresh();
-              }}
-            />
-          </div>
-          <Button size='sm' variant='primary' onClick={onBack}>Назад</Button>
-          <Button size='sm' variant='success' onClick={onSave}>Сохранить</Button>
-        </Stack>
+        <div className='editOrderMobile-stickyHeader'>
+          <Stack direction='horizontal' gap={2} className='editOrderMobile-topBar'>
+            <div className='editOrderMobile-orderId'>Заявка № {order.id}</div>
+            <div className='editOrderMobile-dateWrap'>
+              <Form.Control
+                as='input'
+                type='date'
+                value={order.date || ''}
+                onChange={(evt) => {
+                  order.date = evt.target.value;
+                  refresh();
+                }}
+              />
+            </div>
+            <Button size='sm' variant='primary' onClick={onBack}>Назад</Button>
+            <Button size='sm' variant='success' onClick={onSave}>Сохранить</Button>
+          </Stack>
 
-        <Stack direction='horizontal' gap={2} className='editOrderMobile-topActions'>
-          <Button size='sm' variant='primary' onClick={addSupplier}>Добавить поставщика</Button>
-          <Button size='sm' variant='success' onClick={addBuyer}>Добавить покупателя</Button>
-        </Stack>
+          <Stack direction='horizontal' gap={2} className='editOrderMobile-topActions'>
+            <Button size='sm' variant='primary' onClick={addSupplier}>Добавить поставщика</Button>
+            <Button size='sm' variant='success' onClick={addBuyer}>Добавить покупателя</Button>
+          </Stack>
+        </div>
 
         <div className='editOrderMobile-section'>
           <Stack direction='horizontal' className='editOrderMobile-sectionHeader'>
@@ -598,7 +635,7 @@ function EditOrderMobile({ order, setOrder, onSave, onBack, cost, setCost }) {
         </div>
       </div>
 
-      <Modal centered show={show} onHide={handleCloseModal} animation={true} >
+      <Modal centered show={show} onHide={handleCloseModal} animation={true} onKeyDown={handleModalKeyDown}>
         <Modal.Header closeButton>
           <Modal.Title>Подтверждение удаления</Modal.Title>
         </Modal.Header>

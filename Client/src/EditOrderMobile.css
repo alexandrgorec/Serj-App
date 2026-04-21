@@ -3,13 +3,18 @@
     gap: 10px;
 }
 
-.editOrderMobile-topBar {
+.editOrderMobile-stickyHeader {
     position: sticky;
     top: 0;
     z-index: 1200;
     background: aliceblue;
-    padding: 6px 0;
+    padding: calc(6px + env(safe-area-inset-top, 0px)) 0 6px;
     border-bottom: 1px solid rgba(130, 150, 180, 0.25);
+    display: grid;
+    gap: 6px;
+}
+
+.editOrderMobile-topBar {
     flex-wrap: nowrap;
     align-items: center;
 }

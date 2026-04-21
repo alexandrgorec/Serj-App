@@ -1,0 +1,34 @@
+.newOrderDesktop-topBar {
+    --new-order-topbar-item-height: 44px;
+    align-items: center;
+}
+
+.newOrderDesktop-manager {
+    min-width: 220px;
+}
+
+.newOrderDesktop-topBar .btn {
+    height: var(--new-order-topbar-item-height);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+.newOrderDesktop-topBar .form-floating {
+    height: var(--new-order-topbar-item-height);
+}
+
+.newOrderDesktop-topBar .form-floating > .form-control {
+    height: 100%;
+    min-height: 100%;
+    padding-top: 1.05rem;
+    padding-bottom: 0.2rem;
+}
+
+.newOrderDesktop-topBar .form-floating > label {
+    padding-top: 0.25rem;
+    font-size: 0.82rem;
+}
