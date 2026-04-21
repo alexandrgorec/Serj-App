@@ -9,6 +9,16 @@
     grid-template-columns: 1fr;
 }
 
+.orderMobile-topActions {
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 1100;
+    background: aliceblue;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(130, 150, 180, 0.2);
+}
+
 .orderMobile-section {
     background: rgba(232, 238, 248, 0.55);
     border: 1px solid rgba(140, 160, 190, 0.35);
@@ -50,6 +60,24 @@
     font-size: 13px;
 }
 
+.orderMobile-cardTitle {
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.orderMobile-cardActions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    flex: 0 0 auto;
+    min-width: fit-content;
+    white-space: nowrap;
+}
+
 .orderMobile-label {
     font-size: 11px;
     color: rgba(47, 58, 79, 0.85);
@@ -75,9 +103,12 @@
 
 .orderMobile-hBtn {
     font-weight: 600;
-    min-width: 34px;
+    min-width: 30px;
+    width: 30px;
     padding-top: 2px;
     padding-bottom: 2px;
+    padding-left: 0;
+    padding-right: 0;
 }
 
 .orderMobile .input-group > .btn {
@@ -99,6 +130,15 @@
 
     .orderMobile-card {
         padding: 7px;
+    }
+
+    .orderMobile-topActions {
+        gap: 6px !important;
+    }
+
+    .orderMobile-topActions .btn {
+        font-size: 11px;
+        padding: 4px 8px;
     }
 
     .orderMobile-grid2 {

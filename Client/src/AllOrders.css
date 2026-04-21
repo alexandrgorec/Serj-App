@@ -8,6 +8,23 @@
     flex-wrap: wrap;
     row-gap: 8px;
     align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 1200;
+    background: aliceblue;
+    padding: 6px 0 8px;
+    border-bottom: 1px solid rgba(130, 150, 180, 0.2);
+}
+
+.allOrders-controls-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+}
+
+.allOrders-toggleAllBtn {
+    white-space: nowrap;
 }
 
 .allOrders-main-table {
@@ -23,8 +40,8 @@
 .allOrders-main-table col.allOrders-col-hsum { width: 14%; }
 .allOrders-main-table col.allOrders-col-suppliers { width: 29%; }
 .allOrders-main-table col.allOrders-col-menu {
-    width: 10%;
-    min-width: 4.8rem;
+    width: 8%;
+    min-width: 5.4rem;
 }
 
 .allOrders-main-table th,
@@ -58,15 +75,26 @@
 
 .allOrders-td-menu {
     vertical-align: middle;
-    padding: 4px 6px !important;
+    padding: 4px !important;
     white-space: nowrap;
-    min-width: 4.5rem;
+    min-width: 5.1rem;
 }
 
 .allOrders-menu-stack {
     flex-wrap: nowrap;
     justify-content: center;
     align-items: center;
+    gap: 0.42rem !important;
+}
+
+.allOrders-menu-stack .icon {
+    padding: 2px;
+}
+
+.allOrders-menu-stack .vr {
+    margin-left: 2px;
+    margin-right: 2px;
+    opacity: 0.45;
 }
 
 .allOrders-buyerFilter {
@@ -113,8 +141,8 @@
 }
 
 .allOrders-card-header {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
     padding: 8px 10px;
     border-bottom: 1px solid rgba(80, 110, 160, 0.2);
@@ -128,24 +156,40 @@
 .allOrders-card-id {
     font-weight: 700;
     font-size: 13px;
+    justify-self: start;
+    white-space: nowrap;
 }
 
 .allOrders-card-date {
     font-size: 12px;
     color: rgba(40, 50, 70, 0.85);
+    justify-self: center;
+    white-space: nowrap;
+    text-align: center;
 }
 
 .allOrders-card-actions {
     flex-wrap: nowrap;
     align-items: center;
+    justify-self: end;
 }
 
 .allOrders-card-body {
     padding: 8px 10px;
 }
 
-.allOrders-card-row + .allOrders-card-row {
-    margin-top: 8px;
+.allOrders-card-summaryGrid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px 10px;
+}
+
+.allOrders-card-row {
+    min-width: 0;
+}
+
+.allOrders-card-row-full {
+    grid-column: 1 / -1;
 }
 
 .allOrders-card-label {
@@ -256,16 +300,32 @@
         row-gap: 6px;
     }
 
-    .allOrders-switches-row {
-        flex: 1 1 100%;
+    .allOrders-controls-row {
         width: 100%;
-        justify-content: space-between;
+        gap: 6px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .allOrders-controls-row::-webkit-scrollbar {
+        display: none;
+    }
+
+    .allOrders-toggleAllBtn {
+        font-size: 12px;
+        padding: 5px 8px;
+    }
+
+    .allOrders-switches-row {
+        flex: 1 1 auto;
+        width: auto;
+        justify-content: flex-start;
         gap: 8px;
-        font-size: 13px;
+        font-size: 12px;
     }
 
     .allOrders-switches-row > label {
-        min-width: 0;
+        min-width: fit-content;
         margin: 0;
         white-space: nowrap;
     }
@@ -314,6 +374,17 @@
 
     .allOrders-card-id {
         font-size: 12px;
+    }
+
+    .allOrders-card-actions {
+        gap: 10px !important;
+    }
+
+    .allOrders-card-actions .icon {
+        width: 1.8rem !important;
+        height: 1.8rem !important;
+        padding: 2px;
+        border-radius: 6px;
     }
 
     .allOrders-card-value {

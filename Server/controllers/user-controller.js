@@ -117,11 +117,18 @@ class UserController {
         })
     }
     async checkAuth(req, res, next) {
-        jwt.verify(req.body.token, process.env.SECRET_KEY, (err, result) => {
+        const bearerToken = req.headers?.authorization?.replace(/^Bearer\s+/i, '') || '';
+        const token = req.body?.token || req.query?.token || bearerToken;
+        if (!token) {
+            res.sendStatus(401);
+            return;
+        }
+        jwt.verify(token, process.env.SECRET_KEY, (err, result) => {
             if (err) {
                 res.sendStatus(401);
             }
             else {
+                req.body = req.body || {};
                 // console.log("result:", result)
                 req.body.rights = result.user.rights;
                 req.body.user = result?.user?.name || '';
@@ -131,7 +138,13 @@ class UserController {
         });
     }
     async checkAdmin(req, res, next) {
-        jwt.verify(req.body.token, process.env.SECRET_KEY, (err, result) => {
+        const bearerToken = req.headers?.authorization?.replace(/^Bearer\s+/i, '') || '';
+        const token = req.body?.token || req.query?.token || bearerToken;
+        if (!token) {
+            res.sendStatus(401);
+            return;
+        }
+        jwt.verify(token, process.env.SECRET_KEY, (err, result) => {
             if (err) {
                 res.sendStatus(401);
             }

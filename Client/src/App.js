@@ -90,19 +90,37 @@ function App() {
 
         })
   }, [token]);
+
+  useEffect(() => {
+    const setAppHeight = () => {
+      const viewportHeight = window.visualViewport?.height || window.innerHeight;
+      document.documentElement.style.setProperty('--app-height', `${Math.round(viewportHeight)}px`);
+    };
+
+    setAppHeight();
+    window.addEventListener('resize', setAppHeight);
+    window.addEventListener('orientationchange', setAppHeight);
+    window.visualViewport?.addEventListener('resize', setAppHeight);
+    window.visualViewport?.addEventListener('scroll', setAppHeight);
+
+    return () => {
+      window.removeEventListener('resize', setAppHeight);
+      window.removeEventListener('orientationchange', setAppHeight);
+      window.visualViewport?.removeEventListener('resize', setAppHeight);
+      window.visualViewport?.removeEventListener('scroll', setAppHeight);
+    };
+  }, []);
   let size = '';
   let display = '';
   if (window.innerWidth < 850) {
     display = 'none';
     size = 'sm';
   }
-
-  const height = (window.innerHeight / window.outerHeight) > 0.85 ? 100 : 89.7;
   return (
     <userContext.Provider value={{ user, logOut, setUser, PORT, setToast, aAxios, editingOrder, setEditingOrder, size, display }}>
       <BrowserRouter>
         {!token && <Login setToken={setToken} />}
-        {token && <div style={{ height: `${height}vh` }}>
+        {token && <div className='appViewport'>
           <AlertMessage showMessage={showMessage} setShowMessage={setShowMessage} toastVariant={toastVariant} message={message} />
           <div className='app' >
             <Header />
@@ -130,6 +148,4 @@ function App() {
 }
 
 export { App as default };
-
-
 

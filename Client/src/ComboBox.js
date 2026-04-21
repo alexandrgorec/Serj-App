@@ -42,6 +42,8 @@ function ComboBox({ isBuyerH = '', iconSize = '2em', fontSize = '16px', id, obje
                     }}
                 >
                     <Typeahead className="combobox-typeahead" id={id} ref={typeaheadRef}
+                    positionFixed
+                    flip={true}
                     inputProps={{
                         className: `tabIndex-${tabIndex} ${isBuyerH}`,
                         style: {
@@ -53,11 +55,19 @@ function ComboBox({ isBuyerH = '', iconSize = '2em', fontSize = '16px', id, obje
                     onKeyDown={(evt) => {
 
                         if (evt.key === 'Enter') {
+                            if (typeaheadRef.current) {
+                                typeaheadRef.current.hideMenu();
+                            }
                             let nextElem = document.querySelector(`.tabIndex-${tabIndex + 1}`)
                             console.log(nextElem)
                             if (nextElem) {
                                 nextElem.focus();
                             }
+                        }
+                    }}
+                    onBlur={() => {
+                        if (typeaheadRef.current) {
+                            typeaheadRef.current.hideMenu();
                         }
                     }}
                     defaultInputValue={object[field]}
@@ -69,6 +79,7 @@ function ComboBox({ isBuyerH = '', iconSize = '2em', fontSize = '16px', id, obje
                         object[field] = text;
                     }}
                     options={data}
+                    emptyLabel={null}
                     placeholder={associations[nameDataList]}
                     renderMenuItemChildren={(option) => (
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

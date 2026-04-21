@@ -11,9 +11,46 @@
     min-width: 980px;
 }
 
+.orderTable-topActions {
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 1100;
+    background: aliceblue;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(130, 150, 180, 0.2);
+}
+
+.orderTable-head-supplier {
+    width: 17%;
+}
+
+.orderTable-col-supplier {
+    width: 16%;
+}
+
+.orderTable-col-actions {
+    width: 58px;
+    min-width: 58px;
+    max-width: 58px;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.orderTable-col-actions .btn {
+    margin-left: 2px !important;
+    margin-right: 2px !important;
+}
+
 .table-responsive-sm {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+}
+
+th.th-akt {
+    min-width: 7.2rem;
+    white-space: nowrap;
 }
 
 /* Tablet: keep "Сумма" fully visible (input + button) */
@@ -64,6 +101,21 @@
 }
 
 @media (max-width: 480px) {
+    .orderTable-topActions {
+        gap: 6px !important;
+    }
+
+    .orderTable-topActions .btn {
+        font-size: 11px;
+        padding: 4px 8px;
+    }
+
+    .orderTable-col-actions {
+        width: 50px;
+        min-width: 50px;
+        max-width: 50px;
+    }
+
     .orderTable-main {
         min-width: 760px;
     }

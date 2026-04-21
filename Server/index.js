@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require('cookie-parser');
+require('dotenv').config();
 const app = express();
 const bodyParser = require("body-parser")
 const path = require('path');
@@ -11,7 +12,6 @@ const { adminRouter } = require('./routers/adminRouter.js')
 const { userRouter } = require('./routers/userRouter.js')
 const { guestRouter } = require("./routers/guestRouter.js")
 const bcrypt = require('bcrypt');
-require('dotenv').config();
 app.use(cors());
 app.use(cookieParser(process.env.SECRET_KEY));
 app.use(bodyParser.json());
@@ -38,5 +38,13 @@ app.use("/guest", guestRouter);
 app.use('/admin', adminRouter);
 app.use('/user', userRouter);
 app.get("/*", (req, res) => { res.redirect("/"); })
-console.log(`SERVER STARTED ON PORT:${PORT}`);
-app.listen(PORT);
+const server = app.listen(PORT, () => {
+    console.log(`SERVER STARTED ON PORT:${PORT}`);
+});
+server.on('error', (error) => {
+    if (error?.code === 'EADDRINUSE') {
+        console.error(`PORT ${PORT} уже занят. Останови другой процесс на этом порту или измени PORT в Server/.env`);
+        return;
+    }
+    console.error('Ошибка запуска сервера:', error);
+});

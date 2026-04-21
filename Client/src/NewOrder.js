@@ -2,6 +2,9 @@
 import OrderTable from './OrderTable';
 import NewOrderMobile from './NewOrderMobile';
 import Button from 'react-bootstrap/Button';
+import Form from 'react-bootstrap/Form';
+import FloatingLabel from 'react-bootstrap/FloatingLabel';
+import Stack from 'react-bootstrap/Stack';
 import { useState, useContext } from 'react';
 import { Alert } from 'react-bootstrap';
 import { userContext } from './App';
@@ -19,6 +22,26 @@ function NewOrder({ order, setOrder }) {
   const { aAxios } = useContext(userContext);
   const [message, setMessage] = useState("");
   const [alertVariant, setAlertVariant] = useState("");
+
+  const addSupplier = () => {
+    setOrder((prev) => ({
+      ...prev,
+      suppliers: [
+        ...(prev.suppliers || []),
+        { liters: '', name: '', price: '', tons: '', typeOfProduct: '' },
+      ],
+    }));
+  };
+
+  const addBuyer = () => {
+    setOrder((prev) => ({
+      ...prev,
+      buyers: [
+        ...(prev.buyers || []),
+        { liters: '', name: '', price: '', tons: '', typeOfProduct: '' },
+      ],
+    }));
+  };
 
   const clearData = () => {
     setMessage("");
@@ -68,7 +91,28 @@ function NewOrder({ order, setOrder }) {
     <>
       {isPhone
         ? <NewOrderMobile order={order} setOrder={setOrder} />
-        : <OrderTable order={order} setOrder={setOrder} />
+        : <>
+            <Stack direction='horizontal' gap={2} className='orderTable-topActions noselect'>
+              <Button variant="primary" onClick={addSupplier}>Добавить поставщика</Button>
+              <Button variant="success" onClick={addBuyer}>Добавить покупателя</Button>
+              <FloatingLabel label="Менеджер" className="p-0" style={{ minWidth: '220px' }}>
+                <Form.Control
+                  as="input"
+                  type='text'
+                  value={order.manager || ''}
+                  onChange={(evt) => {
+                    setOrder((prev) => ({ ...prev, manager: evt.target.value }));
+                  }}
+                />
+              </FloatingLabel>
+            </Stack>
+            <OrderTable
+              order={order}
+              setOrder={setOrder}
+              hideInlineAddButtons={true}
+              hideManagerInTable={true}
+            />
+          </>
       }
       {message !== ""
         ? <Alert key={alertVariant} variant={alertVariant}> {message} </Alert>

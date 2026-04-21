@@ -1,0 +1,158 @@
+.editOrderMobile {
+    display: grid;
+    gap: 10px;
+}
+
+.editOrderMobile-topBar {
+    position: sticky;
+    top: 0;
+    z-index: 1200;
+    background: aliceblue;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(130, 150, 180, 0.25);
+    flex-wrap: nowrap;
+    align-items: center;
+}
+
+.editOrderMobile-orderId {
+    font-weight: 700;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.editOrderMobile-dateWrap {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.editOrderMobile-dateWrap .form-control {
+    font-size: 12px;
+    padding: 5px 8px;
+}
+
+.editOrderMobile-topBar .btn {
+    white-space: nowrap;
+    font-size: 11px;
+    padding: 4px 8px;
+}
+
+.editOrderMobile-topActions {
+    flex-wrap: wrap;
+    gap: 6px !important;
+}
+
+.editOrderMobile-topActions .btn {
+    font-size: 11px;
+    padding: 4px 8px;
+}
+
+.editOrderMobile-section {
+    background: rgba(232, 238, 248, 0.55);
+    border: 1px solid rgba(140, 160, 190, 0.35);
+    border-radius: 10px;
+    padding: 7px;
+    display: grid;
+    gap: 8px;
+}
+
+.editOrderMobile-sectionHeader {
+    align-items: center;
+}
+
+.editOrderMobile-sectionTitle {
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.editOrderMobile-card {
+    background: #fff;
+    border: 1px solid rgba(130, 150, 180, 0.35);
+    border-radius: 8px;
+    padding: 7px;
+    display: grid;
+    gap: 7px;
+}
+
+.editOrderMobile-subCard {
+    border: 1px solid rgba(130, 150, 180, 0.35);
+    border-radius: 8px;
+    padding: 7px;
+    margin-top: 4px;
+    display: grid;
+    gap: 6px;
+}
+
+.editOrderMobile-cardHeader {
+    align-items: center;
+    font-size: 13px;
+}
+
+.editOrderMobile-cardTitle {
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.editOrderMobile-cardActions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    flex: 0 0 auto;
+    min-width: fit-content;
+    white-space: nowrap;
+}
+
+.editOrderMobile-hBtn {
+    font-weight: 600;
+    min-width: 30px;
+    width: 30px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.editOrderMobile-label {
+    font-size: 11px;
+    color: rgba(47, 58, 79, 0.85);
+    margin-bottom: 2px;
+}
+
+.editOrderMobile-field .form-control {
+    font-size: 13px;
+    padding: 6px 8px;
+}
+
+.editOrderMobile-grid2 {
+    display: grid;
+    gap: 7px;
+    grid-template-columns: 1fr;
+}
+
+.editOrderMobile-grid3 {
+    display: grid;
+    gap: 7px;
+    grid-template-columns: 1fr;
+}
+
+.editOrderMobile .input-group > .btn {
+    min-width: 54px;
+    white-space: nowrap;
+    font-size: 11px;
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+.editOrderMobile-mainFields {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: 1fr;
+}
+
+.editOrderMobile-mainFields textarea {
+    resize: vertical;
+    min-height: 92px;
+}

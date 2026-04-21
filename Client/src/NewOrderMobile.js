@@ -151,44 +151,31 @@ function NewOrderMobile({ order, setOrder }) {
   return (
     <>
       <div className='orderMobile noselect'>
-        <div className='orderMobile-mainFields'>
-          <div className='orderMobile-field'>
-            <div className='orderMobile-label'>Дата</div>
-            <Form.Control as='input' type='date' value={order.date || ''} disabled />
-          </div>
-          <div className='orderMobile-field'>
-            <div className='orderMobile-label'>Менеджер</div>
-            <Form.Control
-              as='input'
-              type='text'
-              value={order.manager || ''}
-              onChange={(evt) => {
-                order.manager = evt.target.value;
-                refresh();
-              }}
-            />
-          </div>
-        </div>
+        <Stack direction='horizontal' gap={2} className='orderMobile-topActions'>
+          <Button size='sm' variant='primary' onClick={addSupplier}>Добавить поставщика</Button>
+          <Button size='sm' variant='success' onClick={addBuyer}>Добавить покупателя</Button>
+        </Stack>
 
         <div className='orderMobile-section'>
           <Stack direction='horizontal' className='orderMobile-sectionHeader'>
             <div className='orderMobile-sectionTitle'>Поставщики</div>
-            <Button size='sm' className='ms-auto' onClick={addSupplier}>Добавить</Button>
           </Stack>
 
           {(order.suppliers || []).map((supplier, index) => (
             <div className='orderMobile-card' key={`supplier-${index}`}>
               <Stack direction='horizontal' className='orderMobile-cardHeader'>
-                <strong>Поставщик #{index + 1}</strong>
-                <MdDelete
-                  size='1.5em'
-                  className='icon ms-auto'
-                  style={{ color: 'rgb(194, 65, 65)' }}
-                  onClick={() => {
-                    setDeleteElement({ element: 'suppliers', index });
-                    handleShowModal();
-                  }}
-                />
+                <strong className='orderMobile-cardTitle'>Поставщик #{index + 1}</strong>
+                <div className='orderMobile-cardActions'>
+                  <MdDelete
+                    size='1.4em'
+                    className='icon'
+                    style={{ color: 'rgb(194, 65, 65)' }}
+                    onClick={() => {
+                      setDeleteElement({ element: 'suppliers', index });
+                      handleShowModal();
+                    }}
+                  />
+                </div>
               </Stack>
 
               <div className='orderMobile-field'>
@@ -277,31 +264,32 @@ function NewOrderMobile({ order, setOrder }) {
         <div className='orderMobile-section'>
           <Stack direction='horizontal' className='orderMobile-sectionHeader'>
             <div className='orderMobile-sectionTitle'>Покупатели</div>
-            <Button size='sm' className='ms-auto' onClick={addBuyer}>Добавить</Button>
           </Stack>
 
           {(order.buyers || []).map((buyer, index) => (
             <div className='orderMobile-card' key={`buyer-${index}`}>
               <Stack direction='horizontal' className='orderMobile-cardHeader'>
-                <strong>Покупатель #{index + 1}</strong>
-                <Button
-                  size='sm'
-                  variant='warning'
-                  className='ms-auto me-2 orderMobile-hBtn'
-                  style={{ backgroundColor: buyer.buyersH?.length > 0 ? bgColorH : '' }}
-                  onClick={() => addBuyerH(index)}
-                >
-                  н
-                </Button>
-                <MdDelete
-                  size='1.5em'
-                  className='icon'
-                  style={{ color: 'rgb(194, 65, 65)' }}
-                  onClick={() => {
-                    setDeleteElement({ element: 'buyers', index });
-                    handleShowModal();
-                  }}
-                />
+                <strong className='orderMobile-cardTitle'>Покупатель #{index + 1}</strong>
+                <div className='orderMobile-cardActions'>
+                  <Button
+                    size='sm'
+                    variant='warning'
+                    className='orderMobile-hBtn'
+                    style={{ backgroundColor: buyer.buyersH?.length > 0 ? bgColorH : '' }}
+                    onClick={() => addBuyerH(index)}
+                  >
+                    н
+                  </Button>
+                  <MdDelete
+                    size='1.4em'
+                    className='icon'
+                    style={{ color: 'rgb(194, 65, 65)' }}
+                    onClick={() => {
+                      setDeleteElement({ element: 'buyers', index });
+                      handleShowModal();
+                    }}
+                  />
+                </div>
               </Stack>
 
               <div className='orderMobile-field'>
@@ -387,16 +375,18 @@ function NewOrderMobile({ order, setOrder }) {
               {(buyer.buyersH || []).map((buyerH, indexBuyerH) => (
                 <div className='orderMobile-subCard' key={`buyerH-${index}-${indexBuyerH}`} style={{ backgroundColor: bgColorH }}>
                   <Stack direction='horizontal' className='orderMobile-cardHeader'>
-                    <strong>Подпокупатель #{indexBuyerH + 1}</strong>
-                    <MdDelete
-                      size='1.4em'
-                      className='icon ms-auto'
-                      style={{ color: 'rgb(194, 65, 65)' }}
-                      onClick={() => {
-                        setDeleteElement({ element: 'buyerH', index, indexBuyerH });
-                        handleShowModal();
-                      }}
-                    />
+                    <strong className='orderMobile-cardTitle'>Подпокупатель #{indexBuyerH + 1}</strong>
+                    <div className='orderMobile-cardActions'>
+                      <MdDelete
+                        size='1.35em'
+                        className='icon'
+                        style={{ color: 'rgb(194, 65, 65)' }}
+                        onClick={() => {
+                          setDeleteElement({ element: 'buyerH', index, indexBuyerH });
+                          handleShowModal();
+                        }}
+                      />
+                    </div>
                   </Stack>
 
                   <div className='orderMobile-field'>
@@ -482,6 +472,25 @@ function NewOrderMobile({ order, setOrder }) {
               ))}
             </div>
           ))}
+        </div>
+
+        <div className='orderMobile-mainFields'>
+          <div className='orderMobile-field'>
+            <div className='orderMobile-label'>Дата</div>
+            <Form.Control as='input' type='date' value={order.date || ''} disabled />
+          </div>
+          <div className='orderMobile-field'>
+            <div className='orderMobile-label'>Менеджер</div>
+            <Form.Control
+              as='input'
+              type='text'
+              value={order.manager || ''}
+              onChange={(evt) => {
+                order.manager = evt.target.value;
+                refresh();
+              }}
+            />
+          </div>
         </div>
       </div>
 

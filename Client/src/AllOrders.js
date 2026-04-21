@@ -10,7 +10,7 @@ import Stack from 'react-bootstrap/Stack';
 import { BiEditAlt } from "react-icons/bi";
 import { MdDelete } from "react-icons/md";
 import { userContext } from './App';
-import { FaPeopleArrows } from "react-icons/fa6";
+import { FaPeopleArrows, FaPrint } from "react-icons/fa6";
 import { FormLabel } from 'react-bootstrap';
 import { Typeahead } from "react-bootstrap-typeahead";
 
@@ -187,6 +187,16 @@ function AllOrders() {
       });
   }
 
+  const printOrder = (id) => {
+    const token = window.localStorage.token || '';
+    const baseUrl = aAxios?.defaults?.baseURL || `http://${window.location.hostname}:3001`;
+    const printUrl = `${baseUrl}/user/printorder/${id}?token=${encodeURIComponent(token)}`;
+    const printWindow = window.open(printUrl, '_blank', 'noopener,noreferrer');
+    if (!printWindow) {
+      setToast('Разрешите всплывающие окна, чтобы открыть печать', 'warning');
+    }
+  }
+
 
 
   useEffect(() => {
@@ -238,39 +248,42 @@ function AllOrders() {
   return (
     <>
       <Stack direction='horizontal' gap={2} className='allOrders-toolbar'>
-        <Button style={{ margin: '5px', marginLeft: '0' }}
-          onClick={() => {
-            const next = !allExpanded;
-            setOrders((orders) => {
-              orders.map(order => {
-                order.open = next;
-                return (order)
+        <div className='allOrders-controls-row'>
+          <Button
+            className='allOrders-toggleAllBtn'
+            onClick={() => {
+              const next = !allExpanded;
+              setOrders((orders) => {
+                orders.map(order => {
+                  order.open = next;
+                  return (order)
+                })
+                return (orders);
               })
-              return (orders);
-            })
-            setAllExpanded(next);
-            reload(!state);
-          }}
-        > {allExpanded ? 'Свернуть все' : 'Развернуть все'}
-        </Button>
+              setAllExpanded(next);
+              reload(!state);
+            }}
+          > {allExpanded ? 'Свернуть все' : 'Развернуть все'}
+          </Button>
 
-        <div className='allOrders-switches-row'>
-          <FormLabel className='noselect clickable mb-0'>
-            <Stack direction='horizontal' gap={2}>
-              <Form.Check className='noselect' ref={refFilter} onClick={() => { reload(!state) }}
-                type="switch"
-              />
-              Фильтр <FaPeopleArrows style={{ color: 'rgba(16, 188, 45, 0.79)' }} />
-            </Stack>
-          </FormLabel>
-          <FormLabel className='noselect clickable mb-0'>
-            <Stack direction='horizontal' gap={2}>
-              <Form.Check className='noselect' ref={refFilterSumH} onClick={() => { reload(!state) }}
-                type="switch"
-              />
-              Фильтр суммы &quot;H&quot;
-            </Stack>
-          </FormLabel>
+          <div className='allOrders-switches-row'>
+            <FormLabel className='noselect clickable mb-0'>
+              <Stack direction='horizontal' gap={2}>
+                <Form.Check className='noselect' ref={refFilter} onClick={() => { reload(!state) }}
+                  type="switch"
+                />
+                Фильтр <FaPeopleArrows style={{ color: 'rgba(16, 188, 45, 0.79)' }} />
+              </Stack>
+            </FormLabel>
+            <FormLabel className='noselect clickable mb-0'>
+              <Stack direction='horizontal' gap={2}>
+                <Form.Check className='noselect' ref={refFilterSumH} onClick={() => { reload(!state) }}
+                  type="switch"
+                />
+                Фильтр ∑ &quot;H&quot;
+              </Stack>
+            </FormLabel>
+          </div>
         </div>
 
         <div className="allOrders-buyerFilter">
@@ -306,17 +319,15 @@ function AllOrders() {
             return (
               <div key={order.id} className={`allOrders-card ${order.orderjson.haveEmptyBuyerH ? 'allOrders-card-warning' : ''}`}>
                 <div className='allOrders-card-header clickable' onClick={toggleRow}>
-                  <div className='allOrders-card-meta'>
-                    <div className='allOrders-card-id'>Заявка №{order.id}</div>
-                    <div className='allOrders-card-date'>{formatDate(order.orderjson.date)}</div>
-                  </div>
+                  <div className='allOrders-card-id'>Заявка №{order.id}</div>
+                  <div className='allOrders-card-date'>{formatDate(order.orderjson.date)}</div>
                   <Stack direction="horizontal" gap={2} className="allOrders-card-actions">
-                    <BiEditAlt size='1.3em' className='clickable icon' style={{ color: 'rgba(1, 87, 248, 0.85)' }} onClick={(e) => {
+                    <BiEditAlt size='1.6em' className='clickable icon' style={{ color: 'rgba(1, 87, 248, 0.85)' }} onClick={(e) => {
                       e.stopPropagation();
                       setEditingOrder(() => order.orderjson);
                       navigate("/editorder");
                     }} />
-                    <MdDelete size='1.3em' className='clickable icon' style={{ color: 'rgb(194, 65, 65)' }} onClick={(e) => {
+                    <MdDelete size='1.6em' className='clickable icon' style={{ color: 'rgb(194, 65, 65)' }} onClick={(e) => {
                       e.stopPropagation();
                       setIdForDeleteOrder(order.id);
                       handleShowModal();
@@ -325,20 +336,22 @@ function AllOrders() {
                 </div>
 
                 <div className='allOrders-card-body clickable' onClick={toggleRow}>
-                  <div className='allOrders-card-row'>
-                    <div className='allOrders-card-label'>Покупатели</div>
-                    <div className='allOrders-card-value'>{spisok(order.orderjson.buyers) || '—'}</div>
-                  </div>
-                  <div className='allOrders-card-row'>
-                    <div className='allOrders-card-label'>Поставщики</div>
-                    <div className='allOrders-card-value'>{spisok(order.orderjson.suppliers) || '—'}</div>
-                  </div>
-                  {emptyHSummas !== '' &&
+                  <div className='allOrders-card-summaryGrid'>
                     <div className='allOrders-card-row'>
-                      <div className='allOrders-card-label'>Суммы "H"</div>
-                      <div className='allOrders-card-value'>{emptyHSummas}</div>
+                      <div className='allOrders-card-label'>Покупатели</div>
+                      <div className='allOrders-card-value'>{spisok(order.orderjson.buyers) || '—'}</div>
                     </div>
-                  }
+                    <div className='allOrders-card-row'>
+                      <div className='allOrders-card-label'>Поставщики</div>
+                      <div className='allOrders-card-value'>{spisok(order.orderjson.suppliers) || '—'}</div>
+                    </div>
+                    {emptyHSummas !== '' &&
+                      <div className='allOrders-card-row allOrders-card-row-full'>
+                        <div className='allOrders-card-label'>Суммы "H"</div>
+                        <div className='allOrders-card-value'>{emptyHSummas}</div>
+                      </div>
+                    }
+                  </div>
                 </div>
 
                 <Collapse in={order.open}>
@@ -480,7 +493,12 @@ function AllOrders() {
                         {spisok(order.orderjson.suppliers)}
                       </td>
                       <td className="allOrders-td-menu" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
-                        <Stack direction="horizontal" gap={1} className="allOrders-menu-stack">
+                        <Stack direction="horizontal" gap={2} className="allOrders-menu-stack">
+                          <FaPrint title='Печать заявки' size='1.3em' className='clickable icon' style={{ color: 'rgba(47, 79, 112, 0.95)' }} onClick={(e) => {
+                            e.stopPropagation();
+                            printOrder(order.id);
+                          }} />
+                          <div className="vr" />
                           <BiEditAlt size='1.7em' className='clickable icon' style={{ color: 'rgba(1, 87, 248, 0.85)' }} onClick={(e) => {
                             e.stopPropagation();
                             if (orderIndex >= 0) showHideOrder(orderIndex);

@@ -33,7 +33,9 @@
 }
 
 .combobox-typeahead-wrap .rbt-menu {
-    z-index: 1060;
+    z-index: 3000;
+    max-height: min(38vh, 280px);
+    overflow-y: auto;
 }
 
 .combobox-typeahead,
