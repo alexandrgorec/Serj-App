@@ -70,6 +70,47 @@ function buyerNamesFromOrder(orderjson) {
   return out;
 }
 
+function orderRows(orderjson) {
+  const suppliers = Array.isArray(orderjson?.suppliers) ? orderjson.suppliers : [];
+  const buyers = Array.isArray(orderjson?.buyers) ? orderjson.buyers : [];
+  const buyersH = buyers.flatMap((buyer) => Array.isArray(buyer?.buyersH) ? buyer.buyersH : []);
+  return [...suppliers, ...buyers, ...buyersH];
+}
+
+function hasFilledValue(value) {
+  if (value === null || value === undefined) return false;
+  if (typeof value === 'number') return !Number.isNaN(value);
+  if (typeof value === 'string') return value.trim() !== '';
+  return true;
+}
+
+function isMeaningfulOrderRow(row) {
+  return ['name', 'typeOfProduct', 'liters', 'tons', 'price', 'sf', 'summa', 'akt']
+    .some((field) => hasFilledValue(row?.[field]));
+}
+
+function isFilledByManager(orderjson) {
+  const rows = orderRows(orderjson);
+  if (!rows.length) return false;
+  return rows.every((row) =>
+    hasFilledValue(row?.name) &&
+    hasFilledValue(row?.typeOfProduct) &&
+    hasFilledValue(row?.liters) &&
+    hasFilledValue(row?.tons) &&
+    hasFilledValue(row?.price)
+  );
+}
+
+function isFilledByAccountant(orderjson) {
+  const rows = orderRows(orderjson).filter(isMeaningfulOrderRow);
+  if (!rows.length) return false;
+  return rows.every((row) =>
+    hasFilledValue(row?.sf) &&
+    hasFilledValue(row?.summa) &&
+    hasFilledValue(row?.akt)
+  );
+}
+
 
 function formatDate(date) {
   date = new Date(Date.parse(date));
@@ -92,6 +133,8 @@ function AllOrders() {
   const navigate = useNavigate();
   const refFilter = useRef(null);
   const refFilterSumH = useRef(null);
+  const refFilterUnfilledManager = useRef(null);
+  const refFilterUnfilledAccountant = useRef(null);
   const [buyerFilter, setBuyerFilter] = useState('');
   const buyerTypeaheadRef = useRef(null);
   const openEditedOrder = () => {
@@ -230,6 +273,8 @@ function AllOrders() {
   }
   const filterEmptyBuyerH = !!refFilter.current?.checked;
   const filterSumH = !!refFilterSumH.current?.checked;
+  const filterUnfilledManager = !!refFilterUnfilledManager.current?.checked;
+  const filterUnfilledAccountant = !!refFilterUnfilledAccountant.current?.checked;
   const q = String(buyerFilter || '').trim().toLowerCase();
   const filteredOrders = orders.filter((order) => {
     const matchBuyer =
@@ -238,12 +283,18 @@ function AllOrders() {
         .some((n) => String(n).toLowerCase().includes(q));
 
     if (!matchBuyer) return false;
-    if (!filterEmptyBuyerH && !filterSumH) return true;
-    const matchEmptyBuyerH = !!order.orderjson.haveEmptyBuyerH;
-    const matchSumH = emptyBuyerHSummasDisplay(order.orderjson.buyers) !== '';
-    if (filterEmptyBuyerH && !filterSumH) return matchEmptyBuyerH;
-    if (!filterEmptyBuyerH && filterSumH) return matchSumH;
-    return matchEmptyBuyerH && matchSumH;
+    if (filterEmptyBuyerH || filterSumH) {
+      const matchEmptyBuyerH = !!order.orderjson.haveEmptyBuyerH;
+      const matchSumH = emptyBuyerHSummasDisplay(order.orderjson.buyers) !== '';
+      if (filterEmptyBuyerH && !filterSumH && !matchEmptyBuyerH) return false;
+      if (!filterEmptyBuyerH && filterSumH && !matchSumH) return false;
+      if (filterEmptyBuyerH && filterSumH && !(matchEmptyBuyerH && matchSumH)) return false;
+    }
+
+    if (filterUnfilledManager && isFilledByManager(order.orderjson)) return false;
+    if (filterUnfilledAccountant && isFilledByAccountant(order.orderjson)) return false;
+
+    return true;
   });
   return (
     <>
@@ -281,6 +332,22 @@ function AllOrders() {
                   type="switch"
                 />
                 Фильтр ∑ &quot;H&quot;
+              </Stack>
+            </FormLabel>
+            <FormLabel className='noselect clickable mb-0'>
+              <Stack direction='horizontal' gap={2}>
+                <Form.Check className='noselect' ref={refFilterUnfilledManager} onClick={() => { reload(!state) }}
+                  type="switch"
+                />
+                Не заполнено менеджером
+              </Stack>
+            </FormLabel>
+            <FormLabel className='noselect clickable mb-0'>
+              <Stack direction='horizontal' gap={2}>
+                <Form.Check className='noselect' ref={refFilterUnfilledAccountant} onClick={() => { reload(!state) }}
+                  type="switch"
+                />
+                Не заполнено бухгалтером
               </Stack>
             </FormLabel>
           </div>

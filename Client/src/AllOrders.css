@@ -114,7 +114,7 @@
 
 .allOrders-switches-row {
     display: flex;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     gap: 12px;
     align-items: center;
 }
@@ -319,6 +319,7 @@
     .allOrders-switches-row {
         flex: 1 1 auto;
         width: auto;
+        flex-wrap: nowrap;
         justify-content: flex-start;
         gap: 8px;
         font-size: 12px;

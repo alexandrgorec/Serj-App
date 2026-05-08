@@ -13,6 +13,7 @@ import DeleteUser from './DeleteUser';
 import Header from './Header';
 import AlertMessage from './AlertMessage';
 import EditOrder from './EditOrder';
+import AuditLog from './AuditLog';
 
 
 
@@ -133,6 +134,7 @@ function App() {
                   <Route path='/menu' element={<Menu />}></Route>
                   {user.rights.adminAccess && <Route path='/menu/adduser' element={<AddUser />}></Route>}
                   {user.rights.adminAccess && <Route path='/menu/deleteuser' element={<DeleteUser />}></Route>}
+                  {user.rights.adminAccess && <Route path='/menu/auditlog' element={<AuditLog />}></Route>}
                   <Route path='/menu/profile' element={'profile'}></Route>
                 </Route>
                 <Route path='/warehouse' element={'Компонент не создан'}></Route>
@@ -148,4 +150,3 @@ function App() {
 }
 
 export { App as default };
-

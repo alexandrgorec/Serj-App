@@ -1,6 +1,7 @@
 const { pool } = require("../db");
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const { writeAuditLog } = require("../utils/audit-log");
 
 class UserController {
     async editSelectListsData(req, res) {
@@ -24,6 +25,21 @@ class UserController {
                         res.send('ошибка доступа к базе данных');
                     } else {
                         // console.log('EDIT userSelectListsData');
+                        const listSizes = {};
+                        Object.keys(selectListsData || {}).forEach((key) => {
+                            listSizes[key] = Array.isArray(selectListsData[key]) ? selectListsData[key].length : 0;
+                        });
+                        writeAuditLog({
+                            actorUserId: req.body.userId,
+                            actorName: req.body.user,
+                            action: "UPDATE_SELECT_LISTS",
+                            entityType: "select_lists",
+                            entityId: req.body.userId,
+                            route: "/user/editSelectListsData",
+                            payload: { listSizes },
+                        }).catch((logError) => {
+                            console.error("Audit log error (UPDATE_SELECT_LISTS):", logError);
+                        });
 
                         res.sendStatus(202);
                     }

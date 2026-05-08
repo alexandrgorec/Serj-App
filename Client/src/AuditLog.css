@@ -1,0 +1,84 @@
+.auditLogPage {
+    padding: 12px 10px 10px;
+}
+
+.auditLogTopBar {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    column-gap: 10px;
+    margin-bottom: 10px;
+    row-gap: 8px;
+}
+
+.auditLogTopBarLeft {
+    display: flex;
+    justify-content: flex-start;
+    min-width: 0;
+}
+
+.auditLogTopBarCenter {
+    display: flex;
+    justify-content: center;
+    min-width: 0;
+}
+
+.auditLogTopBarRight {
+    justify-content: flex-end;
+    min-width: 0;
+}
+
+.auditLogTitle {
+    font-weight: 700;
+    font-size: 2rem;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.auditLogPageSize {
+    width: 86px;
+}
+
+.auditLogTableWrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.auditLogTable {
+    margin-bottom: 0.6rem;
+    min-width: 820px;
+}
+
+.auditLogDetails {
+    max-width: 460px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 12px;
+    line-height: 1.25;
+}
+
+.auditLogPager {
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.auditLogPagerInfo {
+    font-size: 13px;
+    color: rgba(40, 50, 70, 0.9);
+}
+
+@media (max-width: 768px) {
+    .auditLogTopBar {
+        grid-template-columns: 1fr;
+    }
+
+    .auditLogTopBarLeft,
+    .auditLogTopBarCenter,
+    .auditLogTopBarRight {
+        justify-content: center;
+    }
+
+    .auditLogTitle {
+        font-size: 1.35rem;
+    }
+}

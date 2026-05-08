@@ -9,5 +9,7 @@ adminRouter.use(userController.checkAdmin)
 adminRouter.post("/adduser", adminController.addUser);
 adminRouter.post("/getListUsers", adminController.getListUsers);
 adminRouter.post("/deleteuser", adminController.deleteuser);
+adminRouter.post("/auditlog/list", adminController.listAuditLog);
+adminRouter.post("/auditlog/clear", adminController.clearAuditLog);
 
 module.exports.adminRouter = adminRouter;

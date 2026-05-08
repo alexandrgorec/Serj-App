@@ -1,6 +1,7 @@
 const fs = require("fs");
 const PDFDocument = require("pdfkit");
 const { pool } = require("../db");
+const { writeAuditLog } = require("../utils/audit-log");
 
 const A5_WIDTH_PT = 419.53;
 const A5_HEIGHT_PT = 595.28;
@@ -468,6 +469,71 @@ function buildReport(orderId, order, showFinBlock) {
     return { title: `Заявка №${orderId}`, tables };
 }
 
+const ORDER_DIFF_IGNORED_KEYS = new Set(["id", "haveEmptyBuyerH"]);
+const ORDER_DIFF_MAX_CHANGES_IN_LOG = 200;
+const ORDER_DIFF_MAX_VALUE_LEN = 180;
+
+function isPlainObject(value) {
+    return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function formatAuditValue(value) {
+    if (value === undefined) return "∅";
+    if (value === null) return "null";
+    if (typeof value === "string") {
+        if (value === "") return "\"\"";
+        return value.length > ORDER_DIFF_MAX_VALUE_LEN ? `${value.slice(0, ORDER_DIFF_MAX_VALUE_LEN)}…` : value;
+    }
+    if (typeof value === "number" || typeof value === "boolean") return String(value);
+    try {
+        const serialized = JSON.stringify(value);
+        return serialized.length > ORDER_DIFF_MAX_VALUE_LEN
+            ? `${serialized.slice(0, ORDER_DIFF_MAX_VALUE_LEN)}…`
+            : serialized;
+    } catch (error) {
+        const text = String(value);
+        return text.length > ORDER_DIFF_MAX_VALUE_LEN ? `${text.slice(0, ORDER_DIFF_MAX_VALUE_LEN)}…` : text;
+    }
+}
+
+function collectOrderDiff(beforeValue, afterValue, path, output) {
+    if (beforeValue === afterValue) return;
+    const beforeIsArray = Array.isArray(beforeValue);
+    const afterIsArray = Array.isArray(afterValue);
+    const beforeIsObject = isPlainObject(beforeValue);
+    const afterIsObject = isPlainObject(afterValue);
+
+    if (beforeIsArray && afterIsArray) {
+        const maxLen = Math.max(beforeValue.length, afterValue.length);
+        for (let i = 0; i < maxLen; i += 1) {
+            collectOrderDiff(beforeValue[i], afterValue[i], `${path}[${i}]`, output);
+        }
+        return;
+    }
+
+    if (beforeIsObject && afterIsObject) {
+        const keys = new Set([...Object.keys(beforeValue), ...Object.keys(afterValue)]);
+        keys.forEach((key) => {
+            if (ORDER_DIFF_IGNORED_KEYS.has(key)) return;
+            const nextPath = path ? `${path}.${key}` : key;
+            collectOrderDiff(beforeValue[key], afterValue[key], nextPath, output);
+        });
+        return;
+    }
+
+    output.push({
+        field: path || "order",
+        before: formatAuditValue(beforeValue),
+        after: formatAuditValue(afterValue),
+    });
+}
+
+function buildOrderChanges(beforeOrder, afterOrder) {
+    const changes = [];
+    collectOrderDiff(beforeOrder || {}, afterOrder || {}, "", changes);
+    return changes;
+}
+
 class OrderController {
     async neworder(req, res) {
         const order = req.body.order;
@@ -477,7 +543,23 @@ class OrderController {
                 res.sendStatus(400);
             } else {
                 res.status(202);
-                res.send(result.rows[0].id);
+                const createdId = result.rows[0].id;
+                writeAuditLog({
+                    actorUserId: req.body.userId,
+                    actorName: req.body.user,
+                    action: "CREATE_ORDER",
+                    entityType: "order",
+                    entityId: createdId,
+                    route: "/user/neworder",
+                    payload: {
+                        date: order?.date || null,
+                        suppliersCount: Array.isArray(order?.suppliers) ? order.suppliers.length : 0,
+                        buyersCount: Array.isArray(order?.buyers) ? order.buyers.length : 0,
+                    },
+                }).catch((logError) => {
+                    console.error("Audit log error (CREATE_ORDER):", logError);
+                });
+                res.send(createdId);
             }
         });
     }
@@ -503,6 +585,17 @@ class OrderController {
                 console.error("Error delete order", err.stack);
                 res.send("ошибка доступа к базе данных");
             } else {
+                writeAuditLog({
+                    actorUserId: req.body.userId,
+                    actorName: req.body.user,
+                    action: "DELETE_ORDER",
+                    entityType: "order",
+                    entityId: id,
+                    route: "/user/deleteorder",
+                    payload: {},
+                }).catch((logError) => {
+                    console.error("Audit log error (DELETE_ORDER):", logError);
+                });
                 res.sendStatus(202);
             }
         });
@@ -510,14 +603,35 @@ class OrderController {
 
     async editorder(req, res) {
         const order = req.body.editingOrder;
-        pool.query("UPDATE orders SET orderjson = $1 where id = $2", [order, order.id], (err) => {
-            if (err) {
-                console.error("Error connecting to the database", err.stack);
-                res.send("ошибка доступа к базе данных");
-            } else {
-                res.sendStatus(202);
-            }
-        });
+        try {
+            const previousOrderRes = await pool.query("select orderjson from orders where id = $1", [order.id]);
+            const previousOrder = previousOrderRes?.rows?.[0]?.orderjson || {};
+
+            await pool.query("UPDATE orders SET orderjson = $1 where id = $2", [order, order.id]);
+
+            const allChanges = buildOrderChanges(previousOrder, order);
+            const changes = allChanges.slice(0, ORDER_DIFF_MAX_CHANGES_IN_LOG);
+            writeAuditLog({
+                actorUserId: req.body.userId,
+                actorName: req.body.user,
+                action: "UPDATE_ORDER",
+                entityType: "order",
+                entityId: order?.id,
+                route: "/user/editorder",
+                payload: {
+                    totalChanges: allChanges.length,
+                    shownChanges: changes.length,
+                    truncated: allChanges.length > changes.length,
+                    changes,
+                },
+            }).catch((logError) => {
+                console.error("Audit log error (UPDATE_ORDER):", logError);
+            });
+            res.sendStatus(202);
+        } catch (err) {
+            console.error("Error connecting to the database", err.stack || err);
+            res.send("ошибка доступа к базе данных");
+        }
     }
 
     async printorder(req, res) {

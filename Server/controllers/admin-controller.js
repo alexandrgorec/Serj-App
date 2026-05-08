@@ -1,5 +1,6 @@
 const { pool } = require("../db");
 const bcrypt = require('bcrypt');
+const { writeAuditLog, listAuditLogs, clearAuditLogs } = require("../utils/audit-log");
 
 
 // let a = bcrypt.hash("password", 10, function (err, hash) {
@@ -36,6 +37,21 @@ class AdminController {
                 }
             }
             if (result) {
+                writeAuditLog({
+                    actorUserId: req.body.userId,
+                    actorName: req.body.user,
+                    action: "CREATE_USER",
+                    entityType: "user",
+                    entityId: login,
+                    route: "/admin/adduser",
+                    payload: {
+                        login,
+                        name: userInfo?.name || null,
+                        rights: rights || {},
+                    },
+                }).catch((logError) => {
+                    console.error("Audit log error (CREATE_USER):", logError);
+                });
                 res.status(202);
                 res.send(`Пользователь ${login} создан`);
             }
@@ -64,9 +80,42 @@ class AdminController {
                 console.error('Error delete order', err.stack);
                 res.send('ошибка доступа к базе данных');
             } else {
+                writeAuditLog({
+                    actorUserId: req.body.userId,
+                    actorName: req.body.user,
+                    action: "DELETE_USER",
+                    entityType: "user",
+                    entityId: id,
+                    route: "/admin/deleteuser",
+                    payload: {},
+                }).catch((logError) => {
+                    console.error("Audit log error (DELETE_USER):", logError);
+                });
                 res.sendStatus(202);
             }
         });
+    }
+
+    async listAuditLog(req, res) {
+        try {
+            const page = req.body?.page;
+            const pageSize = req.body?.pageSize;
+            const result = await listAuditLogs({ page, pageSize });
+            res.status(202).json(result);
+        } catch (error) {
+            console.error("Error list audit log", error);
+            res.status(500).send("ошибка доступа к базе данных");
+        }
+    }
+
+    async clearAuditLog(req, res) {
+        try {
+            const deletedCount = await clearAuditLogs();
+            res.status(202).json({ deletedCount });
+        } catch (error) {
+            console.error("Error clear audit log", error);
+            res.status(500).send("ошибка доступа к базе данных");
+        }
     }
 }
 
