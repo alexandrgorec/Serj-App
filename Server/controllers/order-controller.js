@@ -70,6 +70,25 @@ function calculateDeliveryTax(order) {
     return Math.round(normalizedCost * 0.4);
 }
 
+function parseOrderNumber(value) {
+    if (value === undefined || value === null || String(value).trim() === "") return null;
+    const normalized = String(value).replace(/\s/g, "").trim();
+    if (!/^\d+$/.test(normalized)) return NaN;
+    const orderNumber = Number(normalized);
+    return Number.isSafeInteger(orderNumber) && orderNumber > 0 ? orderNumber : NaN;
+}
+
+async function syncOrderNumberSequence() {
+    await pool.query(`
+        SELECT setval(
+            'orders_order_number_seq',
+            GREATEST(COALESCE(MAX(order_number), 1), 1),
+            MAX(order_number) IS NOT NULL
+        )
+        FROM orders
+    `);
+}
+
 function resolveFontFamily() {
     const candidates = [
         { regular: "/System/Library/Fonts/Supplemental/Arial.ttf", bold: "/System/Library/Fonts/Supplemental/Arial Bold.ttf" },
@@ -244,13 +263,13 @@ function estimateTextHeight(text, fontSize, width) {
 function estimateRowHeight(row, columns, profile, tableWidth, isHeader = false) {
     const fontSize = isHeader ? profile.headerSize : profile.bodySize;
     let maxHeight = fontSize * 1.2;
-    let x = 0;
+    // let x = 0;
     for (let i = 0; i < columns.length; i += 1) {
         const colWidth = columns[i].weight * tableWidth;
         const text = isHeader ? columns[i].label : textValue(row.cells[i]);
         const textHeight = estimateTextHeight(text, fontSize, Math.max(10, colWidth - profile.cellPadX * 2));
         if (textHeight > maxHeight) maxHeight = textHeight;
-        x += colWidth;
+        // x += colWidth;
     }
     return maxHeight + profile.cellPadY * 2;
 }
@@ -490,7 +509,7 @@ function formatAuditValue(value) {
         return serialized.length > ORDER_DIFF_MAX_VALUE_LEN
             ? `${serialized.slice(0, ORDER_DIFF_MAX_VALUE_LEN)}…`
             : serialized;
-    } catch (error) {
+    } catch  {
         const text = String(value);
         return text.length > ORDER_DIFF_MAX_VALUE_LEN ? `${text.slice(0, ORDER_DIFF_MAX_VALUE_LEN)}…` : text;
     }
@@ -537,35 +556,53 @@ function buildOrderChanges(beforeOrder, afterOrder) {
 class OrderController {
     async neworder(req, res) {
         const order = req.body.order;
-        const insertText = "INSERT INTO orders(orderjson) VALUES ($1) RETURNING id";
-        pool.query(insertText, [order], (err, result) => {
-            if (err) {
-                res.sendStatus(400);
-            } else {
-                res.status(202);
-                const createdId = result.rows[0].id;
-                writeAuditLog({
-                    actorUserId: req.body.userId,
-                    actorName: req.body.user,
-                    action: "CREATE_ORDER",
-                    entityType: "order",
-                    entityId: createdId,
-                    route: "/user/neworder",
-                    payload: {
-                        date: order?.date || null,
-                        suppliersCount: Array.isArray(order?.suppliers) ? order.suppliers.length : 0,
-                        buyersCount: Array.isArray(order?.buyers) ? order.buyers.length : 0,
-                    },
-                }).catch((logError) => {
-                    console.error("Audit log error (CREATE_ORDER):", logError);
-                });
-                res.send(createdId);
+        const requestedOrderNumber = parseOrderNumber(order?.orderNumber ?? order?.order_number);
+        if (Number.isNaN(requestedOrderNumber)) {
+            res.status(400).json({ message: "Некорректный номер заявки" });
+            return;
+        }
+
+        const insertText = requestedOrderNumber === null
+            ? "INSERT INTO orders(orderjson) VALUES ($1) RETURNING id, order_number"
+            : "INSERT INTO orders(orderjson, order_number) VALUES ($1, $2) RETURNING id, order_number";
+        const insertParams = requestedOrderNumber === null ? [order] : [order, requestedOrderNumber];
+
+        try {
+            const result = await pool.query(insertText, insertParams);
+            const createdId = result.rows[0].id;
+            const orderNumber = result.rows[0].order_number;
+            await syncOrderNumberSequence();
+
+            writeAuditLog({
+                actorUserId: req.body.userId,
+                actorName: req.body.user,
+                action: "CREATE_ORDER",
+                entityType: "order",
+                entityId: createdId,
+                route: "/user/neworder",
+                payload: {
+                    orderNumber,
+                    date: order?.date || null,
+                    suppliersCount: Array.isArray(order?.suppliers) ? order.suppliers.length : 0,
+                    buyersCount: Array.isArray(order?.buyers) ? order.buyers.length : 0,
+                },
+            }).catch((logError) => {
+                console.error("Audit log error (CREATE_ORDER):", logError);
+            });
+
+            res.status(202).json({ id: createdId, orderNumber });
+        } catch (err) {
+            if (err?.code === "23505") {
+                res.status(409).json({ message: "Заявка с таким номером уже существует" });
+                return;
             }
-        });
+            console.error("Error create order", err.stack || err);
+            res.sendStatus(400);
+        }
     }
 
     async getallorders(req, res) {
-        pool.query("select * from orders ORDER BY id DESC", (err, result) => {
+        pool.query("select id, order_number, orderjson from orders ORDER BY id DESC", (err, result) => {
             if (err) {
                 console.error("Error connecting to the database", err.stack);
                 res.send("ошибка доступа к базе данных");
@@ -580,36 +617,60 @@ class OrderController {
 
     async deleteorder(req, res) {
         const id = req.body.id;
-        pool.query("delete from orders where id = $1", [id], (err) => {
-            if (err) {
-                console.error("Error delete order", err.stack);
-                res.send("ошибка доступа к базе данных");
-            } else {
-                writeAuditLog({
-                    actorUserId: req.body.userId,
-                    actorName: req.body.user,
-                    action: "DELETE_ORDER",
-                    entityType: "order",
-                    entityId: id,
-                    route: "/user/deleteorder",
-                    payload: {},
-                }).catch((logError) => {
-                    console.error("Audit log error (DELETE_ORDER):", logError);
-                });
-                res.sendStatus(202);
-            }
-        });
+        try {
+            const result = await pool.query("delete from orders where id = $1 RETURNING order_number", [id]);
+            const orderNumber = result.rows?.[0]?.order_number || id;
+            writeAuditLog({
+                actorUserId: req.body.userId,
+                actorName: req.body.user,
+                action: "DELETE_ORDER",
+                entityType: "order",
+                entityId: id,
+                route: "/user/deleteorder",
+                payload: { orderNumber },
+            }).catch((logError) => {
+                console.error("Audit log error (DELETE_ORDER):", logError);
+            });
+            res.sendStatus(202);
+        } catch (err) {
+            console.error("Error delete order", err.stack || err);
+            res.send("ошибка доступа к базе данных");
+        }
     }
 
     async editorder(req, res) {
         const order = req.body.editingOrder;
+        const requestedOrderNumber = parseOrderNumber(order?.orderNumber ?? order?.order_number);
+        if (Number.isNaN(requestedOrderNumber)) {
+            res.status(400).json({ message: "Некорректный номер заявки" });
+            return;
+        }
+
         try {
-            const previousOrderRes = await pool.query("select orderjson from orders where id = $1", [order.id]);
-            const previousOrder = previousOrderRes?.rows?.[0]?.orderjson || {};
+            const previousOrderRes = await pool.query("select order_number, orderjson from orders where id = $1", [order.id]);
+            if (!previousOrderRes?.rows?.[0]) {
+                res.status(404).json({ message: "Заявка не найдена" });
+                return;
+            }
 
-            await pool.query("UPDATE orders SET orderjson = $1 where id = $2", [order, order.id]);
+            const previousOrderNumber = previousOrderRes.rows[0].order_number;
+            const orderNumber = requestedOrderNumber === null ? previousOrderNumber : requestedOrderNumber;
+            const previousOrder = {
+                ...(previousOrderRes.rows[0].orderjson || {}),
+                orderNumber: previousOrderNumber,
+            };
+            const nextOrder = {
+                ...order,
+                orderNumber,
+            };
 
-            const allChanges = buildOrderChanges(previousOrder, order);
+            await pool.query(
+                "UPDATE orders SET orderjson = $1, order_number = $2 where id = $3",
+                [nextOrder, orderNumber, order.id]
+            );
+            await syncOrderNumberSequence();
+
+            const allChanges = buildOrderChanges(previousOrder, nextOrder);
             const changes = allChanges.slice(0, ORDER_DIFF_MAX_CHANGES_IN_LOG);
             writeAuditLog({
                 actorUserId: req.body.userId,
@@ -619,6 +680,7 @@ class OrderController {
                 entityId: order?.id,
                 route: "/user/editorder",
                 payload: {
+                    orderNumber,
                     totalChanges: allChanges.length,
                     shownChanges: changes.length,
                     truncated: allChanges.length > changes.length,
@@ -629,6 +691,10 @@ class OrderController {
             });
             res.sendStatus(202);
         } catch (err) {
+            if (err?.code === "23505") {
+                res.status(409).json({ message: "Заявка с таким номером уже существует" });
+                return;
+            }
             console.error("Error connecting to the database", err.stack || err);
             res.send("ошибка доступа к базе данных");
         }
@@ -641,7 +707,7 @@ class OrderController {
             return;
         }
 
-        pool.query("select id, orderjson from orders where id = $1", [id], (err, result) => {
+        pool.query("select id, order_number, orderjson from orders where id = $1", [id], (err, result) => {
             if (err) {
                 console.error("Error loading order for print", err.stack);
                 res.status(500).send("Ошибка доступа к базе данных");
@@ -653,13 +719,14 @@ class OrderController {
             }
 
             const order = result.rows[0].orderjson || {};
+            const orderNumber = result.rows[0].order_number || id;
             const showFinBlock = !!req.body?.rights?.finBlockAccess;
-            const report = buildReport(id, order, showFinBlock);
+            const report = buildReport(orderNumber, order, showFinBlock);
             const profile = pickLayout(report);
             const fonts = resolveFontFamily();
 
             res.setHeader("Content-Type", "application/pdf");
-            res.setHeader("Content-Disposition", `inline; filename="order-${id}.pdf"`);
+            res.setHeader("Content-Disposition", `inline; filename="order-${orderNumber}.pdf"`);
             res.status(200);
 
             const doc = new PDFDocument({ autoFirstPage: false, size: "A5", margin: 0, compress: true });

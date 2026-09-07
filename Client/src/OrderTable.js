@@ -360,7 +360,7 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
                           {user.rights.finBlockAccess &&
                             <>
                               <TDInput object={buyerH} field={'sf'} type={'text'} display={display} />
-                              <TDInput object={order} field={'date'} type={'date'} disabled={true} display={display} tdClassName="td-date" inputClassName="date-input" fontSize="12px" />
+                              <TDInput object={order} field={'date'} type={'date'} disabled={true} value={true} display={display} tdClassName="td-date" inputClassName="date-input" fontSize="12px" />
                               <TDSumma object={buyerH} field={'summa'} display={display} calcTrigger={buyerHSummaKeys[`${index}-${indexBuyerH}`] || 0} />
                               <TDInput object={buyerH} field={'akt'} type={'number'} display={display} />
                             </>

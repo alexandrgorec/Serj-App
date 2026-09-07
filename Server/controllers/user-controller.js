@@ -1,122 +1,49 @@
 const { pool } = require("../db");
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
-const { writeAuditLog } = require("../utils/audit-log");
+// const bcrypt = require('bcrypt');
+// const { writeAuditLog } = require("../utils/audit-log");
+const { updateSelectListData, getRootToken, verifyRootPassword, getUserDB, getUserToken } = require("../services/userServices");
 
 class UserController {
     async editSelectListsData(req, res) {
         const selectListsData = req.body.selectListsData;
-        // console.log("selectListsData.SUPPLIERS", selectListsData.SUPPLIERS);
         const userId = req.body.userId;
-        // console.log("userId", userId)
-        pool.query("select userinfo from users where id = $1", [userId], (err, result) => {
-            if (err) {
-                console.error('Error connecting to the database', err.stack);
-                res.send('ошибка доступа к базе данных');
-            } else {
-
-                const userInfo = result.rows[0].userinfo;
-                userInfo.selectListsData = selectListsData;
-                // console.log("userInfo:", userInfo);
-                // res.sendStatus(202);
-                pool.query("UPDATE users SET userinfo = $1 where id = $2", [userInfo, userId], (err, result) => {
-                    if (err) {
-                        console.error('Error connecting to the database', err.stack);
-                        res.send('ошибка доступа к базе данных');
-                    } else {
-                        // console.log('EDIT userSelectListsData');
-                        const listSizes = {};
-                        Object.keys(selectListsData || {}).forEach((key) => {
-                            listSizes[key] = Array.isArray(selectListsData[key]) ? selectListsData[key].length : 0;
-                        });
-                        writeAuditLog({
-                            actorUserId: req.body.userId,
-                            actorName: req.body.user,
-                            action: "UPDATE_SELECT_LISTS",
-                            entityType: "select_lists",
-                            entityId: req.body.userId,
-                            route: "/user/editSelectListsData",
-                            payload: { listSizes },
-                        }).catch((logError) => {
-                            console.error("Audit log error (UPDATE_SELECT_LISTS):", logError);
-                        });
-
-                        res.sendStatus(202);
-                    }
-                });
+        const user = req.body.user;
+        try {
+            if (await updateSelectListData(userId, selectListsData, user)) {
+                res.sendStatus(202);
             }
-        });
+        }
+        catch {
+            res.sendStatus(422);
+        }
     }
     async getAccessToken(req, res) {
-        const selectListsData = {
-            SUPPLIERS: [],
-            BUYERS: [],
-            DRIVERS: [],
-            TYPE_OF_PRODUCT: [],
-            MANAGERS: [],
-        }
-
-        const sql = 'select * from users where login = $1';
-
-        if (req.body.u === 'root') {
-            if (req.body.p === process.env.SECRET_KEY) {
-                res.status(202);
-                const payload = {
-                    user: {
-                        name: 'root',
-                        rights: {
-                            finBlockAccess: true,
-                            adminAccess: true,
-                        },
-                        userId: 'root',
-                    },
-                }
-                const token = jwt.sign(payload, process.env.SECRET_KEY, {
-                    expiresIn: 60 * 60 * 24 * 7,
-                });
-                res.send(token);
+        try {
+            const user = req.body.u;
+            const password = req.body.p;
+            let token = null;
+            if (user === 'root' && verifyRootPassword(password)) {
+                token = getRootToken();
             }
             else {
-                res.send('Ошибка авторизации'); // неверный пароль
+                let userDB = await getUserDB(user, password);
+                if (userDB) {
+                    token = getUserToken(userDB.userinfo.name, userDB.rights, userDB.id);
+                }
             }
-
+            if (token) {
+                res.status(202);
+                res.send(token);
+            }
+            else throw new Error('Неизвестная ошибка')
         }
-        else {
-            pool.query(sql, [req.body.u], (err, result) => {
-                if (err) {
-                    res.send("ошибка доступа к базе данных")
-                }
-                else {
-                    if (result.rowCount !== 0) {
-                        const user = result.rows[0];
-                        if (bcrypt.compareSync(req.body.p, user.password)) {
-                            res.status(202);
-                            const payload = {
-                                user: {
-                                    name: user?.userinfo?.name || '',
-                                    rights: user.rights,
-                                    userId: user.id,
-                                },
-                            }
-                            const token = jwt.sign(payload, process.env.SECRET_KEY, {
-                                expiresIn: 60 * 60 * 24 * 7,
-                            });
-                            res.send(token);
-                        }
-                        else {
-                            res.send('Ошибка авторизации'); // неверный пароль
-                        }
-                    }
-                    else {
-                        res.send("Ошибка авторизации") // такого пользователя не существует
-                    }
-                }
-            })
+        catch {
+            res.sendStatus(422);
         }
     }
     async getData(req, res) {
         res.status(202);
-        // console.log("GET DATA")
         const user = {
             name: req.body.user,
             rights: req.body.rights,
@@ -145,7 +72,6 @@ class UserController {
             }
             else {
                 req.body = req.body || {};
-                // console.log("result:", result)
                 req.body.rights = result.user.rights;
                 req.body.user = result?.user?.name || '';
                 req.body.userId = result?.user?.userId;

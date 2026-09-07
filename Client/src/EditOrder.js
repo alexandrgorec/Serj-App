@@ -28,6 +28,7 @@ function EditOrder() {
     const refOtk = useRef(null);
     const refDate = useRef(null);
     const refManager = useRef(null);
+    const refOrderNumber = useRef(null);
     if (editingOrder.id === undefined)
         navigate("/allorders");
 
@@ -62,6 +63,7 @@ function EditOrder() {
             saveOrder.otk = refOtk.current.value;
             saveOrder.date = refDate.current.value;
             saveOrder.manager = refManager.current.value;
+            saveOrder.orderNumber = refOrderNumber.current.value;
         }
 
         setEditingOrder({ ...saveOrder });
@@ -86,7 +88,14 @@ function EditOrder() {
                     }
                 })
                 .catch(function (error) {
-
+                    if (error?.response?.status === 409) {
+                        setAlertVariant("danger");
+                        setMessage(error.response.data?.message || "Заявка с таким номером уже существует");
+                    }
+                    if (error?.response?.status === 400) {
+                        setAlertVariant("danger");
+                        setMessage(error.response.data?.message || "Некорректный номер заявки");
+                    }
                 });
         }
         else {
@@ -129,7 +138,19 @@ function EditOrder() {
                                     }}
                                 />
                             </FloatingLabel>
-                            <h4 className='m-0 p-0 editOrderDesktop-orderId'>Заявка № {editingOrder.id}</h4>
+                            <FloatingLabel label="№ заявки" className="p-0 editOrderDesktop-orderNumber">
+                                <Form.Control
+                                    as="input"
+                                    type='number'
+                                    min='1'
+                                    ref={refOrderNumber}
+                                    defaultValue={editingOrder.orderNumber || editingOrder.id || ''}
+                                    onChange={() => {
+                                        editingOrder.orderNumber = refOrderNumber.current.value;
+                                        setEditingOrder({ ...editingOrder });
+                                    }}
+                                />
+                            </FloatingLabel>
                             <FloatingLabel label="Дата" className="p-0 editOrderDesktop-date" >
                                 <Form.Control as="input" type='date' ref={refDate} defaultValue={editingOrder.date} onChange={() => {
                                     editingOrder.date = refDate.current.value;

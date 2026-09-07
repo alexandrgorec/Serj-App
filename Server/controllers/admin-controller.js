@@ -3,19 +3,6 @@ const bcrypt = require('bcrypt');
 const { writeAuditLog, listAuditLogs, clearAuditLogs } = require("../utils/audit-log");
 
 
-// let a = bcrypt.hash("password", 10, function (err, hash) {
-//     if (err) {
-//         console.log("err", err)
-//     }
-//     if (hash)
-//         console.log("hash", hash)
-// });
-// let h = "$2b$10$LEuQl8ouApiMK0oSV1K1Y.33UsKfQ7i6yc39diWeDWL4liwJgiO5S";
-
-// bcrypt.compare("password", h, function (err, result) {
-//     console.log(result);
-// });
-
 class AdminController {
     async addUser(req, res) {
         const rights = req.body.newUser.rights;
@@ -75,7 +62,7 @@ class AdminController {
     async deleteuser(req, res) {
         const id = +req.body.deleteUser.id;
        
-        pool.query("delete from users where id = $1", [id], (err, result) => {
+        pool.query("delete from users where id = $1", [id], (err) => {
             if (err) {
                 console.error('Error delete order', err.stack);
                 res.send('ошибка доступа к базе данных');

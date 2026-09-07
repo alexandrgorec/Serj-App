@@ -511,6 +511,20 @@ function NewOrderMobile({ order, setOrder }) {
 
         <div className='orderMobile-mainFields'>
           <div className='orderMobile-field'>
+            <div className='orderMobile-label'>№ заявки</div>
+            <Form.Control
+              as='input'
+              type='number'
+              min='1'
+              placeholder='Авто'
+              value={order.orderNumber || ''}
+              onChange={(evt) => {
+                order.orderNumber = evt.target.value;
+                refresh();
+              }}
+            />
+          </div>
+          <div className='orderMobile-field'>
             <div className='orderMobile-label'>Дата</div>
             <Form.Control as='input' type='date' value={order.date || ''} disabled />
           </div>

@@ -209,7 +209,18 @@ function EditOrderMobile({ order, setOrder, onSave, onBack, cost, setCost }) {
       <div className='editOrderMobile noselect'>
         <div className='editOrderMobile-stickyHeader'>
           <Stack direction='horizontal' gap={2} className='editOrderMobile-topBar'>
-            <div className='editOrderMobile-orderId'>Заявка № {order.id}</div>
+            <div className='editOrderMobile-orderNumberWrap'>
+              <Form.Control
+                as='input'
+                type='number'
+                min='1'
+                value={order.orderNumber || order.id || ''}
+                onChange={(evt) => {
+                  order.orderNumber = evt.target.value;
+                  refresh();
+                }}
+              />
+            </div>
             <div className='editOrderMobile-dateWrap'>
               <Form.Control
                 as='input'

@@ -1,10 +1,62 @@
 .newOrderDesktop-topBar {
     --new-order-topbar-item-height: 44px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 10px;
     align-items: center;
 }
 
+.newOrderDesktop-topBarLeft {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-start;
+    min-width: 0;
+}
+
+.newOrderDesktop-topBarCenter {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+}
+
+.newOrderDesktop-topBarRight {
+    min-width: 0;
+}
+
+.newOrderDesktop-title {
+    height: var(--new-order-topbar-item-height);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    min-width: 170px;
+    padding: 0 16px !important;
+    border-radius: 6px;
+    background: rgba(39, 167, 90, 0.16);
+    border: 1px solid rgba(39, 167, 90, 0.22);
+    color: rgba(28, 107, 59, 0.95);
+    font-size: 1.45rem;
+    font-weight: 700;
+}
+
 .newOrderDesktop-manager {
-    min-width: 220px;
+    width: 220px;
+}
+
+.newOrderDesktop-orderNumber {
+    width: 150px;
+}
+
+.newOrderDesktop-orderNumber > label,
+.newOrderDesktop-orderNumber > label::after {
+    background: transparent !important;
+}
+
+.newOrderDesktop-date {
+    width: 170px;
 }
 
 .newOrderDesktop-topBar .btn {
@@ -31,4 +83,27 @@
 .newOrderDesktop-topBar .form-floating > label {
     padding-top: 0.25rem;
     font-size: 0.82rem;
+}
+
+.newOrderDesktop-serviceFields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: stretch;
+    margin: 8px 6px 16px;
+}
+
+.newOrderDesktop-comments {
+    display: flex;
+    min-height: 240px;
+}
+
+.newOrderDesktop-comments textarea {
+    height: 100%;
+    resize: none;
+}
+
+.newOrderDesktop-requisites {
+    display: flex;
+    flex-direction: column;
 }

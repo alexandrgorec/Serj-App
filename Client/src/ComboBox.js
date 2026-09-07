@@ -42,69 +42,69 @@ function ComboBox({ isBuyerH = '', iconSize = '2em', fontSize = '16px', id, obje
                     }}
                 >
                     <Typeahead className="combobox-typeahead" id={id} ref={typeaheadRef}
-                    positionFixed
-                    flip={true}
-                    inputProps={{
-                        className: `tabIndex-${tabIndex} ${isBuyerH}`,
-                        style: {
-                            fontSize: isTablet ? '12px' : fontSize,
-                            paddingTop: isTablet ? '2px' : undefined,
-                            paddingBottom: isTablet ? '2px' : undefined,
-                        }
-                    }}
-                    onKeyDown={(evt) => {
+                        positionFixed
+                        flip={true}
+                        inputProps={{
+                            className: `tabIndex-${tabIndex} ${isBuyerH}`,
+                            style: {
+                                fontSize: isTablet ? '12px' : fontSize,
+                                paddingTop: isTablet ? '2px' : undefined,
+                                paddingBottom: isTablet ? '2px' : undefined,
+                            }
+                        }}
+                        onKeyDown={(evt) => {
 
-                        if (evt.key === 'Enter') {
+                            if (evt.key === 'Enter') {
+                                if (typeaheadRef.current) {
+                                    typeaheadRef.current.hideMenu();
+                                }
+                                let nextElem = document.querySelector(`.tabIndex-${tabIndex + 1}`)
+                                console.log(nextElem)
+                                if (nextElem) {
+                                    nextElem.focus();
+                                }
+                            }
+                        }}
+                        onBlur={() => {
                             if (typeaheadRef.current) {
                                 typeaheadRef.current.hideMenu();
                             }
-                            let nextElem = document.querySelector(`.tabIndex-${tabIndex + 1}`)
-                            console.log(nextElem)
-                            if (nextElem) {
-                                nextElem.focus();
-                            }
-                        }
-                    }}
-                    onBlur={() => {
-                        if (typeaheadRef.current) {
-                            typeaheadRef.current.hideMenu();
-                        }
-                    }}
-                    defaultInputValue={object[field]}
-                    labelKey="name"
-                    onChange={(selected) => {
-                        object[field] = selected.length ? selected[0] : '';
-                    }}
-                    onInputChange={(text) => {
-                        object[field] = text;
-                    }}
-                    options={data}
-                    emptyLabel={null}
-                    placeholder={associations[nameDataList]}
-                    renderMenuItemChildren={(option) => (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span>{option}</span>
-                            <MdDelete
-                                className="icon"
-                                size={iconSize}
-                                style={{ color: 'rgba(194, 65, 65, 0.82)', flexShrink: 0 }}
-                                onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    const updated = user.selectListsData[nameDataList].filter(item => item !== option);
-                                    setUser(user => {
-                                        user.selectListsData[nameDataList] = updated;
-                                        return { ...user };
-                                    });
-                                    aAxios.post(`/user/editSelectListsData`, {
-                                        selectListsData: { ...user.selectListsData, [nameDataList]: updated },
-                                    });
-                                    if (typeaheadRef.current) typeaheadRef.current.hideMenu();
-                                }}
-                            />
-                        </div>
-                    )}
+                        }}
+                        defaultInputValue={object[field]}
+                        labelKey="name"
+                        onChange={(selected) => {
+                            object[field] = selected.length ? selected[0] : '';
+                        }}
+                        onInputChange={(text) => {
+                            object[field] = text;
+                        }}
+                        options={data}
+                        emptyLabel={null}
+                        placeholder={associations[nameDataList]}
+                        renderMenuItemChildren={(option) => (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span>{option}</span>
+                                <MdDelete
+                                    className="icon"
+                                    size={iconSize}
+                                    style={{ color: 'rgba(194, 65, 65, 0.82)', flexShrink: 0 }}
+                                    onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        const updated = user.selectListsData[nameDataList].filter(item => item !== option);
+                                        setUser(user => {
+                                            user.selectListsData[nameDataList] = updated;
+                                            return { ...user };
+                                        });
+                                        aAxios.post(`/user/editSelectListsData`, {
+                                            selectListsData: { ...user.selectListsData, [nameDataList]: updated },
+                                        });
+                                        if (typeaheadRef.current) typeaheadRef.current.hideMenu();
+                                    }}
+                                />
+                            </div>
+                        )}
                     />
                 </div>
 
@@ -122,12 +122,12 @@ function ComboBox({ isBuyerH = '', iconSize = '2em', fontSize = '16px', id, obje
                         justifyContent: 'center',
                     }}
                     onClick={() => {
-                    object[field] = '';
-                    if (typeaheadRef.current) {
-                        typeaheadRef.current.clear();
-                    }
-                }}>
-                    <MdClear className="combobox-btn-icon" style={{ width: '100%', height: '100%'}} />
+                        object[field] = '';
+                        if (typeaheadRef.current) {
+                            typeaheadRef.current.clear();
+                        }
+                    }}>
+                    <MdClear className="combobox-btn-icon" style={{ width: '100%', height: '100%' }} />
                 </button>
 
                 <button
@@ -144,26 +144,35 @@ function ComboBox({ isBuyerH = '', iconSize = '2em', fontSize = '16px', id, obje
                         justifyContent: 'center',
                     }}
                     onClick={() => {
-                    const selectListsDataEdited = user.selectListsData;
-                    if (!selectListsDataEdited[nameDataList].includes(object[field]) && object[field] !== '') {
-                        selectListsDataEdited[nameDataList].push(object[field]);
-                        aAxios.post(`/user/editSelectListsData`, {
-                            selectListsData: selectListsDataEdited,
-                        })
-                            .then(function (response) {
-                                if (response.status === 202) {
-                                    console.log("edited");
-                                }
+                        let selectListsDataEdited = user.selectListsData;
+                        if (selectListsDataEdited == undefined) {
+                            selectListsDataEdited = {
+                                SUPPLIERS: [],
+                                BUYERS: [],
+                                DRIVERS: [],
+                                TYPE_OF_PRODUCT: [],
+                                MANAGERS: [],
+                            }
+                        }
+                        if (!selectListsDataEdited[nameDataList].includes(object[field]) && object[field] !== '') {
+                            selectListsDataEdited[nameDataList].push(object[field]);
+                            aAxios.post(`/user/editSelectListsData`, {
+                                selectListsData: selectListsDataEdited,
                             })
-                            .catch(function (error) {
+                                .then(function (response) {
+                                    if (response.status === 202) {
+                                        console.log("edited");
+                                    }
+                                })
+                                .catch(function (error) {
 
-                            })
-                    }
-                    setUser(user => {
-                        user.selectListsData = selectListsDataEdited;
-                        return { ...user };
-                    })
-                }}>
+                                })
+                        }
+                        setUser(user => {
+                            user.selectListsData = selectListsDataEdited;
+                            return { ...user };
+                        })
+                    }}>
                     <FaSave className="combobox-btn-icon" style={{ width: '70%', height: '70%' }} />
                 </button>
             </div>

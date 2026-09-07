@@ -70,6 +70,10 @@ function buyerNamesFromOrder(orderjson) {
   return out;
 }
 
+function getOrderNumber(order) {
+  return order?.order_number || order?.orderjson?.orderNumber || order?.orderjson?.order_number || order?.id;
+}
+
 function orderRows(orderjson) {
   const suppliers = Array.isArray(orderjson?.suppliers) ? orderjson.suppliers : [];
   const buyers = Array.isArray(orderjson?.buyers) ? orderjson.buyers : [];
@@ -165,9 +169,12 @@ function AllOrders() {
 
 
 
-  const [idForDeleteOrder, setIdForDeleteOrder] = useState(null);
+  const [orderForDelete, setOrderForDelete] = useState(null);
   const [show, setShow] = useState(false);
-  const handleCloseModal = () => setShow(false);
+  const handleCloseModal = () => {
+    setShow(false);
+    setOrderForDelete(null);
+  };
   const handleShowModal = () => setShow(true);
 
   function showHideOrder(num) {
@@ -198,6 +205,7 @@ function AllOrders() {
         if (response.status === 202) {
           setOrders(response.data.orders.map((order, index) => {
             order.orderjson.id = order.id;
+            order.orderjson.orderNumber = getOrderNumber(order);
             if (firstUpload) {
               order.open = false;
               if (sessionStorage.createdOrderId) {
@@ -216,19 +224,49 @@ function AllOrders() {
       });
   }
 
-  const deleteOrder = (id) => {
+  const deleteOrder = (id, orderNumber = id) => {
     aAxios.post(`/user/deleteorder`, {
       id
     })
       .then(function (response) {
         if (response.status === 202) {
           getAllOrders(false);
-          setToast(`Заявка №${id} удалена`)
+          setToast(`Заявка №${orderNumber} удалена`)
         }
       })
       .catch(function (error) {
       });
   }
+
+  const handleDeleteConfirmed = () => {
+    if (!orderForDelete) return;
+    deleteOrder(orderForDelete.id, orderForDelete.orderNumber);
+    handleCloseModal();
+  };
+
+  useEffect(() => {
+    if (!show) return undefined;
+
+    const handleGlobalModalKeyDown = (evt) => {
+      if (evt.key === 'Escape') {
+        evt.preventDefault();
+        evt.stopPropagation();
+        handleCloseModal();
+        return;
+      }
+      if (evt.key === 'Enter') {
+        evt.preventDefault();
+        evt.stopPropagation();
+        handleDeleteConfirmed();
+      }
+    };
+
+    document.addEventListener('keydown', handleGlobalModalKeyDown, true);
+    return () => {
+      document.removeEventListener('keydown', handleGlobalModalKeyDown, true);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [show, orderForDelete]);
 
   const printOrder = (id) => {
     const token = window.localStorage.token || '';
@@ -379,6 +417,7 @@ function AllOrders() {
         <div className='allOrdersCards noselect'>
           {filteredOrders.map((order) => {
             const emptyHSummas = emptyBuyerHSummasDisplay(order.orderjson.buyers);
+            const orderNumber = getOrderNumber(order);
             const orderIndex = orders.findIndex((o) => o.id === order.id);
             const toggleRow = () => {
               if (orderIndex >= 0) showHideOrder(orderIndex);
@@ -386,7 +425,7 @@ function AllOrders() {
             return (
               <div key={order.id} className={`allOrders-card ${order.orderjson.haveEmptyBuyerH ? 'allOrders-card-warning' : ''}`}>
                 <div className='allOrders-card-header clickable' onClick={toggleRow}>
-                  <div className='allOrders-card-id'>Заявка №{order.id}</div>
+                  <div className='allOrders-card-id'>Заявка №{orderNumber}</div>
                   <div className='allOrders-card-date'>{formatDate(order.orderjson.date)}</div>
                   <Stack direction="horizontal" gap={2} className="allOrders-card-actions">
                     <BiEditAlt size='1.6em' className='clickable icon' style={{ color: 'rgba(1, 87, 248, 0.85)' }} onClick={(e) => {
@@ -396,7 +435,7 @@ function AllOrders() {
                     }} />
                     <MdDelete size='1.6em' className='clickable icon' style={{ color: 'rgb(194, 65, 65)' }} onClick={(e) => {
                       e.stopPropagation();
-                      setIdForDeleteOrder(order.id);
+                      setOrderForDelete({ id: order.id, orderNumber });
                       handleShowModal();
                     }} />
                   </Stack>
@@ -520,6 +559,7 @@ function AllOrders() {
         {
           filteredOrders.map((order) => {
             const emptyHSummas = emptyBuyerHSummasDisplay(order.orderjson.buyers);
+            const orderNumber = getOrderNumber(order);
             const orderIndex = orders.findIndex((o) => o.id === order.id);
             const toggleRow = () => {
               if (orderIndex >= 0) showHideOrder(orderIndex);
@@ -537,7 +577,7 @@ function AllOrders() {
                   }}
                 >
 
-                      <td className="allOrders-cell-num" style={{ overflow: "hidden", textAlign: 'center', backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>{order.id}</td>
+                      <td className="allOrders-cell-num" style={{ overflow: "hidden", textAlign: 'center', backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>{orderNumber}</td>
                       <td className="allOrders-cell-date" style={{ overflow: "hidden", backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }} >{formatDate(order.orderjson.date)}</td>
                       <td className="allOrders-cell-buyers" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>{
                         <Stack direction="horizontal" gap={3} className="allOrders-buyers-stack" >
@@ -576,7 +616,7 @@ function AllOrders() {
                           <MdDelete size='1.7em' className='clickable icon' style={{ color: 'rgb(194, 65, 65)' }} onClick={(e) => {
                             e.stopPropagation();
                             if (orderIndex >= 0) showHideOrder(orderIndex)
-                            setIdForDeleteOrder(order.id);
+                            setOrderForDelete({ id: order.id, orderNumber });
                             handleShowModal();
                           }} />
 
@@ -767,7 +807,7 @@ function AllOrders() {
       <Modal centered show={show} onHide={handleCloseModal}
         animation={true} >
         <Modal.Header closeButton>
-          <Modal.Title>Подтверждение удаления заявки № {idForDeleteOrder}</Modal.Title>
+          <Modal.Title>Подтверждение удаления заявки № {orderForDelete?.orderNumber || ''}</Modal.Title>
         </Modal.Header>
         <Modal.Body>Точно удаляем?</Modal.Body>
         <Modal.Footer>
@@ -775,11 +815,7 @@ function AllOrders() {
           <Button variant="secondary" onClick={handleCloseModal}>
             Еще подумаю
           </Button>
-          <Button variant="primary" className='col-3' onClick={() => {
-            if (idForDeleteOrder)
-              deleteOrder(idForDeleteOrder);
-            handleCloseModal();
-          }}>
+          <Button variant="primary" className='col-3' onClick={handleDeleteConfirmed}>
             Да
           </Button>
 

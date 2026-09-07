@@ -7,7 +7,6 @@ import { Link } from 'react-router-dom';
 
 import Stack from 'react-bootstrap/Stack';
 
-
 function AddUser({ setMenuComponent }) {
     const { setToast, aAxios } = useContext(userContext);
     const refLogin = useRef(null);

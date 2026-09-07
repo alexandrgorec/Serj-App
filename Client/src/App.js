@@ -19,6 +19,19 @@ import AuditLog from './AuditLog';
 
 export const userContext = createContext();
 
+const emptyOrderRow = () => ({
+  liters: '',
+  name: '',
+  price: '',
+  tons: '',
+  typeOfProduct: '',
+});
+
+const todayInputDate = () =>
+  Intl.DateTimeFormat('ru', { year: 'numeric' }).format(new Date()) + '-' +
+  Intl.DateTimeFormat('ru', { month: '2-digit' }).format(new Date()) + '-' +
+  Intl.DateTimeFormat('ru', { day: '2-digit' }).format(new Date());
+
 
 function App() {
   const PORT = 3001;
@@ -68,12 +81,14 @@ function App() {
     if (error?.code === "ERR_NETWORK") {
       setToast('Нет соединения с сервером')
     }
+    return Promise.reject(error);
   })
 
   const [newOrder, setNewOrder] = useState({
-    suppliers: [],
-    buyers: [],
-    date: Intl.DateTimeFormat('ru',{year:'numeric'}).format(new Date()) + '-' + Intl.DateTimeFormat('ru',{month:'2-digit'}).format(new Date()) + '-' + Intl.DateTimeFormat('ru',{day:'2-digit'}).format(new Date())
+    suppliers: [emptyOrderRow()],
+    buyers: [emptyOrderRow()],
+    orderNumber: '',
+    date: todayInputDate(),
   });
 
 

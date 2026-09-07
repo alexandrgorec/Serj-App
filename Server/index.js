@@ -12,7 +12,8 @@ const { adminRouter } = require('./routers/adminRouter.js')
 const { userRouter } = require('./routers/userRouter.js')
 const { guestRouter } = require("./routers/guestRouter.js")
 const { ensureAuditLogTable } = require("./utils/audit-log");
-const bcrypt = require('bcrypt');
+const { ensureOrderNumberColumn } = require("./utils/db-migrations");
+// const bcrypt = require('bcrypt');
 app.use(cors());
 app.use(cookieParser(process.env.SECRET_KEY));
 app.use(bodyParser.json());
@@ -39,16 +40,24 @@ app.use("/guest", guestRouter);
 app.use('/admin', adminRouter);
 app.use('/user', userRouter);
 app.get("/*", (req, res) => { res.redirect("/"); })
-const server = app.listen(PORT, () => {
-    console.log(`SERVER STARTED ON PORT:${PORT}`);
-    ensureAuditLogTable().catch((error) => {
-        console.error("Не удалось инициализировать таблицу audit_log:", error);
+
+async function startServer() {
+    await ensureOrderNumberColumn();
+    await ensureAuditLogTable();
+
+    const server = app.listen(PORT, () => {
+        console.log(`SERVER STARTED ON PORT:${PORT}`);
     });
-});
-server.on('error', (error) => {
-    if (error?.code === 'EADDRINUSE') {
-        console.error(`PORT ${PORT} уже занят. Останови другой процесс на этом порту или измени PORT в Server/.env`);
-        return;
-    }
-    console.error('Ошибка запуска сервера:', error);
+    server.on('error', (error) => {
+        if (error?.code === 'EADDRINUSE') {
+            console.error(`PORT ${PORT} уже занят. Останови другой процесс на этом порту или измени PORT в Server/.env`);
+            return;
+        }
+        console.error('Ошибка запуска сервера:', error);
+    });
+}
+
+startServer().catch((error) => {
+    console.error("Ошибка инициализации сервера:", error);
+    process.exit(1);
 });

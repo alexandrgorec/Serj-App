@@ -41,6 +41,32 @@
     height: var(--edit-topbar-item-height);
     display: flex;
     align-items: center;
+    justify-content: center;
+    min-width: 170px;
+    padding: 0 16px !important;
+    border-radius: 6px;
+    background: rgba(47, 122, 220, 0.16);
+    border: 1px solid rgba(47, 122, 220, 0.24);
+    color: rgba(32, 80, 145, 0.96);
+    font-size: 1.45rem;
+    font-weight: 700;
+}
+
+.editOrderDesktop-orderNumber {
+    width: 170px;
+}
+
+.editOrderDesktop-orderNumber > .form-control {
+    background: rgba(47, 122, 220, 0.16);
+    border: 1px solid rgba(47, 122, 220, 0.24);
+    color: rgba(32, 80, 145, 0.96);
+    font-size: 1.35rem;
+    font-weight: 700;
+}
+
+.editOrderDesktop-orderNumber > label,
+.editOrderDesktop-orderNumber > label::after {
+    background: transparent !important;
 }
 
 .editOrderDesktop-manager {
