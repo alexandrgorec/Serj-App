@@ -526,7 +526,15 @@ function NewOrderMobile({ order, setOrder }) {
           </div>
           <div className='orderMobile-field'>
             <div className='orderMobile-label'>Дата</div>
-            <Form.Control as='input' type='date' value={order.date || ''} disabled />
+            <Form.Control
+              as='input'
+              type='date'
+              value={order.date || ''}
+              onChange={(evt) => {
+                order.date = evt.target.value;
+                refresh();
+              }}
+            />
           </div>
           <div className='orderMobile-field'>
             <div className='orderMobile-label'>Менеджер</div>

@@ -1,6 +1,5 @@
 import "./ComboBox.css";
 import { useRef, useContext } from "react";
-import { FaSave } from "react-icons/fa";
 import { MdDelete, MdClear } from "react-icons/md";
 import { userContext } from "./App";
 import { Typeahead } from "react-bootstrap-typeahead";
@@ -128,52 +127,6 @@ function ComboBox({ isBuyerH = '', iconSize = '2em', fontSize = '16px', id, obje
                         }
                     }}>
                     <MdClear className="combobox-btn-icon" style={{ width: '100%', height: '100%' }} />
-                </button>
-
-                <button
-                    type="button"
-                    className="combobox-btn combobox-btn-save d-flex justify-content-center align-items-center"
-                    style={{
-                        cursor: 'pointer',
-                        flex: '0 0 auto',
-                        width: `${btnSize}px`,
-                        minWidth: `${btnSize}px`,
-                        padding: 0,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                    onClick={() => {
-                        let selectListsDataEdited = user.selectListsData;
-                        if (selectListsDataEdited == undefined) {
-                            selectListsDataEdited = {
-                                SUPPLIERS: [],
-                                BUYERS: [],
-                                DRIVERS: [],
-                                TYPE_OF_PRODUCT: [],
-                                MANAGERS: [],
-                            }
-                        }
-                        if (!selectListsDataEdited[nameDataList].includes(object[field]) && object[field] !== '') {
-                            selectListsDataEdited[nameDataList].push(object[field]);
-                            aAxios.post(`/user/editSelectListsData`, {
-                                selectListsData: selectListsDataEdited,
-                            })
-                                .then(function (response) {
-                                    if (response.status === 202) {
-                                        console.log("edited");
-                                    }
-                                })
-                                .catch(function (error) {
-
-                                })
-                        }
-                        setUser(user => {
-                            user.selectListsData = selectListsDataEdited;
-                            return { ...user };
-                        })
-                    }}>
-                    <FaSave className="combobox-btn-icon" style={{ width: '70%', height: '70%' }} />
                 </button>
             </div>
 

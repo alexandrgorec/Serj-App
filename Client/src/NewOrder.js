@@ -9,6 +9,7 @@ import { useState, useContext } from 'react';
 import { Alert } from 'react-bootstrap';
 import { userContext } from './App';
 import { useNavigate } from 'react-router-dom';
+import { syncOrderSelectLists } from './selectListsSync';
 
 
 
@@ -33,7 +34,7 @@ function NewOrder({ order, setOrder }) {
   const isPhone = window.innerWidth <= 480;
 
   const redirect = useNavigate();
-  const { aAxios } = useContext(userContext);
+  const { user, setUser, aAxios } = useContext(userContext);
   const [message, setMessage] = useState("");
   const [alertVariant, setAlertVariant] = useState("");
 
@@ -88,8 +89,11 @@ function NewOrder({ order, setOrder }) {
       aAxios.post(`/user/neworder`, {
         order,
       })
-        .then(function (response) {
+        .then(async function (response) {
           if (response.status === 202) {
+            await syncOrderSelectLists({ order, user, setUser, aAxios }).catch((error) => {
+              console.error('Select lists sync error:', error);
+            });
             clearData();
             setAlertVariant("success");
             sessionStorage.createdOrderId = response.data?.id || response.data;

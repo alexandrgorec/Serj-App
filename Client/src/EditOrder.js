@@ -9,13 +9,14 @@ import { Alert } from 'react-bootstrap';
 import Stack from 'react-bootstrap/Stack';
 import { userContext } from './App';
 import { useNavigate } from 'react-router-dom';
+import { syncOrderSelectLists } from './selectListsSync';
 
 
 
 
 
 function EditOrder() {
-    const { setToast, aAxios, editingOrder, setEditingOrder } = useContext(userContext);
+    const { user, setUser, setToast, aAxios, editingOrder, setEditingOrder } = useContext(userContext);
     const navigate = useNavigate();
     const isPhone = window.innerWidth <= 480;
     const [message, setMessage] = useState("");
@@ -80,8 +81,11 @@ function EditOrder() {
             aAxios.post(`/user/editorder`, {
                 editingOrder,
             })
-                .then(function (response) {
+                .then(async function (response) {
                     if (response.status === 202) {
+                        await syncOrderSelectLists({ order: saveOrder, user, setUser, aAxios }).catch((error) => {
+                            console.error('Select lists sync error:', error);
+                        });
                         setAlertVariant("success");
                         setToast("Изменения сохранены")  //id = response.data
                         sessionStorage.createdOrderId = editingOrder.id;

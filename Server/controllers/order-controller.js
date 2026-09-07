@@ -3,15 +3,16 @@ const PDFDocument = require("pdfkit");
 const { pool } = require("../db");
 const { writeAuditLog } = require("../utils/audit-log");
 
-const A5_WIDTH_PT = 419.53;
-const A5_HEIGHT_PT = 595.28;
+const REPORT_PAGE_SIZE = "A4";
+const REPORT_PAGE_WIDTH_PT = 595.28;
+const REPORT_PAGE_HEIGHT_PT = 841.89;
 
 const LAYOUT_PROFILES = [
-    { margin: 16, titleSize: 13.2, sectionSize: 9.2, headerSize: 6.1, bodySize: 4.9, cellPadX: 2.2, cellPadY: 1.35, lineGap: 2.0, sectionGap: 3.2, borderWidth: 0.45 },
-    { margin: 14, titleSize: 12.4, sectionSize: 8.8, headerSize: 5.8, bodySize: 4.5, cellPadX: 2.0, cellPadY: 1.2, lineGap: 1.8, sectionGap: 2.8, borderWidth: 0.42 },
-    { margin: 12, titleSize: 11.6, sectionSize: 8.3, headerSize: 5.4, bodySize: 4.1, cellPadX: 1.8, cellPadY: 1.05, lineGap: 1.6, sectionGap: 2.4, borderWidth: 0.4 },
-    { margin: 10, titleSize: 10.8, sectionSize: 7.8, headerSize: 5.0, bodySize: 3.7, cellPadX: 1.55, cellPadY: 0.95, lineGap: 1.4, sectionGap: 2.1, borderWidth: 0.38 },
-    { margin: 8, titleSize: 10.0, sectionSize: 7.2, headerSize: 4.5, bodySize: 3.2, cellPadX: 1.35, cellPadY: 0.85, lineGap: 1.2, sectionGap: 1.9, borderWidth: 0.35 },
+    { margin: 22, titleSize: 18.0, sectionSize: 12.2, headerSize: 8.4, bodySize: 7.2, cellPadX: 3.6, cellPadY: 2.4, lineGap: 4.0, sectionGap: 6.0, borderWidth: 0.55 },
+    { margin: 20, titleSize: 16.5, sectionSize: 11.4, headerSize: 7.8, bodySize: 6.6, cellPadX: 3.2, cellPadY: 2.1, lineGap: 3.5, sectionGap: 5.2, borderWidth: 0.52 },
+    { margin: 18, titleSize: 15.0, sectionSize: 10.6, headerSize: 7.2, bodySize: 6.0, cellPadX: 2.8, cellPadY: 1.8, lineGap: 3.0, sectionGap: 4.4, borderWidth: 0.48 },
+    { margin: 16, titleSize: 13.8, sectionSize: 9.8, headerSize: 6.6, bodySize: 5.4, cellPadX: 2.4, cellPadY: 1.55, lineGap: 2.6, sectionGap: 3.7, borderWidth: 0.44 },
+    { margin: 14, titleSize: 12.6, sectionSize: 9.0, headerSize: 6.0, bodySize: 4.8, cellPadX: 2.1, cellPadY: 1.35, lineGap: 2.2, sectionGap: 3.0, borderWidth: 0.40 },
 ];
 
 function hasValue(value) {
@@ -275,8 +276,8 @@ function estimateRowHeight(row, columns, profile, tableWidth, isHeader = false) 
 }
 
 function estimatePages(report, profile) {
-    const contentWidth = A5_WIDTH_PT - profile.margin * 2;
-    const pageBottom = A5_HEIGHT_PT - profile.margin;
+    const contentWidth = REPORT_PAGE_WIDTH_PT - profile.margin * 2;
+    const pageBottom = REPORT_PAGE_HEIGHT_PT - profile.margin;
     let pages = 1;
     let y = profile.margin;
 
@@ -460,7 +461,7 @@ function renderTable(doc, table, state) {
 }
 
 function renderReport(doc, report, profile, fonts) {
-    const pageSetup = { size: "A5", margins: { top: 0, bottom: 0, left: 0, right: 0 } };
+    const pageSetup = { size: REPORT_PAGE_SIZE, margins: { top: 0, bottom: 0, left: 0, right: 0 } };
     doc.addPage(pageSetup);
     const state = { y: profile.margin, profile, fonts, pageSetup };
     const x = profile.margin;
@@ -729,7 +730,7 @@ class OrderController {
             res.setHeader("Content-Disposition", `inline; filename="order-${orderNumber}.pdf"`);
             res.status(200);
 
-            const doc = new PDFDocument({ autoFirstPage: false, size: "A5", margin: 0, compress: true });
+            const doc = new PDFDocument({ autoFirstPage: false, size: REPORT_PAGE_SIZE, margin: 0, compress: true });
             doc.pipe(res);
             renderReport(doc, report, profile, fonts);
             doc.end();
