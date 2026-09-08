@@ -154,12 +154,12 @@ function makeSuppliersTable(order, showFinBlock) {
             { key: "n", label: "№", weight: 0.05, align: "center" },
             { key: "name", label: "Поставщик", weight: 0.145, align: "left" },
             { key: "product", label: "Продукт", weight: 0.145, align: "left" },
-            { key: "liters", label: "Л", weight: 0.065, align: "right", noWrap: true },
+            { key: "liters", label: "Л", weight: 0.085, align: "right", noWrap: true, bodyFontScale: 0.92 },
             { key: "tons", label: "Т", weight: 0.08, align: "right", noWrap: true },
             { key: "price", label: "Цена", weight: 0.085, align: "right", noWrap: true },
             { key: "sf", label: "С/Ф", weight: 0.075, align: "left" },
             { key: "date", label: "Дата", weight: 0.095, align: "center", noWrap: true },
-            { key: "summa", label: "Σ", weight: 0.18, align: "right", noWrap: true, bodyFontScale: 0.92 },
+            { key: "summa", label: "Σ", weight: 0.16, align: "right", noWrap: true, bodyFontScale: 0.92 },
             { key: "akt", label: "Акт", weight: 0.08, align: "left" },
         ]
         : [
