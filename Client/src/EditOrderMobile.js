@@ -8,8 +8,9 @@ import Stack from 'react-bootstrap/Stack';
 import Modal from 'react-bootstrap/Modal';
 import InputGroup from 'react-bootstrap/InputGroup';
 import { MdDelete } from "react-icons/md";
-import OtkFields from './OtkFields';
+import OtkFields, { getOrderOtkTax } from './OtkFields';
 import OrderExtraFields from './OrderExtraFields';
+import { getManagerOptions } from './managerOptions';
 
 const ORDER_STATUS_OPTIONS = [
   'Создана',
@@ -23,7 +24,7 @@ function getOrderStatusClass(status) {
   return 'editOrder-status-created';
 }
 
-function EditOrderMobile({ order, setOrder, onSave, onBack, cost, setCost }) {
+function EditOrderMobile({ order, setOrder, onSave, onBack }) {
   const { user } = useContext(userContext);
   const bgColorH = 'rgba(127, 244, 166, 0.22)';
   const canEditOrderStatus = !!user?.rights?.finBlockAccess;
@@ -594,15 +595,18 @@ function EditOrderMobile({ order, setOrder, onSave, onBack, cost, setCost }) {
         <div className='editOrderMobile-mainFields'>
           <div className='editOrderMobile-field'>
             <div className='editOrderMobile-label'>Менеджер</div>
-            <Form.Control
-              as='input'
-              type='text'
+            <Form.Select
               value={order.manager || ''}
               onChange={(evt) => {
                 order.manager = evt.target.value;
                 refresh();
               }}
-            />
+            >
+              <option value="">Менеджер</option>
+              {getManagerOptions(order.manager).map((manager) => (
+                <option key={manager} value={manager}>{manager}</option>
+              ))}
+            </Form.Select>
           </div>
           <div className='editOrderMobile-field'>
             <div className='editOrderMobile-label'>Комментарии</div>
@@ -648,7 +652,6 @@ function EditOrderMobile({ order, setOrder, onSave, onBack, cost, setCost }) {
               value={order.cost || ''}
               onChange={(evt) => {
                 order.cost = evt.target.value;
-                setCost(evt.target.value);
                 refresh();
               }}
             />
@@ -660,12 +663,12 @@ function EditOrderMobile({ order, setOrder, onSave, onBack, cost, setCost }) {
             <OtkFields order={order} setOrder={setOrder} variant='mobile' />
           </div>
           <div className='editOrderMobile-field'>
-            <div className='editOrderMobile-label'>Налог (42% от доставки)</div>
+            <div className='editOrderMobile-label'>Налог 42%</div>
             <Form.Control
               as='input'
               type='number'
               readOnly
-              value={Math.round((Number(cost) || 0) * 0.42)}
+              value={getOrderOtkTax(order)}
             />
           </div>
         </div>

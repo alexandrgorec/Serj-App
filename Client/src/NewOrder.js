@@ -10,8 +10,9 @@ import { Alert } from 'react-bootstrap';
 import { userContext } from './App';
 import { useNavigate } from 'react-router-dom';
 import { syncOrderSelectLists } from './selectListsSync';
-import OtkFields, { getOrderOtkForSave } from './OtkFields';
+import OtkFields, { getOrderOtkForSave, getOrderOtkTax } from './OtkFields';
 import OrderExtraFields from './OrderExtraFields';
+import { getManagerOptions } from './managerOptions';
 
 
 
@@ -44,8 +45,7 @@ function NewOrder({ order, setOrder }) {
     setOrder((prev) => ({ ...prev, [field]: value }));
   };
 
-  const deliveryCost = Number(String(order.cost || '').replace(/\s/g, '').replace(/,/g, '.'));
-  const tax = Number.isNaN(deliveryCost) ? 0 : Math.round(deliveryCost * 0.42);
+  const tax = getOrderOtkTax(order);
 
   const addSupplier = () => {
     setOrder((prev) => ({
@@ -139,14 +139,17 @@ function NewOrder({ order, setOrder }) {
 
               <div className='newOrderDesktop-topBarCenter'>
                 <FloatingLabel label="Менеджер" className="p-0 newOrderDesktop-manager">
-                  <Form.Control
-                    as="input"
-                    type='text'
+                  <Form.Select
                     value={order.manager || ''}
                     onChange={(evt) => {
                       setOrder((prev) => ({ ...prev, manager: evt.target.value }));
                     }}
-                  />
+                  >
+                    <option value="">Менеджер</option>
+                    {getManagerOptions(order.manager).map((manager) => (
+                      <option key={manager} value={manager}>{manager}</option>
+                    ))}
+                  </Form.Select>
                 </FloatingLabel>
                 <h4 className='m-0 p-0 newOrderDesktop-title'>Новая заявка</h4>
                 <FloatingLabel label="№ заявки" className="p-0 newOrderDesktop-orderNumber">
@@ -217,7 +220,7 @@ function NewOrder({ order, setOrder }) {
                     />
                   </FloatingLabel>
                   <OtkFields order={order} setOrder={setOrder} />
-                  <FloatingLabel label="Налог (42% от доставки)" className="mb-0">
+                  <FloatingLabel label="Налог 42%" className="mb-0">
                     <Form.Control as="input" type='number' readOnly value={tax} />
                   </FloatingLabel>
                 </div>

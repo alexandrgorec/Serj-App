@@ -10,8 +10,9 @@ import Stack from 'react-bootstrap/Stack';
 import { userContext } from './App';
 import { useNavigate } from 'react-router-dom';
 import { syncOrderSelectLists } from './selectListsSync';
-import OtkFields, { getOrderOtkForSave } from './OtkFields';
+import OtkFields, { getOrderOtkForSave, getOrderOtkTax } from './OtkFields';
 import OrderExtraFields from './OrderExtraFields';
+import { getManagerOptions } from './managerOptions';
 
 
 
@@ -35,7 +36,6 @@ function EditOrder() {
     const isPhone = window.innerWidth <= 480;
     const [message, setMessage] = useState("");
     const [alertVariant, setAlertVariant] = useState("");
-    const [cost, setCost] = useState(editingOrder.cost || 0);
     const refComments = useRef(null);
     const refIp = useRef(null);
     const refDriver = useRef(null);
@@ -135,8 +135,6 @@ function EditOrder() {
                     setOrder={setEditingOrder}
                     onSave={sendData}
                     onBack={() => navigate(-1)}
-                    cost={cost}
-                    setCost={setCost}
                 />
                 : <>
                     <div className='mb-2 noselect editOrderDesktop-topBar'>
@@ -166,16 +164,19 @@ function EditOrder() {
 
                         <div className='editOrderDesktop-topBarCenter'>
                             <FloatingLabel label="Менеджер" className="p-0 editOrderDesktop-manager">
-                                <Form.Control
-                                    as="input"
-                                    type='text'
+                                <Form.Select
                                     ref={refManager}
-                                    defaultValue={editingOrder.manager || ''}
+                                    value={editingOrder.manager || ''}
                                     onChange={() => {
                                         editingOrder.manager = refManager.current.value;
                                         setEditingOrder({ ...editingOrder });
                                     }}
-                                />
+                                >
+                                    <option value="">Менеджер</option>
+                                    {getManagerOptions(editingOrder.manager).map((manager) => (
+                                        <option key={manager} value={manager}>{manager}</option>
+                                    ))}
+                                </Form.Select>
                             </FloatingLabel>
                             <FloatingLabel label="№ заявки" className="p-0 editOrderDesktop-orderNumber">
                                 <Form.Control
@@ -234,13 +235,13 @@ function EditOrder() {
                                     <Form.Control as="input" type='text' ref={refDriver} defaultValue={editingOrder.driver} />
                                 </FloatingLabel>
                                 <FloatingLabel label="Стоимость доставки" className="mb-2 col-11" >
-                                    <Form.Control as="input" type='number' ref={refCost} defaultValue={editingOrder.cost} onChange={() => setCost(refCost.current.value)} />
+                                    <Form.Control as="input" type='number' ref={refCost} defaultValue={editingOrder.cost} />
                                 </FloatingLabel>
                                 <div className='col-11'>
                                     <OtkFields order={editingOrder} setOrder={setEditingOrder} />
                                 </div>
-                                <FloatingLabel label="Налог (42% от доставки)" className="mb-0 col-11" >
-                                    <Form.Control as="input" type='number' readOnly value={Math.round(cost * 0.42)} />
+                                <FloatingLabel label="Налог 42%" className="mb-0 col-11" >
+                                    <Form.Control as="input" type='number' readOnly value={getOrderOtkTax(editingOrder)} />
                                 </FloatingLabel>
                             </center>
                         </div>

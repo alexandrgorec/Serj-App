@@ -8,8 +8,9 @@ import Stack from 'react-bootstrap/Stack';
 import Modal from 'react-bootstrap/Modal';
 import InputGroup from 'react-bootstrap/InputGroup';
 import { MdDelete } from "react-icons/md";
-import OtkFields from './OtkFields';
+import OtkFields, { getOrderOtkTax } from './OtkFields';
 import OrderExtraFields from './OrderExtraFields';
+import { getManagerOptions } from './managerOptions';
 
 function NewOrderMobile({ order, setOrder }) {
   const { user } = useContext(userContext);
@@ -540,21 +541,33 @@ function NewOrderMobile({ order, setOrder }) {
           </div>
           <div className='orderMobile-field'>
             <div className='orderMobile-label'>Менеджер</div>
-            <Form.Control
-              as='input'
-              type='text'
+            <Form.Select
               value={order.manager || ''}
               onChange={(evt) => {
                 order.manager = evt.target.value;
                 refresh();
               }}
-            />
+            >
+              <option value="">Менеджер</option>
+              {getManagerOptions(order.manager).map((manager) => (
+                <option key={manager} value={manager}>{manager}</option>
+              ))}
+            </Form.Select>
           </div>
           <div className='orderMobile-field'>
             <OrderExtraFields order={order} setOrder={setOrder} variant='mobile' />
           </div>
           <div className='orderMobile-field'>
             <OtkFields order={order} setOrder={setOrder} variant='mobile' />
+          </div>
+          <div className='orderMobile-field'>
+            <div className='orderMobile-label'>Налог 42%</div>
+            <Form.Control
+              as='input'
+              type='number'
+              readOnly
+              value={getOrderOtkTax(order)}
+            />
           </div>
         </div>
       </div>

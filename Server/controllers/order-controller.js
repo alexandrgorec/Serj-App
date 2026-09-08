@@ -77,10 +77,16 @@ function parseNumberValue(value) {
     return Number.isFinite(num) ? num : null;
 }
 
-function calculateDeliveryTax(order) {
-    const cost = parseNumberValue(order?.cost);
-    const normalizedCost = cost === null ? 0 : cost;
-    return Math.round(normalizedCost * 0.42);
+function getOrderOtkForTax(order) {
+    if (hasValue(order?.otkManual)) return order.otkManual;
+    if (hasValue(order?.otkFormulaTotal)) return order.otkFormulaTotal;
+    return order?.otk;
+}
+
+function calculateOtkTax(order) {
+    const otk = parseNumberValue(getOrderOtkForTax(order));
+    const normalizedOtk = otk === null ? 0 : otk;
+    return Math.round(normalizedOtk * 0.42);
 }
 
 function parseOrderNumber(value) {
@@ -136,7 +142,7 @@ function makeMetaTable(orderId, order, printedAt) {
         { cells: ["Менеджер", textValue(order?.manager), "Дата печати", printedAt] },
         { cells: ["Перевозчик", textValue(order?.ip), "Водитель", textValue(order?.driver)] },
         { cells: ["Сумма доставки", numberValue(order?.cost), "ОТК", textValue(order?.otk)] },
-        { cells: ["Налог (42% от доставки)", String(calculateDeliveryTax(order)), "", ""] },
+        { cells: ["Налог 42%", String(calculateOtkTax(order)), "", ""] },
     ];
     return { title: "Реквизиты", columns, rows };
 }
@@ -146,15 +152,15 @@ function makeSuppliersTable(order, showFinBlock) {
     const columns = normalizeWeights(showFinBlock
         ? [
             { key: "n", label: "№", weight: 0.05, align: "center" },
-            { key: "name", label: "Поставщик", weight: 0.16, align: "left" },
-            { key: "product", label: "Продукт", weight: 0.16, align: "left" },
-            { key: "liters", label: "Л", weight: 0.07, align: "right" },
-            { key: "tons", label: "Т", weight: 0.07, align: "right" },
-            { key: "price", label: "Цена", weight: 0.09, align: "right" },
-            { key: "sf", label: "С/Ф", weight: 0.1, align: "left" },
-            { key: "date", label: "Дата", weight: 0.10, align: "center", noWrap: true },
-            { key: "summa", label: "Σ", weight: 0.12, align: "right" },
-            { key: "akt", label: "Акт", weight: 0.09, align: "left" },
+            { key: "name", label: "Поставщик", weight: 0.145, align: "left" },
+            { key: "product", label: "Продукт", weight: 0.145, align: "left" },
+            { key: "liters", label: "Л", weight: 0.065, align: "right", noWrap: true },
+            { key: "tons", label: "Т", weight: 0.08, align: "right", noWrap: true },
+            { key: "price", label: "Цена", weight: 0.085, align: "right", noWrap: true },
+            { key: "sf", label: "С/Ф", weight: 0.075, align: "left" },
+            { key: "date", label: "Дата", weight: 0.095, align: "center", noWrap: true },
+            { key: "summa", label: "Σ", weight: 0.18, align: "right", noWrap: true, bodyFontScale: 0.92 },
+            { key: "akt", label: "Акт", weight: 0.08, align: "left" },
         ]
         : [
             { key: "n", label: "№", weight: 0.07, align: "center" },
@@ -193,15 +199,15 @@ function makeBuyersTable(order, showFinBlock) {
         ? [
             { key: "type", label: "Тип", weight: 0.04, align: "center" },
             { key: "n", label: "№", weight: 0.05, align: "center" },
-            { key: "name", label: "Покупатель", weight: 0.18, align: "left" },
-            { key: "product", label: "Продукт", weight: 0.17, align: "left" },
-            { key: "liters", label: "Л", weight: 0.06, align: "right" },
-            { key: "tons", label: "Т", weight: 0.06, align: "right" },
-            { key: "price", label: "Цена", weight: 0.07, align: "right" },
-            { key: "sf", label: "С/Ф", weight: 0.08, align: "left" },
-            { key: "date", label: "Дата", weight: 0.11, align: "center", noWrap: true },
-            { key: "summa", label: "Σ", weight: 0.10, align: "right" },
-            { key: "akt", label: "Акт", weight: 0.09, align: "left" },
+            { key: "name", label: "Покупатель", weight: 0.165, align: "left" },
+            { key: "product", label: "Продукт", weight: 0.155, align: "left" },
+            { key: "liters", label: "Л", weight: 0.055, align: "right", noWrap: true },
+            { key: "tons", label: "Т", weight: 0.075, align: "right", noWrap: true },
+            { key: "price", label: "Цена", weight: 0.07, align: "right", noWrap: true },
+            { key: "sf", label: "С/Ф", weight: 0.075, align: "left" },
+            { key: "date", label: "Дата", weight: 0.095, align: "center", noWrap: true },
+            { key: "summa", label: "Σ", weight: 0.16, align: "right", noWrap: true, bodyFontScale: 0.92 },
+            { key: "akt", label: "Акт", weight: 0.06, align: "left" },
         ]
         : [
             { key: "type", label: "Тип", weight: 0.06, align: "center" },
@@ -273,11 +279,17 @@ function estimateTextHeight(text, fontSize, width) {
     return lines * fontSize * 1.17;
 }
 
+function getColumnFontSize(column, profile, isHeader = false) {
+    const baseSize = isHeader ? profile.headerSize : profile.bodySize;
+    const scale = isHeader ? column.headerFontScale : column.bodyFontScale;
+    return scale ? baseSize * scale : baseSize;
+}
+
 function estimateRowHeight(row, columns, profile, tableWidth, isHeader = false) {
-    const fontSize = isHeader ? profile.headerSize : profile.bodySize;
-    let maxHeight = fontSize * 1.2;
+    let maxHeight = (isHeader ? profile.headerSize : profile.bodySize) * 1.2;
     // let x = 0;
     for (let i = 0; i < columns.length; i += 1) {
+        const fontSize = getColumnFontSize(columns[i], profile, isHeader);
         const colWidth = columns[i].weight * tableWidth;
         const text = isHeader ? columns[i].label : textValue(row.cells[i]);
         const textHeight = columns[i].noWrap
@@ -343,10 +355,11 @@ function pickLayout(report) {
 }
 
 function measureRowHeightDoc(doc, row, columns, profile, widths, isHeader = false) {
-    const fontSize = isHeader ? profile.headerSize : profile.bodySize;
-    let maxHeight = fontSize * 1.2;
+    let maxHeight = (isHeader ? profile.headerSize : profile.bodySize) * 1.2;
     for (let i = 0; i < columns.length; i += 1) {
+        const fontSize = getColumnFontSize(columns[i], profile, isHeader);
         const text = isHeader ? columns[i].label : textValue(row.cells[i]);
+        doc.fontSize(fontSize);
         const textHeight = columns[i].noWrap
             ? fontSize * 1.2
             : doc.heightOfString(text, { width: Math.max(10, widths[i] - profile.cellPadX * 2), align: columns[i].align || "left" });
@@ -386,9 +399,10 @@ function drawRow(doc, opts) {
         doc.restore();
 
         const text = isHeader ? columns[i].label : textValue(row.cells[i]);
+        const fontSize = getColumnFontSize(columns[i], profile, isHeader);
         doc.fillColor(textColor)
             .font(isHeader ? fonts.bold : fonts.regular)
-            .fontSize(isHeader ? profile.headerSize : profile.bodySize)
+            .fontSize(fontSize)
             .text(text, cx + profile.cellPadX, y + profile.cellPadY, {
                 width: Math.max(10, width - profile.cellPadX * 2),
                 align: columns[i].align || "left",

@@ -9,7 +9,7 @@
 
 .orderExtraFields-wide .form-control {
     min-height: 48px;
-    font-weight: 600;
+    font-weight: 400;
 }
 
 .orderExtraFields-storageGrid {
@@ -23,7 +23,7 @@
 }
 
 .orderExtraFields-storageGrid .form-control {
-    font-weight: 600;
+    font-weight: 400;
 }
 
 .orderExtraFields .form-control:read-only {

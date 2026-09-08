@@ -44,6 +44,12 @@ export function getOrderOtkForSave(order) {
   return '';
 }
 
+export function getOrderOtkTax(order) {
+  const otkValue = getOrderOtkForSave(order);
+  const normalizedOtk = parseNumberValue(otkValue);
+  return normalizedOtk === null ? 0 : Math.round(normalizedOtk * 0.42);
+}
+
 function OtkFields({ order, setOrder, variant = 'desktop' }) {
   const manualValue = getOtkManualValue(order);
   const formulaValues = getFormulaValues(order);
