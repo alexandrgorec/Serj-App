@@ -201,12 +201,12 @@ function makeBuyersTable(order, showFinBlock) {
             { key: "n", label: "№", weight: 0.05, align: "center" },
             { key: "name", label: "Покупатель", weight: 0.165, align: "left" },
             { key: "product", label: "Продукт", weight: 0.155, align: "left" },
-            { key: "liters", label: "Л", weight: 0.055, align: "right", noWrap: true },
+            { key: "liters", label: "Л", weight: 0.075, align: "right", noWrap: true, bodyFontScale: 0.92 },
             { key: "tons", label: "Т", weight: 0.075, align: "right", noWrap: true },
             { key: "price", label: "Цена", weight: 0.07, align: "right", noWrap: true },
             { key: "sf", label: "С/Ф", weight: 0.075, align: "left" },
             { key: "date", label: "Дата", weight: 0.095, align: "center", noWrap: true },
-            { key: "summa", label: "Σ", weight: 0.16, align: "right", noWrap: true, bodyFontScale: 0.92 },
+            { key: "summa", label: "Σ", weight: 0.14, align: "right", noWrap: true, bodyFontScale: 0.92 },
             { key: "akt", label: "Акт", weight: 0.06, align: "left" },
         ]
         : [
