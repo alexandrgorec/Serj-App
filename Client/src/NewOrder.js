@@ -10,6 +10,8 @@ import { Alert } from 'react-bootstrap';
 import { userContext } from './App';
 import { useNavigate } from 'react-router-dom';
 import { syncOrderSelectLists } from './selectListsSync';
+import OtkFields, { getOrderOtkForSave } from './OtkFields';
+import OrderExtraFields from './OrderExtraFields';
 
 
 
@@ -43,7 +45,7 @@ function NewOrder({ order, setOrder }) {
   };
 
   const deliveryCost = Number(String(order.cost || '').replace(/\s/g, '').replace(/,/g, '.'));
-  const tax = Number.isNaN(deliveryCost) ? 0 : Math.round(deliveryCost * 0.4);
+  const tax = Number.isNaN(deliveryCost) ? 0 : Math.round(deliveryCost * 0.42);
 
   const addSupplier = () => {
     setOrder((prev) => ({
@@ -86,12 +88,16 @@ function NewOrder({ order, setOrder }) {
     order.haveEmptyBuyerH = false;
     buyersH.forEach(buyerH => buyerH.value == '' ? order.haveEmptyBuyerH = true : '')
     if (alertMessage === '') {
+      const orderToSave = {
+        ...order,
+        otk: getOrderOtkForSave(order),
+      };
       aAxios.post(`/user/neworder`, {
-        order,
+        order: orderToSave,
       })
         .then(async function (response) {
           if (response.status === 202) {
-            await syncOrderSelectLists({ order, user, setUser, aAxios }).catch((error) => {
+            await syncOrderSelectLists({ order: orderToSave, user, setUser, aAxios }).catch((error) => {
               console.error('Select lists sync error:', error);
             });
             clearData();
@@ -167,7 +173,10 @@ function NewOrder({ order, setOrder }) {
                 </FloatingLabel>
               </div>
 
-              <div className='newOrderDesktop-topBarRight' />
+              <div className='newOrderDesktop-topBarRight'>
+                <Button variant="danger" onClick={clearData}>Очистить</Button>
+                <Button variant="success" onClick={sendData}>Создать заявку</Button>
+              </div>
             </div>
             <OrderTable
               order={order}
@@ -176,7 +185,43 @@ function NewOrder({ order, setOrder }) {
               hideManagerInTable={true}
             />
 
-            <div className='newOrderDesktop-serviceFields'>
+            <div className='newOrderDesktop-serviceArea'>
+              <div className='newOrderDesktop-serviceFields'>
+                <div className='newOrderDesktop-leftServiceColumn'>
+                  <OrderExtraFields order={order} setOrder={setOrder} />
+                </div>
+
+                <div className='newOrderDesktop-requisites'>
+                  <FloatingLabel label="ИП Перевозчик" className="mb-2">
+                    <Form.Control
+                      as="input"
+                      type='text'
+                      value={order.ip || ''}
+                      onChange={(evt) => updateOrderField('ip', evt.target.value)}
+                    />
+                  </FloatingLabel>
+                  <FloatingLabel label="Водитель" className="mb-2">
+                    <Form.Control
+                      as="input"
+                      type='text'
+                      value={order.driver || ''}
+                      onChange={(evt) => updateOrderField('driver', evt.target.value)}
+                    />
+                  </FloatingLabel>
+                  <FloatingLabel label="Стоимость доставки" className="mb-2">
+                    <Form.Control
+                      as="input"
+                      type='number'
+                      value={order.cost || ''}
+                      onChange={(evt) => updateOrderField('cost', evt.target.value)}
+                    />
+                  </FloatingLabel>
+                  <OtkFields order={order} setOrder={setOrder} />
+                  <FloatingLabel label="Налог (42% от доставки)" className="mb-0">
+                    <Form.Control as="input" type='number' readOnly value={tax} />
+                  </FloatingLabel>
+                </div>
+              </div>
               <div className='newOrderDesktop-comments'>
                 <Form.Control
                   as='textarea'
@@ -185,44 +230,6 @@ function NewOrder({ order, setOrder }) {
                   onChange={(evt) => updateOrderField('comments', evt.target.value)}
                 />
               </div>
-
-              <div className='newOrderDesktop-requisites'>
-                <FloatingLabel label="ИП Перевозчик" className="mb-2">
-                  <Form.Control
-                    as="input"
-                    type='text'
-                    value={order.ip || ''}
-                    onChange={(evt) => updateOrderField('ip', evt.target.value)}
-                  />
-                </FloatingLabel>
-                <FloatingLabel label="Водитель" className="mb-2">
-                  <Form.Control
-                    as="input"
-                    type='text'
-                    value={order.driver || ''}
-                    onChange={(evt) => updateOrderField('driver', evt.target.value)}
-                  />
-                </FloatingLabel>
-                <FloatingLabel label="Стоимость доставки" className="mb-2">
-                  <Form.Control
-                    as="input"
-                    type='number'
-                    value={order.cost || ''}
-                    onChange={(evt) => updateOrderField('cost', evt.target.value)}
-                  />
-                </FloatingLabel>
-                <FloatingLabel label="ОТК" className="mb-2">
-                  <Form.Control
-                    as="input"
-                    type='text'
-                    value={order.otk || ''}
-                    onChange={(evt) => updateOrderField('otk', evt.target.value)}
-                  />
-                </FloatingLabel>
-                <FloatingLabel label="Налог (40% от доставки)" className="mb-0">
-                  <Form.Control as="input" type='number' readOnly value={tax} />
-                </FloatingLabel>
-              </div>
             </div>
           </>
       }
@@ -230,19 +237,20 @@ function NewOrder({ order, setOrder }) {
         ? <Alert key={alertVariant} variant={alertVariant}> {message} </Alert>
         : ""
       }
-      <div
-        style={{
-          marginTop: isPhone ? '14px' : '8px',
-          display: 'flex',
-          gap: '12px',
-          flexWrap: 'wrap',
-        }}
-      >
-        <Button variant="danger " onClick={clearData}>Очистить</Button>
-        <Button variant="success" onClick={() => {
-          sendData();
-        }}>Создать заявку</Button>
-      </div>
+      {isPhone
+        ? <div
+            style={{
+              marginTop: '14px',
+              display: 'flex',
+              gap: '12px',
+              flexWrap: 'wrap',
+            }}
+          >
+            <Button variant="danger" onClick={clearData}>Очистить</Button>
+            <Button variant="success" onClick={sendData}>Создать заявку</Button>
+          </div>
+        : null
+      }
     </>
 
   );

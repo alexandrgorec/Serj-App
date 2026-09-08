@@ -10,8 +10,22 @@ import Stack from 'react-bootstrap/Stack';
 import { userContext } from './App';
 import { useNavigate } from 'react-router-dom';
 import { syncOrderSelectLists } from './selectListsSync';
+import OtkFields, { getOrderOtkForSave } from './OtkFields';
+import OrderExtraFields from './OrderExtraFields';
 
 
+
+const ORDER_STATUS_OPTIONS = [
+    'Создана',
+    'Приход внесен',
+    'Выполнена реализация',
+];
+
+function getOrderStatusClass(status) {
+    if (status === 'Приход внесен') return 'editOrder-status-income';
+    if (status === 'Выполнена реализация') return 'editOrder-status-done';
+    return 'editOrder-status-created';
+}
 
 
 
@@ -26,12 +40,15 @@ function EditOrder() {
     const refIp = useRef(null);
     const refDriver = useRef(null);
     const refCost = useRef(null);
-    const refOtk = useRef(null);
     const refDate = useRef(null);
     const refManager = useRef(null);
     const refOrderNumber = useRef(null);
+    const refOrderStatus = useRef(null);
     if (editingOrder.id === undefined)
         navigate("/allorders");
+
+    const canEditOrderStatus = !!user?.rights?.finBlockAccess;
+    const orderStatus = editingOrder.orderStatus || ORDER_STATUS_OPTIONS[0];
 
     const addSupplier = () => {
         setEditingOrder((prev) => ({
@@ -61,10 +78,13 @@ function EditOrder() {
             saveOrder.ip = refIp.current.value;
             saveOrder.driver = refDriver.current.value;
             saveOrder.cost = refCost.current.value;
-            saveOrder.otk = refOtk.current.value;
+            saveOrder.otk = getOrderOtkForSave(saveOrder);
             saveOrder.date = refDate.current.value;
             saveOrder.manager = refManager.current.value;
             saveOrder.orderNumber = refOrderNumber.current.value;
+            if (canEditOrderStatus && refOrderStatus.current) {
+                saveOrder.orderStatus = refOrderStatus.current.value;
+            }
         }
 
         setEditingOrder({ ...saveOrder });
@@ -127,6 +147,21 @@ function EditOrder() {
                             <Button tabIndex={-1} variant="success" className='p-2' onClick={addBuyer}>
                                 Добавить покупателя
                             </Button>
+                            <FloatingLabel label="Статус" className={`p-0 editOrderDesktop-status ${getOrderStatusClass(orderStatus)}`}>
+                                <Form.Select
+                                    ref={refOrderStatus}
+                                    value={orderStatus}
+                                    disabled={!canEditOrderStatus}
+                                    onChange={() => {
+                                        editingOrder.orderStatus = refOrderStatus.current.value;
+                                        setEditingOrder({ ...editingOrder });
+                                    }}
+                                >
+                                    {ORDER_STATUS_OPTIONS.map((status) => (
+                                        <option key={status} value={status}>{status}</option>
+                                    ))}
+                                </Form.Select>
+                            </FloatingLabel>
                         </div>
 
                         <div className='editOrderDesktop-topBarCenter'>
@@ -186,8 +221,8 @@ function EditOrder() {
 
                     <Stack direction='horizontal' className='mt-0 align-items-stretch'>
 
-                        <div className='mb-3 col-6 px-2 d-flex' >
-                            <Form.Control as='textarea' placeholder='Комментарии' ref={refComments} defaultValue={editingOrder.comments ? editingOrder.comments : ''} style={{ resize: 'none', height: '100%' }} />
+                        <div className='mb-3 col-6 px-2 editOrderDesktop-leftServiceColumn' >
+                            <OrderExtraFields order={editingOrder} setOrder={setEditingOrder} />
                         </div>
                         <div className='mb-3 col-6'>
 
@@ -201,16 +236,19 @@ function EditOrder() {
                                 <FloatingLabel label="Стоимость доставки" className="mb-2 col-11" >
                                     <Form.Control as="input" type='number' ref={refCost} defaultValue={editingOrder.cost} onChange={() => setCost(refCost.current.value)} />
                                 </FloatingLabel>
-                                <FloatingLabel label="ОТК" className="mb-2 col-11" >
-                                    <Form.Control as="input" type='text' ref={refOtk} defaultValue={editingOrder.otk} />
-                                </FloatingLabel>
-                                <FloatingLabel label="Налог (40% от доставки)" className="mb-0 col-11" >
-                                    <Form.Control as="input" type='number' readOnly value={Math.round(cost * 0.4)} />
+                                <div className='col-11'>
+                                    <OtkFields order={editingOrder} setOrder={setEditingOrder} />
+                                </div>
+                                <FloatingLabel label="Налог (42% от доставки)" className="mb-0 col-11" >
+                                    <Form.Control as="input" type='number' readOnly value={Math.round(cost * 0.42)} />
                                 </FloatingLabel>
                             </center>
                         </div>
 
                     </Stack>
+                    <div className='editOrderDesktop-commentsWrap'>
+                        <Form.Control className='editOrderDesktop-comments' as='textarea' placeholder='Комментарии' ref={refComments} defaultValue={editingOrder.comments ? editingOrder.comments : ''} />
+                    </div>
                 </>
             }
             {message !== ""

@@ -8,10 +8,26 @@ import Stack from 'react-bootstrap/Stack';
 import Modal from 'react-bootstrap/Modal';
 import InputGroup from 'react-bootstrap/InputGroup';
 import { MdDelete } from "react-icons/md";
+import OtkFields from './OtkFields';
+import OrderExtraFields from './OrderExtraFields';
+
+const ORDER_STATUS_OPTIONS = [
+  'Создана',
+  'Приход внесен',
+  'Выполнена реализация',
+];
+
+function getOrderStatusClass(status) {
+  if (status === 'Приход внесен') return 'editOrder-status-income';
+  if (status === 'Выполнена реализация') return 'editOrder-status-done';
+  return 'editOrder-status-created';
+}
 
 function EditOrderMobile({ order, setOrder, onSave, onBack, cost, setCost }) {
   const { user } = useContext(userContext);
   const bgColorH = 'rgba(127, 244, 166, 0.22)';
+  const canEditOrderStatus = !!user?.rights?.finBlockAccess;
+  const orderStatus = order.orderStatus || ORDER_STATUS_OPTIONS[0];
 
   const [deleteElement, setDeleteElement] = useState(null);
   const [show, setShow] = useState(false);
@@ -239,6 +255,21 @@ function EditOrderMobile({ order, setOrder, onSave, onBack, cost, setCost }) {
           <Stack direction='horizontal' gap={2} className='editOrderMobile-topActions'>
             <Button size='sm' variant='primary' onClick={addSupplier}>Добавить поставщика</Button>
             <Button size='sm' variant='success' onClick={addBuyer}>Добавить покупателя</Button>
+            <div className={`editOrderMobile-statusField ${getOrderStatusClass(orderStatus)}`}>
+              <Form.Select
+                size='sm'
+                value={orderStatus}
+                disabled={!canEditOrderStatus}
+                onChange={(evt) => {
+                  order.orderStatus = evt.target.value;
+                  refresh();
+                }}
+              >
+                {ORDER_STATUS_OPTIONS.map((status) => (
+                  <option key={status} value={status}>{status}</option>
+                ))}
+              </Form.Select>
+            </div>
           </Stack>
         </div>
 
@@ -623,24 +654,18 @@ function EditOrderMobile({ order, setOrder, onSave, onBack, cost, setCost }) {
             />
           </div>
           <div className='editOrderMobile-field'>
-            <div className='editOrderMobile-label'>ОТК</div>
-            <Form.Control
-              as='input'
-              type='text'
-              value={order.otk || ''}
-              onChange={(evt) => {
-                order.otk = evt.target.value;
-                refresh();
-              }}
-            />
+            <OrderExtraFields order={order} setOrder={setOrder} variant='mobile' />
           </div>
           <div className='editOrderMobile-field'>
-            <div className='editOrderMobile-label'>Налог (40% от доставки)</div>
+            <OtkFields order={order} setOrder={setOrder} variant='mobile' />
+          </div>
+          <div className='editOrderMobile-field'>
+            <div className='editOrderMobile-label'>Налог (42% от доставки)</div>
             <Form.Control
               as='input'
               type='number'
               readOnly
-              value={Math.round((Number(cost) || 0) * 0.4)}
+              value={Math.round((Number(cost) || 0) * 0.42)}
             />
           </div>
         </div>

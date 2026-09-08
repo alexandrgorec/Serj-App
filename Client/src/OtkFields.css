@@ -1,0 +1,45 @@
+.otkFields {
+    width: 100%;
+}
+
+.otkFields-desktop {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.otkFields-desktop .form-floating {
+    min-width: 0;
+}
+
+.otkFields-desktop .form-control {
+    min-width: 0;
+}
+
+.otkFields-desktop label {
+    font-size: 0.82rem;
+}
+
+.otkFields-mobile {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+}
+
+.otkFields-mobileLabel {
+    font-size: 11px;
+    color: rgba(47, 58, 79, 0.85);
+    margin-bottom: 2px;
+}
+
+.otkFields-mobile .form-control {
+    font-size: 13px;
+    padding: 6px 8px;
+}
+
+.otkFields .form-control:disabled {
+    background-color: rgba(220, 228, 238, 0.75);
+    color: rgba(55, 65, 81, 0.7);
+    cursor: not-allowed;
+}

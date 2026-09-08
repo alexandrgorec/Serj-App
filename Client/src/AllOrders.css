@@ -34,11 +34,12 @@
 }
 
 /* Одна общая таблица: ширины колонок задаём через colgroup */
+.allOrders-main-table col.allOrders-col-status { width: 4%; }
 .allOrders-main-table col.allOrders-col-num { width: 5%; }
 .allOrders-main-table col.allOrders-col-date { width: 10%; }
-.allOrders-main-table col.allOrders-col-buyers { width: 32%; }
+.allOrders-main-table col.allOrders-col-buyers { width: 31%; }
 .allOrders-main-table col.allOrders-col-hsum { width: 14%; }
-.allOrders-main-table col.allOrders-col-suppliers { width: 29%; }
+.allOrders-main-table col.allOrders-col-suppliers { width: 28%; }
 .allOrders-main-table col.allOrders-col-menu {
     width: 8%;
     min-width: 5.4rem;
@@ -59,6 +60,33 @@
 .allOrders-cell-date,
 .allOrders-cell-num {
     white-space: nowrap;
+}
+
+.allOrders-head-status,
+.allOrders-cell-status {
+    text-align: center;
+    white-space: nowrap;
+}
+
+.allOrders-status-dot {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    vertical-align: middle;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45), 0 1px 2px rgba(0, 0, 0, 0.16);
+}
+
+.allOrders-status-created {
+    background: #2138d0;
+}
+
+.allOrders-status-income {
+    background: #f27a30;
+}
+
+.allOrders-status-done {
+    background: #3ea342;
 }
 
 .allOrders-buyers-stack {
@@ -153,10 +181,17 @@
     min-width: 0;
 }
 
+.allOrders-card-idGroup {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    justify-self: start;
+    min-width: 0;
+}
+
 .allOrders-card-id {
     font-weight: 700;
     font-size: 13px;
-    justify-self: start;
     white-space: nowrap;
 }
 

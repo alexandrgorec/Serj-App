@@ -1,0 +1,54 @@
+.orderExtraFields {
+    width: 100%;
+}
+
+.orderExtraFields-desktop {
+    display: grid;
+    gap: 8px;
+}
+
+.orderExtraFields-wide .form-control {
+    min-height: 48px;
+    font-weight: 600;
+}
+
+.orderExtraFields-storageGrid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.orderExtraFields-storageGrid label {
+    font-size: 0.8rem;
+}
+
+.orderExtraFields-storageGrid .form-control {
+    font-weight: 600;
+}
+
+.orderExtraFields .form-control:read-only {
+    background-color: rgba(235, 241, 248, 0.9);
+}
+
+.orderExtraFields-mobile {
+    display: grid;
+    gap: 8px;
+}
+
+.orderExtraFields-mobileLabel {
+    font-size: 11px;
+    color: rgba(47, 58, 79, 0.85);
+    margin-bottom: 2px;
+}
+
+.orderExtraFields-mobile .form-control {
+    font-size: 13px;
+    padding: 6px 8px;
+}
+
+@media (max-width: 850px) {
+    .orderExtraFields-storageGrid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+}

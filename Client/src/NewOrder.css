@@ -23,6 +23,10 @@
 }
 
 .newOrderDesktop-topBarRight {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-end;
     min-width: 0;
 }
 
@@ -90,12 +94,22 @@
     grid-template-columns: 1fr 1fr;
     gap: 24px;
     align-items: stretch;
+}
+
+.newOrderDesktop-serviceArea {
     margin: 8px 6px 16px;
+}
+
+.newOrderDesktop-leftServiceColumn {
+    display: grid;
+    gap: 10px;
+    align-content: start;
 }
 
 .newOrderDesktop-comments {
     display: flex;
-    min-height: 240px;
+    height: 64px;
+    margin-top: 12px;
 }
 
 .newOrderDesktop-comments textarea {

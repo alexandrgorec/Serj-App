@@ -8,6 +8,8 @@ import Stack from 'react-bootstrap/Stack';
 import Modal from 'react-bootstrap/Modal';
 import InputGroup from 'react-bootstrap/InputGroup';
 import { MdDelete } from "react-icons/md";
+import OtkFields from './OtkFields';
+import OrderExtraFields from './OrderExtraFields';
 
 function NewOrderMobile({ order, setOrder }) {
   const { user } = useContext(userContext);
@@ -547,6 +549,12 @@ function NewOrderMobile({ order, setOrder }) {
                 refresh();
               }}
             />
+          </div>
+          <div className='orderMobile-field'>
+            <OrderExtraFields order={order} setOrder={setOrder} variant='mobile' />
+          </div>
+          <div className='orderMobile-field'>
+            <OtkFields order={order} setOrder={setOrder} variant='mobile' />
           </div>
         </div>
       </div>

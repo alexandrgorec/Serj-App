@@ -8,11 +8,11 @@ const REPORT_PAGE_WIDTH_PT = 595.28;
 const REPORT_PAGE_HEIGHT_PT = 841.89;
 
 const LAYOUT_PROFILES = [
-    { margin: 22, titleSize: 18.0, sectionSize: 12.2, headerSize: 8.4, bodySize: 7.2, cellPadX: 3.6, cellPadY: 2.4, lineGap: 4.0, sectionGap: 6.0, borderWidth: 0.55 },
-    { margin: 20, titleSize: 16.5, sectionSize: 11.4, headerSize: 7.8, bodySize: 6.6, cellPadX: 3.2, cellPadY: 2.1, lineGap: 3.5, sectionGap: 5.2, borderWidth: 0.52 },
-    { margin: 18, titleSize: 15.0, sectionSize: 10.6, headerSize: 7.2, bodySize: 6.0, cellPadX: 2.8, cellPadY: 1.8, lineGap: 3.0, sectionGap: 4.4, borderWidth: 0.48 },
-    { margin: 16, titleSize: 13.8, sectionSize: 9.8, headerSize: 6.6, bodySize: 5.4, cellPadX: 2.4, cellPadY: 1.55, lineGap: 2.6, sectionGap: 3.7, borderWidth: 0.44 },
-    { margin: 14, titleSize: 12.6, sectionSize: 9.0, headerSize: 6.0, bodySize: 4.8, cellPadX: 2.1, cellPadY: 1.35, lineGap: 2.2, sectionGap: 3.0, borderWidth: 0.40 },
+    { margin: 22, titleSize: 18.0, sectionSize: 12.2, headerSize: 9.0, bodySize: 8.0, cellPadX: 3.6, cellPadY: 2.4, lineGap: 4.0, sectionGap: 6.0, borderWidth: 0.55 },
+    { margin: 20, titleSize: 16.5, sectionSize: 11.4, headerSize: 8.4, bodySize: 7.4, cellPadX: 3.2, cellPadY: 2.1, lineGap: 3.5, sectionGap: 5.2, borderWidth: 0.52 },
+    { margin: 18, titleSize: 15.0, sectionSize: 10.6, headerSize: 7.8, bodySize: 6.8, cellPadX: 2.8, cellPadY: 1.8, lineGap: 3.0, sectionGap: 4.4, borderWidth: 0.48 },
+    { margin: 16, titleSize: 13.8, sectionSize: 9.8, headerSize: 7.2, bodySize: 6.2, cellPadX: 2.4, cellPadY: 1.55, lineGap: 2.6, sectionGap: 3.7, borderWidth: 0.44 },
+    { margin: 14, titleSize: 12.6, sectionSize: 9.0, headerSize: 6.6, bodySize: 5.6, cellPadX: 2.1, cellPadY: 1.35, lineGap: 2.2, sectionGap: 3.0, borderWidth: 0.40 },
 ];
 
 function hasValue(value) {
@@ -37,6 +37,18 @@ function formatDateRu(value) {
     let mm = date.getMonth() + 1;
     if (mm < 10) mm = `0${mm}`;
     const yy = date.getFullYear();
+    return `${dd}.${mm}.${yy}`;
+}
+
+function formatDateRuShort(value) {
+    if (!hasValue(value)) return "—";
+    const date = new Date(Date.parse(String(value)));
+    if (Number.isNaN(date.getTime())) return textValue(value);
+    let dd = date.getDate();
+    if (dd < 10) dd = `0${dd}`;
+    let mm = date.getMonth() + 1;
+    if (mm < 10) mm = `0${mm}`;
+    const yy = String(date.getFullYear()).slice(-2);
     return `${dd}.${mm}.${yy}`;
 }
 
@@ -68,7 +80,7 @@ function parseNumberValue(value) {
 function calculateDeliveryTax(order) {
     const cost = parseNumberValue(order?.cost);
     const normalizedCost = cost === null ? 0 : cost;
-    return Math.round(normalizedCost * 0.4);
+    return Math.round(normalizedCost * 0.42);
 }
 
 function parseOrderNumber(value) {
@@ -124,7 +136,7 @@ function makeMetaTable(orderId, order, printedAt) {
         { cells: ["Менеджер", textValue(order?.manager), "Дата печати", printedAt] },
         { cells: ["Перевозчик", textValue(order?.ip), "Водитель", textValue(order?.driver)] },
         { cells: ["Сумма доставки", numberValue(order?.cost), "ОТК", textValue(order?.otk)] },
-        { cells: ["Налог (40% от доставки)", String(calculateDeliveryTax(order)), "", ""] },
+        { cells: ["Налог (42% от доставки)", String(calculateDeliveryTax(order)), "", ""] },
     ];
     return { title: "Реквизиты", columns, rows };
 }
@@ -163,7 +175,7 @@ function makeSuppliersTable(order, showFinBlock) {
             numberValue(supplier?.price),
         ];
         const fin = showFinBlock
-            ? [textValue(supplier?.sf), formatDateRu(supplier?.date || order?.date), numberValue(supplier?.summa), textValue(supplier?.akt)]
+            ? [textValue(supplier?.sf), formatDateRuShort(supplier?.date || order?.date), numberValue(supplier?.summa), textValue(supplier?.akt)]
             : [];
         return { cells: [...base, ...fin] };
     });
@@ -213,7 +225,7 @@ function makeBuyersTable(order, showFinBlock) {
             numberValue(buyer?.price),
         ];
         const fin = showFinBlock
-            ? [textValue(buyer?.sf), formatDateRu(buyer?.date || order?.date), numberValue(buyer?.summa), textValue(buyer?.akt)]
+            ? [textValue(buyer?.sf), formatDateRuShort(buyer?.date || order?.date), numberValue(buyer?.summa), textValue(buyer?.akt)]
             : [];
         rows.push({ rowType: "buyer", cells: [...base, ...fin] });
 
@@ -229,7 +241,7 @@ function makeBuyersTable(order, showFinBlock) {
                 numberValue(buyerH?.price),
             ];
             const finH = showFinBlock
-                ? [textValue(buyerH?.sf), formatDateRu(buyerH?.date || order?.date), numberValue(buyerH?.summa), textValue(buyerH?.akt)]
+                ? [textValue(buyerH?.sf), formatDateRuShort(buyerH?.date || order?.date), numberValue(buyerH?.summa), textValue(buyerH?.akt)]
                 : [];
             rows.push({ rowType: "buyerH", cells: [...baseH, ...finH] });
         });

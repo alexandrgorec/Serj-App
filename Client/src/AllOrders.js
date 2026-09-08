@@ -74,6 +74,16 @@ function getOrderNumber(order) {
   return order?.order_number || order?.orderjson?.orderNumber || order?.orderjson?.order_number || order?.id;
 }
 
+function getOrderStatus(orderjson) {
+  return orderjson?.orderStatus || 'Создана';
+}
+
+function getOrderStatusClass(status) {
+  if (status === 'Приход внесен') return 'allOrders-status-income';
+  if (status === 'Выполнена реализация') return 'allOrders-status-done';
+  return 'allOrders-status-created';
+}
+
 function orderRows(orderjson) {
   const suppliers = Array.isArray(orderjson?.suppliers) ? orderjson.suppliers : [];
   const buyers = Array.isArray(orderjson?.buyers) ? orderjson.buyers : [];
@@ -418,6 +428,8 @@ function AllOrders() {
           {filteredOrders.map((order) => {
             const emptyHSummas = emptyBuyerHSummasDisplay(order.orderjson.buyers);
             const orderNumber = getOrderNumber(order);
+            const orderStatus = getOrderStatus(order.orderjson);
+            const orderStatusClass = getOrderStatusClass(orderStatus);
             const orderIndex = orders.findIndex((o) => o.id === order.id);
             const toggleRow = () => {
               if (orderIndex >= 0) showHideOrder(orderIndex);
@@ -425,7 +437,10 @@ function AllOrders() {
             return (
               <div key={order.id} className={`allOrders-card ${order.orderjson.haveEmptyBuyerH ? 'allOrders-card-warning' : ''}`}>
                 <div className='allOrders-card-header clickable' onClick={toggleRow}>
-                  <div className='allOrders-card-id'>Заявка №{orderNumber}</div>
+                  <div className='allOrders-card-idGroup'>
+                    <span className={`allOrders-status-dot ${orderStatusClass}`} title={orderStatus} />
+                    <div className='allOrders-card-id'>Заявка №{orderNumber}</div>
+                  </div>
                   <div className='allOrders-card-date'>{formatDate(order.orderjson.date)}</div>
                   <Stack direction="horizontal" gap={2} className="allOrders-card-actions">
                     <BiEditAlt size='1.6em' className='clickable icon' style={{ color: 'rgba(1, 87, 248, 0.85)' }} onClick={(e) => {
@@ -538,6 +553,7 @@ function AllOrders() {
           style={{ width: '100%', margin: 0 }}
         >
           <colgroup>
+            <col className="allOrders-col-status" />
             <col className="allOrders-col-num" />
             <col className="allOrders-col-date" />
             <col className="allOrders-col-buyers" />
@@ -547,6 +563,7 @@ function AllOrders() {
           </colgroup>
           <thead>
             <tr>
+              <th className="allOrders-head-status">Статус</th>
               <th className="allOrders-head-num" style={{ textAlign: 'center' }}>№</th>
               <th className="allOrders-head-date">Дата</th>
               <th className="allOrders-head-buyers">Покупатели</th>
@@ -560,6 +577,8 @@ function AllOrders() {
           filteredOrders.map((order) => {
             const emptyHSummas = emptyBuyerHSummasDisplay(order.orderjson.buyers);
             const orderNumber = getOrderNumber(order);
+            const orderStatus = getOrderStatus(order.orderjson);
+            const orderStatusClass = getOrderStatusClass(orderStatus);
             const orderIndex = orders.findIndex((o) => o.id === order.id);
             const toggleRow = () => {
               if (orderIndex >= 0) showHideOrder(orderIndex);
@@ -577,6 +596,9 @@ function AllOrders() {
                   }}
                 >
 
+                      <td className="allOrders-cell-status" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
+                        <span className={`allOrders-status-dot ${orderStatusClass}`} title={orderStatus} />
+                      </td>
                       <td className="allOrders-cell-num" style={{ overflow: "hidden", textAlign: 'center', backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>{orderNumber}</td>
                       <td className="allOrders-cell-date" style={{ overflow: "hidden", backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }} >{formatDate(order.orderjson.date)}</td>
                       <td className="allOrders-cell-buyers" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>{
@@ -624,9 +646,9 @@ function AllOrders() {
                         </Stack>
                       </td>
 
-                    </tr>
+                </tr>
                 <tr className="allOrders-expand-row">
-                  <td colSpan={isPhone ? 5 : 6} className="p-0 border-top-0">
+                  <td colSpan={isPhone ? 6 : 7} className="p-0 border-top-0">
                 <Collapse in={order.open}>
 
                   <div className='mb-3'>
