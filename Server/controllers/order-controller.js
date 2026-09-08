@@ -8,11 +8,11 @@ const REPORT_PAGE_WIDTH_PT = 595.28;
 const REPORT_PAGE_HEIGHT_PT = 841.89;
 
 const LAYOUT_PROFILES = [
-    { margin: 22, titleSize: 18.0, sectionSize: 12.2, headerSize: 9.0, bodySize: 8.0, cellPadX: 3.6, cellPadY: 2.4, lineGap: 4.0, sectionGap: 6.0, borderWidth: 0.55 },
-    { margin: 20, titleSize: 16.5, sectionSize: 11.4, headerSize: 8.4, bodySize: 7.4, cellPadX: 3.2, cellPadY: 2.1, lineGap: 3.5, sectionGap: 5.2, borderWidth: 0.52 },
-    { margin: 18, titleSize: 15.0, sectionSize: 10.6, headerSize: 7.8, bodySize: 6.8, cellPadX: 2.8, cellPadY: 1.8, lineGap: 3.0, sectionGap: 4.4, borderWidth: 0.48 },
-    { margin: 16, titleSize: 13.8, sectionSize: 9.8, headerSize: 7.2, bodySize: 6.2, cellPadX: 2.4, cellPadY: 1.55, lineGap: 2.6, sectionGap: 3.7, borderWidth: 0.44 },
-    { margin: 14, titleSize: 12.6, sectionSize: 9.0, headerSize: 6.6, bodySize: 5.6, cellPadX: 2.1, cellPadY: 1.35, lineGap: 2.2, sectionGap: 3.0, borderWidth: 0.40 },
+    { margin: 22, titleSize: 18.4, sectionSize: 12.6, headerSize: 9.4, bodySize: 8.4, cellPadX: 3.6, cellPadY: 2.4, lineGap: 4.0, sectionGap: 6.0, borderWidth: 0.55 },
+    { margin: 20, titleSize: 16.9, sectionSize: 11.8, headerSize: 8.8, bodySize: 7.8, cellPadX: 3.2, cellPadY: 2.1, lineGap: 3.5, sectionGap: 5.2, borderWidth: 0.52 },
+    { margin: 18, titleSize: 15.4, sectionSize: 11.0, headerSize: 8.2, bodySize: 7.2, cellPadX: 2.8, cellPadY: 1.8, lineGap: 3.0, sectionGap: 4.4, borderWidth: 0.48 },
+    { margin: 16, titleSize: 14.2, sectionSize: 10.2, headerSize: 7.6, bodySize: 6.6, cellPadX: 2.4, cellPadY: 1.55, lineGap: 2.6, sectionGap: 3.7, borderWidth: 0.44 },
+    { margin: 14, titleSize: 13.0, sectionSize: 9.4, headerSize: 7.0, bodySize: 6.0, cellPadX: 2.1, cellPadY: 1.35, lineGap: 2.2, sectionGap: 3.0, borderWidth: 0.40 },
 ];
 
 function hasValue(value) {
