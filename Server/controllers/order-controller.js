@@ -152,7 +152,7 @@ function makeSuppliersTable(order, showFinBlock) {
             { key: "tons", label: "Т", weight: 0.07, align: "right" },
             { key: "price", label: "Цена", weight: 0.09, align: "right" },
             { key: "sf", label: "С/Ф", weight: 0.1, align: "left" },
-            { key: "date", label: "Дата", weight: 0.09, align: "center" },
+            { key: "date", label: "Дата", weight: 0.10, align: "center", noWrap: true },
             { key: "summa", label: "Σ", weight: 0.12, align: "right" },
             { key: "akt", label: "Акт", weight: 0.09, align: "left" },
         ]
@@ -193,13 +193,13 @@ function makeBuyersTable(order, showFinBlock) {
         ? [
             { key: "type", label: "Тип", weight: 0.04, align: "center" },
             { key: "n", label: "№", weight: 0.05, align: "center" },
-            { key: "name", label: "Покупатель", weight: 0.19, align: "left" },
-            { key: "product", label: "Продукт", weight: 0.18, align: "left" },
+            { key: "name", label: "Покупатель", weight: 0.18, align: "left" },
+            { key: "product", label: "Продукт", weight: 0.17, align: "left" },
             { key: "liters", label: "Л", weight: 0.06, align: "right" },
             { key: "tons", label: "Т", weight: 0.06, align: "right" },
             { key: "price", label: "Цена", weight: 0.07, align: "right" },
             { key: "sf", label: "С/Ф", weight: 0.08, align: "left" },
-            { key: "date", label: "Дата", weight: 0.08, align: "center" },
+            { key: "date", label: "Дата", weight: 0.11, align: "center", noWrap: true },
             { key: "summa", label: "Σ", weight: 0.10, align: "right" },
             { key: "akt", label: "Акт", weight: 0.09, align: "left" },
         ]
@@ -280,7 +280,9 @@ function estimateRowHeight(row, columns, profile, tableWidth, isHeader = false) 
     for (let i = 0; i < columns.length; i += 1) {
         const colWidth = columns[i].weight * tableWidth;
         const text = isHeader ? columns[i].label : textValue(row.cells[i]);
-        const textHeight = estimateTextHeight(text, fontSize, Math.max(10, colWidth - profile.cellPadX * 2));
+        const textHeight = columns[i].noWrap
+            ? fontSize * 1.2
+            : estimateTextHeight(text, fontSize, Math.max(10, colWidth - profile.cellPadX * 2));
         if (textHeight > maxHeight) maxHeight = textHeight;
         // x += colWidth;
     }
@@ -345,7 +347,9 @@ function measureRowHeightDoc(doc, row, columns, profile, widths, isHeader = fals
     let maxHeight = fontSize * 1.2;
     for (let i = 0; i < columns.length; i += 1) {
         const text = isHeader ? columns[i].label : textValue(row.cells[i]);
-        const textHeight = doc.heightOfString(text, { width: Math.max(10, widths[i] - profile.cellPadX * 2), align: columns[i].align || "left" });
+        const textHeight = columns[i].noWrap
+            ? fontSize * 1.2
+            : doc.heightOfString(text, { width: Math.max(10, widths[i] - profile.cellPadX * 2), align: columns[i].align || "left" });
         if (textHeight > maxHeight) maxHeight = textHeight;
     }
     return maxHeight + profile.cellPadY * 2;
@@ -388,6 +392,7 @@ function drawRow(doc, opts) {
             .text(text, cx + profile.cellPadX, y + profile.cellPadY, {
                 width: Math.max(10, width - profile.cellPadX * 2),
                 align: columns[i].align || "left",
+                lineBreak: !columns[i].noWrap,
             });
         cx += width;
     }
