@@ -14,6 +14,11 @@ import { FaPeopleArrows, FaPrint } from "react-icons/fa6";
 import { FormLabel } from 'react-bootstrap';
 import { Typeahead } from "react-bootstrap-typeahead";
 
+const ORDER_STATUS_OPTIONS = [
+  'Создана',
+  'Приход внесен',
+  'Выполнена реализация',
+];
 
 function spisok(array) {
   {
@@ -40,6 +45,32 @@ function formatSummaCell(num) {
     n = n.replace(/\s/g, '').replace(/,/g, '.');
   if (n === '' || Number.isNaN(Number(n))) return '';
   return new Intl.NumberFormat().format(Number(n));
+}
+
+function parseNumericCellValue(value) {
+  if (value === undefined || value === null) return null;
+  const normalized = String(value).trim().replace(/\s/g, '').replace(/,/g, '.');
+  if (normalized === '' || Number.isNaN(Number(normalized))) return null;
+  return Number(normalized);
+}
+
+function suppliersTonsTotal(orderjson) {
+  const suppliers = Array.isArray(orderjson?.suppliers) ? orderjson.suppliers : [];
+  const total = suppliers.reduce((sum, supplier) => {
+    const tons = parseNumericCellValue(supplier?.tons);
+    return tons === null ? sum : sum + tons;
+  }, 0);
+  return total === 0 ? '' : total;
+}
+
+function supplierProductsDisplay(orderjson) {
+  const suppliers = Array.isArray(orderjson?.suppliers) ? orderjson.suppliers : [];
+  const products = [];
+  suppliers.forEach((supplier) => {
+    const product = String(supplier?.typeOfProduct || '').trim();
+    if (product !== '' && !products.includes(product)) products.push(product);
+  });
+  return products.join('; ');
 }
 
 function emptyBuyerHSummasDisplay(buyers) {
@@ -82,6 +113,21 @@ function getOrderStatusClass(status) {
   if (status === 'Приход внесен') return 'allOrders-status-income';
   if (status === 'Выполнена реализация') return 'allOrders-status-done';
   return 'allOrders-status-created';
+}
+
+function getOrderManager(orderjson) {
+  const manager = String(orderjson?.manager || '').trim();
+  if (manager !== '') return manager;
+  const buyers = Array.isArray(orderjson?.buyers) ? orderjson.buyers : [];
+  const buyerManager = buyers
+    .map((buyer) => String(buyer?.manager || '').trim())
+    .find((value) => value !== '');
+  if (buyerManager) return buyerManager;
+  const buyerHManager = buyers
+    .flatMap((buyer) => Array.isArray(buyer?.buyersH) ? buyer.buyersH : [])
+    .map((buyerH) => String(buyerH?.manager || '').trim())
+    .find((value) => value !== '');
+  return buyerHManager || '';
 }
 
 function orderRows(orderjson) {
@@ -151,6 +197,9 @@ function AllOrders() {
   const refFilterUnfilledAccountant = useRef(null);
   const [buyerFilter, setBuyerFilter] = useState('');
   const buyerTypeaheadRef = useRef(null);
+  const [managerFilter, setManagerFilter] = useState('');
+  const managerTypeaheadRef = useRef(null);
+  const [statusFilter, setStatusFilter] = useState('');
   const openEditedOrder = () => {
     setOrders((orders) => {
       if (sessionStorage.createdOrderId) {
@@ -173,6 +222,13 @@ function AllOrders() {
   const buyerOptions = Array.from(new Set(
     orders
       .flatMap((o) => buyerNamesFromOrder(o?.orderjson))
+      .map((s) => String(s).trim())
+      .filter((s) => s !== '')
+  ));
+
+  const managerOptions = Array.from(new Set(
+    orders
+      .map((o) => getOrderManager(o?.orderjson))
       .map((s) => String(s).trim())
       .filter((s) => s !== '')
   ));
@@ -323,14 +379,25 @@ function AllOrders() {
   const filterSumH = !!refFilterSumH.current?.checked;
   const filterUnfilledManager = !!refFilterUnfilledManager.current?.checked;
   const filterUnfilledAccountant = !!refFilterUnfilledAccountant.current?.checked;
-  const q = String(buyerFilter || '').trim().toLowerCase();
+  const buyerQ = String(buyerFilter || '').trim().toLowerCase();
+  const managerQ = String(managerFilter || '').trim().toLowerCase();
   const filteredOrders = orders.filter((order) => {
     const matchBuyer =
-      q === '' ||
+      buyerQ === '' ||
       buyerNamesFromOrder(order.orderjson)
-        .some((n) => String(n).toLowerCase().includes(q));
+        .some((n) => String(n).toLowerCase().includes(buyerQ));
+
+    const matchManager =
+      managerQ === '' ||
+      getOrderManager(order.orderjson).toLowerCase().includes(managerQ);
+
+    const matchStatus =
+      statusFilter === '' ||
+      getOrderStatus(order.orderjson) === statusFilter;
 
     if (!matchBuyer) return false;
+    if (!matchManager) return false;
+    if (!matchStatus) return false;
     if (filterEmptyBuyerH || filterSumH) {
       const matchEmptyBuyerH = !!order.orderjson.haveEmptyBuyerH;
       const matchSumH = emptyBuyerHSummasDisplay(order.orderjson.buyers) !== '';
@@ -401,12 +468,12 @@ function AllOrders() {
           </div>
         </div>
 
-        <div className="allOrders-buyerFilter">
+        <div className="allOrders-textFilters">
           <Typeahead
             id="allorders-buyer-filter"
             ref={buyerTypeaheadRef}
             options={buyerOptions}
-            className="allOrders-buyerTypeahead"
+            className="allOrders-filterTypeahead"
             selected={buyerFilter ? [buyerFilter] : []}
             onChange={(selected) => {
               const v = selected.length ? String(selected[0]) : '';
@@ -420,6 +487,38 @@ function AllOrders() {
             highlightOnlyResult
             inputProps={{ type: 'text', style: { fontSize: window.innerWidth < 850 ? '12px' : '14px' } }}
           />
+          <Typeahead
+            id="allorders-manager-filter"
+            ref={managerTypeaheadRef}
+            options={managerOptions}
+            className="allOrders-filterTypeahead"
+            selected={managerFilter ? [managerFilter] : []}
+            onChange={(selected) => {
+              const v = selected.length ? String(selected[0]) : '';
+              setManagerFilter(v);
+              reload(!state);
+            }}
+            onInputChange={(text) => {
+              setManagerFilter(text);
+            }}
+            placeholder="Фильтр менеджер…"
+            highlightOnlyResult
+            inputProps={{ type: 'text', style: { fontSize: window.innerWidth < 850 ? '12px' : '14px' } }}
+          />
+          <Form.Select
+            className="allOrders-statusFilter"
+            value={statusFilter}
+            onChange={(evt) => {
+              setStatusFilter(evt.target.value);
+              reload(!state);
+            }}
+            style={{ fontSize: window.innerWidth < 850 ? '12px' : '14px' }}
+          >
+            <option value="">Все статусы</option>
+            {ORDER_STATUS_OPTIONS.map((status) => (
+              <option key={status} value={status}>{status}</option>
+            ))}
+          </Form.Select>
         </div>
 
       </Stack>
@@ -430,6 +529,9 @@ function AllOrders() {
             const orderNumber = getOrderNumber(order);
             const orderStatus = getOrderStatus(order.orderjson);
             const orderStatusClass = getOrderStatusClass(orderStatus);
+            const orderManager = getOrderManager(order.orderjson);
+            const suppliersTons = suppliersTonsTotal(order.orderjson);
+            const supplierProducts = supplierProductsDisplay(order.orderjson);
             const orderIndex = orders.findIndex((o) => o.id === order.id);
             const toggleRow = () => {
               if (orderIndex >= 0) showHideOrder(orderIndex);
@@ -465,6 +567,18 @@ function AllOrders() {
                     <div className='allOrders-card-row'>
                       <div className='allOrders-card-label'>Поставщики</div>
                       <div className='allOrders-card-value'>{spisok(order.orderjson.suppliers) || '—'}</div>
+                    </div>
+                    <div className='allOrders-card-row allOrders-card-row-full'>
+                      <div className='allOrders-card-label'>Менеджер</div>
+                      <div className='allOrders-card-value'>{orderManager || '—'}</div>
+                    </div>
+                    <div className='allOrders-card-row allOrders-card-row-full'>
+                      <div className='allOrders-card-label'>Тонны поставщиков</div>
+                      <div className='allOrders-card-value'>{NumberFormat(suppliersTons) || '—'}</div>
+                    </div>
+                    <div className='allOrders-card-row allOrders-card-row-full'>
+                      <div className='allOrders-card-label'>Вид продукта</div>
+                      <div className='allOrders-card-value'>{supplierProducts || '—'}</div>
                     </div>
                     {emptyHSummas !== '' &&
                       <div className='allOrders-card-row allOrders-card-row-full'>
@@ -556,9 +670,12 @@ function AllOrders() {
             <col className="allOrders-col-status" />
             <col className="allOrders-col-num" />
             <col className="allOrders-col-date" />
+            <col className="allOrders-col-manager" />
             <col className="allOrders-col-buyers" />
             {!isPhone && <col className="allOrders-col-hsum" />}
             <col className="allOrders-col-suppliers" />
+            <col className="allOrders-col-tons" />
+            <col className="allOrders-col-products" />
             <col className="allOrders-col-menu" />
           </colgroup>
           <thead>
@@ -566,9 +683,12 @@ function AllOrders() {
               <th className="allOrders-head-status">Статус</th>
               <th className="allOrders-head-num" style={{ textAlign: 'center' }}>№</th>
               <th className="allOrders-head-date">Дата</th>
+              <th className="allOrders-head-manager">Менеджер</th>
               <th className="allOrders-head-buyers">Покупатели</th>
               {!isPhone && <th className="allOrders-head-hsum" title='Суммы подпокупателей (buyerH) без заполненного имени'>Суммы &quot;H&quot;</th>}
               <th className="allOrders-head-suppliers">Поставщики</th>
+              <th className="allOrders-head-tons">Тонны</th>
+              <th className="allOrders-head-products">Вид продукта</th>
               <th className="allOrders-th-menu">Меню</th>
             </tr>
           </thead>
@@ -579,6 +699,9 @@ function AllOrders() {
             const orderNumber = getOrderNumber(order);
             const orderStatus = getOrderStatus(order.orderjson);
             const orderStatusClass = getOrderStatusClass(orderStatus);
+            const orderManager = getOrderManager(order.orderjson);
+            const suppliersTons = suppliersTonsTotal(order.orderjson);
+            const supplierProducts = supplierProductsDisplay(order.orderjson);
             const orderIndex = orders.findIndex((o) => o.id === order.id);
             const toggleRow = () => {
               if (orderIndex >= 0) showHideOrder(orderIndex);
@@ -601,6 +724,7 @@ function AllOrders() {
                       </td>
                       <td className="allOrders-cell-num" style={{ overflow: "hidden", textAlign: 'center', backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>{orderNumber}</td>
                       <td className="allOrders-cell-date" style={{ overflow: "hidden", backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }} >{formatDate(order.orderjson.date)}</td>
+                      <td className="allOrders-cell-manager" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>{orderManager}</td>
                       <td className="allOrders-cell-buyers" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>{
                         <Stack direction="horizontal" gap={3} className="allOrders-buyers-stack" >
                           {
@@ -620,6 +744,12 @@ function AllOrders() {
 
                       <td className="allOrders-cell-suppliers" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
                         {spisok(order.orderjson.suppliers)}
+                      </td>
+                      <td className="allOrders-cell-tons" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
+                        {NumberFormat(suppliersTons)}
+                      </td>
+                      <td className="allOrders-cell-products" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
+                        {supplierProducts}
                       </td>
                       <td className="allOrders-td-menu" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
                         <Stack direction="horizontal" gap={2} className="allOrders-menu-stack">
@@ -648,7 +778,7 @@ function AllOrders() {
 
                 </tr>
                 <tr className="allOrders-expand-row">
-                  <td colSpan={isPhone ? 6 : 7} className="p-0 border-top-0">
+                  <td colSpan={isPhone ? 9 : 10} className="p-0 border-top-0">
                 <Collapse in={order.open}>
 
                   <div className='mb-3'>

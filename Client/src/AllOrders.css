@@ -30,16 +30,19 @@
 .allOrders-main-table {
     table-layout: fixed;
     width: 100%;
-    min-width: 760px;
+    min-width: 860px;
 }
 
 /* Одна общая таблица: ширины колонок задаём через colgroup */
 .allOrders-main-table col.allOrders-col-status { width: 4%; }
 .allOrders-main-table col.allOrders-col-num { width: 5%; }
-.allOrders-main-table col.allOrders-col-date { width: 10%; }
-.allOrders-main-table col.allOrders-col-buyers { width: 31%; }
-.allOrders-main-table col.allOrders-col-hsum { width: 14%; }
-.allOrders-main-table col.allOrders-col-suppliers { width: 28%; }
+.allOrders-main-table col.allOrders-col-date { width: 8%; }
+.allOrders-main-table col.allOrders-col-manager { width: 10%; }
+.allOrders-main-table col.allOrders-col-buyers { width: 22%; }
+.allOrders-main-table col.allOrders-col-hsum { width: 11%; }
+.allOrders-main-table col.allOrders-col-suppliers { width: 15%; }
+.allOrders-main-table col.allOrders-col-tons { width: 6%; }
+.allOrders-main-table col.allOrders-col-products { width: 11%; }
 .allOrders-main-table col.allOrders-col-menu {
     width: 8%;
     min-width: 5.4rem;
@@ -52,14 +55,27 @@
 
 .allOrders-cell-buyers,
 .allOrders-cell-suppliers,
+.allOrders-cell-manager,
+.allOrders-cell-products,
 .allOrders-cell-hsum {
     white-space: normal;
     word-break: break-word;
 }
 
+.allOrders-head-manager,
+.allOrders-cell-manager {
+    text-align: center;
+}
+
 .allOrders-cell-date,
-.allOrders-cell-num {
+.allOrders-cell-num,
+.allOrders-cell-tons {
     white-space: nowrap;
+}
+
+.allOrders-head-tons,
+.allOrders-cell-tons {
+    text-align: center;
 }
 
 .allOrders-head-status,
@@ -125,19 +141,25 @@
     opacity: 0.45;
 }
 
-.allOrders-buyerFilter {
+.allOrders-textFilters {
     display: flex;
     align-items: center;
+    gap: 8px;
     flex: 1 1 260px;
     min-width: 180px;
-    max-width: 420px;
+    max-width: 720px;
 }
 
-.allOrders-buyerTypeahead,
-.allOrders-buyerTypeahead .rbt {
+.allOrders-filterTypeahead,
+.allOrders-filterTypeahead .rbt {
     flex: 1 1 auto;
     min-width: 0;
     width: 100%;
+}
+
+.allOrders-statusFilter {
+    flex: 0 0 190px;
+    min-width: 170px;
 }
 
 .allOrders-switches-row {
@@ -315,7 +337,7 @@
         font-size: 12px;
     }
 
-    .allOrders-buyerFilter {
+    .allOrders-textFilters {
         flex: 1 1 100%;
         max-width: 100%;
     }
@@ -364,6 +386,16 @@
         min-width: fit-content;
         margin: 0;
         white-space: nowrap;
+    }
+
+    .allOrders-textFilters {
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .allOrders-statusFilter {
+        flex: 1 1 100%;
+        min-width: 0;
     }
 
     .allOrders-main-table {
