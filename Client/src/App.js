@@ -14,6 +14,7 @@ import Header from './Header';
 import AlertMessage from './AlertMessage';
 import EditOrder from './EditOrder';
 import AuditLog from './AuditLog';
+import { getApiBaseUrl } from './apiBaseUrl';
 
 
 
@@ -34,7 +35,7 @@ const todayInputDate = () =>
 
 
 function App() {
-  const PORT = 3001;
+  const apiBaseUrl = getApiBaseUrl();
   const [showMessage, setShowMessage] = useState(false);
   const [message, setMessage] = useState('');
   const [toastVariant, setToastVariant] = useState('info');
@@ -60,7 +61,7 @@ function App() {
   }
 
   const aAxios = axios.create();
-  aAxios.defaults.baseURL = `http://${window.location.hostname}:${PORT}`;
+  aAxios.defaults.baseURL = apiBaseUrl;
   aAxios.interceptors.request.use((config) => {
     config.data = config.data || {};
     config.data.token = token;
@@ -133,7 +134,7 @@ function App() {
     size = 'sm';
   }
   return (
-    <userContext.Provider value={{ user, logOut, setUser, PORT, setToast, aAxios, editingOrder, setEditingOrder, size, display }}>
+    <userContext.Provider value={{ user, logOut, setUser, apiBaseUrl, setToast, aAxios, editingOrder, setEditingOrder, size, display }}>
       <BrowserRouter>
         {!token && <Login setToken={setToken} />}
         {token && <div className='appViewport'>

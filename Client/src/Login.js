@@ -5,10 +5,11 @@ import axios from 'axios';
 import { useState, useRef, useContext } from 'react';
 import { Alert } from 'react-bootstrap';
 import { userContext } from './App';
+import { getApiBaseUrl } from './apiBaseUrl';
 
 
 function Login({ setToken }) {
-    const { PORT } = useContext(userContext);
+    const { apiBaseUrl } = useContext(userContext);
     const refUser = useRef(null);
     const refPassword = useRef(null);
     const [alert, setAlert] = useState("");
@@ -24,7 +25,7 @@ function Login({ setToken }) {
                 refUser.current.focus();
         }
         else {
-                axios.post(`http://${window.location.hostname}:${PORT}/guest/getAccessToken`, {
+                axios.post(`${apiBaseUrl || getApiBaseUrl()}/guest/getAccessToken`, {
                     u,
                     p,
                 })

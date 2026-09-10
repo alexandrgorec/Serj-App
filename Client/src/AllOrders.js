@@ -336,7 +336,7 @@ function AllOrders() {
 
   const printOrder = (id) => {
     const token = window.localStorage.token || '';
-    const baseUrl = aAxios?.defaults?.baseURL || `http://${window.location.hostname}:3001`;
+    const baseUrl = aAxios?.defaults?.baseURL || window.location.origin;
     const printUrl = `${baseUrl}/user/printorder/${id}?token=${encodeURIComponent(token)}`;
     const printWindow = window.open(printUrl, '_blank', 'noopener,noreferrer');
     if (!printWindow) {
