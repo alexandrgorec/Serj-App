@@ -15,7 +15,7 @@ class UserController {
             }
         }
         catch {
-            res.sendStatus(422);
+            res.status(422).json({ message: "Неверный логин или пароль" });
         }
     }
     async getAccessToken(req, res) {

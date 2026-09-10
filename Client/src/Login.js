@@ -39,8 +39,12 @@ function Login({ setToken }) {
                         }
                     })
                     .catch(function (error) {
-                        if (error.request)
+                        if (error.response?.status === 422 || error.response?.status === 401)
+                            setAlert("Неверный логин или пароль")
+                        else if (error.request)
                             setAlert("Нет соединения")
+                        else
+                            setAlert("Ошибка авторизации")
                     });
         }
     }
@@ -80,4 +84,3 @@ function Login({ setToken }) {
 }
 
 export default Login;
-

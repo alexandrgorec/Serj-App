@@ -19,6 +19,11 @@ async function ensureAuditLogTable() {
                 )
             `);
             await pool.query(`
+                ALTER TABLE audit_log
+                ALTER COLUMN actor_user_id TYPE TEXT
+                USING actor_user_id::TEXT
+            `);
+            await pool.query(`
                 CREATE INDEX IF NOT EXISTS audit_log_created_at_idx
                 ON audit_log (created_at DESC)
             `);
