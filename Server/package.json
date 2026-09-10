@@ -22,6 +22,7 @@
     "jsonwebtoken": "^9.0.2",
     "pdfkit": "^0.18.0",
     "pg": "^8.13.1",
+    "pm2": "^7.0.4",
     "word-extractor": "^1.0.4"
   },
   "devDependencies": {
