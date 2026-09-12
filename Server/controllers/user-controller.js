@@ -43,21 +43,31 @@ class UserController {
         }
     }
     async getData(req, res) {
-        res.status(202);
         const user = {
             name: req.body.user,
             rights: req.body.rights,
             userId: req.body.userId,
-        }
-        pool.query("select userinfo from users where Id=$1", [req.body.userId], (err, result) => {
-            if (err) {
-                console.log(err);
-                res.send({ user });
-            } else {
-                user.selectListsData = result.rows[0].userinfo.selectListsData;
-                res.send({ user });
+            selectListsData: {},
+            managerOptions: [],
+        };
+
+        try {
+            const usersResult = await pool.query("select login, userinfo from users order by id");
+            user.managerOptions = usersResult.rows
+                .map((row) => row?.userinfo?.name || row?.login)
+                .map((name) => String(name || '').trim())
+                .filter((name, index, names) => name !== '' && names.indexOf(name) === index);
+
+            if (req.body.userId !== 'root') {
+                const currentUserResult = await pool.query("select userinfo from users where id = $1", [req.body.userId]);
+                user.selectListsData = currentUserResult.rows?.[0]?.userinfo?.selectListsData || {};
             }
-        })
+
+            res.status(202).send({ user });
+        } catch (err) {
+            console.log(err);
+            res.status(202).send({ user });
+        }
     }
     async checkAuth(req, res, next) {
         const bearerToken = req.headers?.authorization?.replace(/^Bearer\s+/i, '') || '';

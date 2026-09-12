@@ -1,7 +1,7 @@
 const fs = require("fs");
 const PDFDocument = require("pdfkit");
 const { pool } = require("../db");
-const { writeAuditLog } = require("../utils/audit-log");
+const { writeAuditLog, listAuditLogsForEntity } = require("../utils/audit-log");
 
 const REPORT_PAGE_SIZE = "A4";
 const REPORT_PAGE_WIDTH_PT = 595.28;
@@ -200,13 +200,13 @@ function makeBuyersTable(order, showFinBlock) {
             { key: "type", label: "Тип", weight: 0.04, align: "center" },
             { key: "n", label: "№", weight: 0.05, align: "center" },
             { key: "name", label: "Покупатель", weight: 0.165, align: "left" },
-            { key: "product", label: "Продукт", weight: 0.155, align: "left" },
-            { key: "liters", label: "Л", weight: 0.075, align: "right", noWrap: true, bodyFontScale: 0.92 },
-            { key: "tons", label: "Т", weight: 0.075, align: "right", noWrap: true },
-            { key: "price", label: "Цена", weight: 0.07, align: "right", noWrap: true },
+            { key: "product", label: "Продукт", weight: 0.125, align: "left" },
+            { key: "liters", label: "Л", weight: 0.085, align: "right", noWrap: true, bodyFontScale: 0.92 },
+            { key: "tons", label: "Т", weight: 0.085, align: "right", noWrap: true },
+            { key: "price", label: "Цена", weight: 0.09, align: "right", noWrap: true, bodyFontScale: 0.92 },
             { key: "sf", label: "С/Ф", weight: 0.075, align: "left" },
             { key: "date", label: "Дата", weight: 0.095, align: "center", noWrap: true },
-            { key: "summa", label: "Σ", weight: 0.14, align: "right", noWrap: true, bodyFontScale: 0.92 },
+            { key: "summa", label: "Σ", weight: 0.13, align: "right", noWrap: true, bodyFontScale: 0.92 },
             { key: "akt", label: "Акт", weight: 0.06, align: "left" },
         ]
         : [
@@ -222,7 +222,7 @@ function makeBuyersTable(order, showFinBlock) {
     const rows = [];
     buyers.forEach((buyer, buyerIndex) => {
         const base = [
-            "П",
+            "Б",
             String(buyerIndex + 1),
             textValue(buyer?.name),
             textValue(buyer?.typeOfProduct),
@@ -238,7 +238,7 @@ function makeBuyersTable(order, showFinBlock) {
         const buyersH = Array.isArray(buyer?.buyersH) ? buyer.buyersH : [];
         buyersH.forEach((buyerH, buyerHIndex) => {
             const baseH = [
-                "H",
+                "Н",
                 `${buyerIndex + 1}.${buyerHIndex + 1}`,
                 textValue(buyerH?.name),
                 textValue(buyerH?.typeOfProduct),
@@ -523,16 +523,110 @@ function buildReport(orderId, order, showFinBlock) {
 const ORDER_DIFF_IGNORED_KEYS = new Set(["id", "haveEmptyBuyerH"]);
 const ORDER_DIFF_MAX_CHANGES_IN_LOG = 200;
 const ORDER_DIFF_MAX_VALUE_LEN = 180;
+const ORDER_DIFF_DEFAULT_VALUES = {
+    orderStatus: "Новая",
+    ttnStatus: "Х",
+};
+const ORDER_DIFF_FIELD_LABELS = {
+    orderNumber: "№ заявки",
+    order_number: "№ заявки",
+    orderStatus: "Статус заявки",
+    ttnStatus: "Статус ТТН",
+    manager: "Менеджер",
+    date: "Дата заявки",
+    ip: "ИП перевозчик",
+    driver: "Водитель",
+    cost: "Стоимость доставки",
+    otk: "ОТК",
+    otkManual: "ОТК (ручной ввод)",
+    otkFormulaTon: "ОТК формула (тонна)",
+    otkFormulaPrice: "ОТК формула (цена)",
+    otkFormulaTotal: "ОТК формула (итого)",
+    courier: "Курьер",
+    shortage: "Недостача",
+    transWarehouse: "Транс.склад",
+    loadingPlace: "Место загрузки",
+    storageTon: "Хранение (тонна)",
+    storagePrice: "Хранение цена",
+    storageTotal: "Хранение итого",
+    supplierPaymentDate: "Дата оплаты поставщику",
+    supplierPaymentDeferred: "Отсрочка оплаты поставщику",
+    loadingDate: "Дата загрузки",
+    loadingFromStorage: "Загрузка с хранения",
+    shipmentDate: "Дата отгрузки",
+    comments: "Комментарии",
+    name: "наименование",
+    typeOfProduct: "вид продукта",
+    liters: "литры",
+    tons: "тонны",
+    price: "цена",
+    sf: "С/Ф",
+    summa: "сумма",
+    akt: "акт транспорт",
+};
+
+function isBlankAuditValue(value) {
+    return value === undefined || value === null || String(value).trim() === "";
+}
+
+function normalizeAuditStatus(value) {
+    const text = isBlankAuditValue(value) ? ORDER_DIFF_DEFAULT_VALUES.orderStatus : String(value).trim();
+    if (text === "Создана") return "Новая";
+    if (text === "Приход внесен") return "Заприходирована";
+    if (text === "Выполнена реализация") return "Реализована";
+    return text;
+}
+
+function normalizeAuditTtnStatus(value) {
+    const text = isBlankAuditValue(value) ? ORDER_DIFF_DEFAULT_VALUES.ttnStatus : String(value).trim();
+    if (text.startsWith("Х")) return "Х";
+    if (text.startsWith("О")) return "О";
+    if (text.startsWith("З")) return "З";
+    if (text.startsWith("Т")) return "Т";
+    return text;
+}
+
+function normalizeAuditComparable(path, value) {
+    if (path === "orderStatus") return normalizeAuditStatus(value);
+    if (path === "ttnStatus") return normalizeAuditTtnStatus(value);
+
+    if (path === "orderNumber" || path === "order_number") {
+        const parsed = parseOrderNumber(value);
+        return Number.isNaN(parsed) ? String(value || "").trim() : parsed;
+    }
+
+    if (isBlankAuditValue(value)) return "";
+    if (typeof value === "string") return value.trim();
+    return value;
+}
+
+function getOrderDiffFieldLabel(path) {
+    const buyerHMatch = path.match(/^buyers\[(\d+)]\.buyersH\[(\d+)]\.(.+)$/);
+    if (buyerHMatch) {
+        const buyerIndex = Number(buyerHMatch[1]) + 1;
+        const buyerHIndex = Number(buyerHMatch[2]) + 1;
+        const fieldLabel = ORDER_DIFF_FIELD_LABELS[buyerHMatch[3]] || buyerHMatch[3];
+        return `Покупатель №${buyerIndex}, Н №${buyerHIndex}: ${fieldLabel}`;
+    }
+
+    const rowMatch = path.match(/^(suppliers|buyers)\[(\d+)]\.(.+)$/);
+    if (rowMatch) {
+        const sectionLabel = rowMatch[1] === "suppliers" ? "Поставщик" : "Покупатель";
+        const rowIndex = Number(rowMatch[2]) + 1;
+        const fieldLabel = ORDER_DIFF_FIELD_LABELS[rowMatch[3]] || rowMatch[3];
+        return `${sectionLabel} №${rowIndex}: ${fieldLabel}`;
+    }
+
+    return ORDER_DIFF_FIELD_LABELS[path] || path || "Заявка";
+}
 
 function isPlainObject(value) {
     return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 function formatAuditValue(value) {
-    if (value === undefined) return "∅";
-    if (value === null) return "null";
+    if (isBlankAuditValue(value)) return "пусто";
     if (typeof value === "string") {
-        if (value === "") return "\"\"";
         return value.length > ORDER_DIFF_MAX_VALUE_LEN ? `${value.slice(0, ORDER_DIFF_MAX_VALUE_LEN)}…` : value;
     }
     if (typeof value === "number" || typeof value === "boolean") return String(value);
@@ -548,11 +642,24 @@ function formatAuditValue(value) {
 }
 
 function collectOrderDiff(beforeValue, afterValue, path, output) {
-    if (beforeValue === afterValue) return;
     const beforeIsArray = Array.isArray(beforeValue);
     const afterIsArray = Array.isArray(afterValue);
     const beforeIsObject = isPlainObject(beforeValue);
     const afterIsObject = isPlainObject(afterValue);
+
+    if (!beforeIsArray && !afterIsArray && !beforeIsObject && !afterIsObject) {
+        const beforeComparable = normalizeAuditComparable(path, beforeValue);
+        const afterComparable = normalizeAuditComparable(path, afterValue);
+        if (beforeComparable === afterComparable) return;
+        output.push({
+            field: getOrderDiffFieldLabel(path),
+            before: formatAuditValue(beforeComparable),
+            after: formatAuditValue(afterComparable),
+        });
+        return;
+    }
+
+    if (beforeValue === afterValue) return;
 
     if (beforeIsArray && afterIsArray) {
         const maxLen = Math.max(beforeValue.length, afterValue.length);
@@ -729,6 +836,27 @@ class OrderController {
             }
             console.error("Error connecting to the database", err.stack || err);
             res.send("ошибка доступа к базе данных");
+        }
+    }
+
+    async orderhistory(req, res) {
+        const id = Number(req.body?.id);
+        if (!Number.isInteger(id) || id <= 0) {
+            res.status(400).json({ message: "Некорректный номер заявки" });
+            return;
+        }
+
+        try {
+            const result = await listAuditLogsForEntity({
+                entityType: "order",
+                entityId: id,
+                page: req.body?.page || 1,
+                pageSize: req.body?.pageSize || 100,
+            });
+            res.status(202).json(result);
+        } catch (err) {
+            console.error("Error order history", err.stack || err);
+            res.status(500).send("ошибка доступа к базе данных");
         }
     }
 

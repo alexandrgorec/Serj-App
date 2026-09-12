@@ -23,8 +23,19 @@
     flex-wrap: nowrap;
 }
 
-.allOrders-toggleAllBtn {
+.allOrders-newOrderBtn {
+    flex: 0 0 auto;
     white-space: nowrap;
+    font-weight: 600;
+    background: linear-gradient(180deg, #42a567 0%, #2f8d53 100%);
+    border-color: #2d844f;
+    box-shadow: 0 1px 2px rgba(25, 95, 55, 0.18);
+}
+
+.allOrders-newOrderBtn:hover,
+.allOrders-newOrderBtn:focus {
+    background: linear-gradient(180deg, #4ab673 0%, #318f55 100%);
+    border-color: #287848;
 }
 
 .allOrders-main-table {
@@ -35,12 +46,13 @@
 
 /* Одна общая таблица: ширины колонок задаём через colgroup */
 .allOrders-main-table col.allOrders-col-status { width: 4%; }
+.allOrders-main-table col.allOrders-col-ttn-status { width: 5%; }
 .allOrders-main-table col.allOrders-col-num { width: 5%; }
 .allOrders-main-table col.allOrders-col-date { width: 8%; }
-.allOrders-main-table col.allOrders-col-manager { width: 10%; }
-.allOrders-main-table col.allOrders-col-buyers { width: 22%; }
-.allOrders-main-table col.allOrders-col-hsum { width: 11%; }
-.allOrders-main-table col.allOrders-col-suppliers { width: 15%; }
+.allOrders-main-table col.allOrders-col-manager { width: 9%; }
+.allOrders-main-table col.allOrders-col-buyers { width: 20%; }
+.allOrders-main-table col.allOrders-col-hsum { width: 10%; }
+.allOrders-main-table col.allOrders-col-suppliers { width: 14%; }
 .allOrders-main-table col.allOrders-col-tons { width: 6%; }
 .allOrders-main-table col.allOrders-col-products { width: 11%; }
 .allOrders-main-table col.allOrders-col-menu {
@@ -69,7 +81,8 @@
 
 .allOrders-cell-date,
 .allOrders-cell-num,
-.allOrders-cell-tons {
+.allOrders-cell-tons,
+.allOrders-cell-ttn-status {
     white-space: nowrap;
 }
 
@@ -79,9 +92,16 @@
 }
 
 .allOrders-head-status,
-.allOrders-cell-status {
+.allOrders-cell-status,
+.allOrders-head-ttn-status,
+.allOrders-cell-ttn-status {
     text-align: center;
     white-space: nowrap;
+}
+
+.allOrders-cell-ttn-status {
+    font-weight: 700;
+    color: rgba(45, 58, 82, 0.92);
 }
 
 .allOrders-status-dot {
@@ -145,9 +165,9 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    flex: 1 1 260px;
+    flex: 1 1 360px;
     min-width: 180px;
-    max-width: 720px;
+    max-width: 960px;
 }
 
 .allOrders-filterTypeahead,
@@ -160,6 +180,27 @@
 .allOrders-statusFilter {
     flex: 0 0 190px;
     min-width: 170px;
+}
+
+.allOrders-ttnStatusFilter {
+    flex: 0 0 112px;
+    min-width: 100px;
+}
+
+.allOrders-resetFiltersBtn {
+    flex: 0 0 auto;
+    margin-left: auto;
+    white-space: nowrap;
+    color: rgba(70, 82, 102, 0.98);
+    border-color: rgba(70, 82, 102, 0.35);
+    background: rgba(255, 255, 255, 0.72);
+}
+
+.allOrders-resetFiltersBtn:hover,
+.allOrders-resetFiltersBtn:focus {
+    color: rgba(43, 52, 66, 1);
+    border-color: rgba(70, 82, 102, 0.52);
+    background: rgba(232, 238, 248, 0.9);
 }
 
 .allOrders-switches-row {
@@ -209,6 +250,19 @@
     gap: 7px;
     justify-self: start;
     min-width: 0;
+}
+
+.allOrders-card-ttnStatus {
+    display: inline-flex;
+    align-items: center;
+    min-height: 20px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: rgba(47, 58, 79, 0.1);
+    color: rgba(45, 58, 82, 0.95);
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
 }
 
 .allOrders-card-id {
@@ -368,9 +422,9 @@
         display: none;
     }
 
-    .allOrders-toggleAllBtn {
+    .allOrders-newOrderBtn {
         font-size: 12px;
-        padding: 5px 8px;
+        padding: 5px 12px;
     }
 
     .allOrders-switches-row {
@@ -398,6 +452,17 @@
         min-width: 0;
     }
 
+    .allOrders-ttnStatusFilter {
+        flex: 1 1 calc(42% - 3px);
+        min-width: 0;
+    }
+
+    .allOrders-resetFiltersBtn {
+        margin-left: 0;
+        font-size: 12px;
+        padding: 5px 12px;
+    }
+
     .allOrders-main-table {
         min-width: 560px;
     }
@@ -407,6 +472,10 @@
     }
 
     .allOrders-main-table-compact col.allOrders-col-num {
+        width: 8%;
+    }
+
+    .allOrders-main-table-compact col.allOrders-col-ttn-status {
         width: 8%;
     }
 

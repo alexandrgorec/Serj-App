@@ -1,0 +1,88 @@
+.orderPaymentDates {
+    width: 100%;
+}
+
+.orderPaymentDates-desktop {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin: 8px 6px 10px;
+}
+
+.orderPaymentDates-mobile {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.orderPaymentDates-field {
+    min-width: 0;
+    padding: 8px 10px;
+    border: 1px solid rgba(120, 135, 160, 0.25);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.78);
+}
+
+.orderPaymentDates-label {
+    margin-bottom: 4px;
+    color: rgba(47, 58, 79, 0.88);
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.orderPaymentDates-field .form-control {
+    min-height: 36px;
+    font-weight: 400;
+}
+
+.orderPaymentDates-inputRow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.orderPaymentDates-inputRow .form-control {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.orderPaymentDates-check {
+    flex: 0 0 auto;
+    margin-top: 0;
+    margin-bottom: 0;
+    color: rgba(47, 58, 79, 0.88);
+    font-size: 0.86rem;
+    white-space: nowrap;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.orderPaymentDates-check .form-check-input,
+.orderPaymentDates-check .form-check-label {
+    cursor: pointer;
+}
+
+.orderPaymentDates-mobile .orderPaymentDates-field {
+    padding: 7px 8px;
+}
+
+.orderPaymentDates-mobile .orderPaymentDates-label,
+.orderPaymentDates-mobile .orderPaymentDates-check {
+    font-size: 12px;
+}
+
+@media (max-width: 850px) {
+    .orderPaymentDates-desktop {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 380px) {
+    .orderPaymentDates-inputRow {
+        gap: 7px;
+    }
+
+    .orderPaymentDates-check {
+        font-size: 11px;
+    }
+}

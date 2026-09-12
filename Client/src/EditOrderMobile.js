@@ -8,27 +8,41 @@ import Stack from 'react-bootstrap/Stack';
 import Modal from 'react-bootstrap/Modal';
 import InputGroup from 'react-bootstrap/InputGroup';
 import { MdDelete } from "react-icons/md";
+import { FaArrowsRotate, FaPrint } from 'react-icons/fa6';
 import OtkFields, { getOrderOtkTax } from './OtkFields';
 import OrderExtraFields from './OrderExtraFields';
+import OrderPaymentDates from './OrderPaymentDates';
 import { getManagerOptions } from './managerOptions';
-
-const ORDER_STATUS_OPTIONS = [
-  'Создана',
-  'Приход внесен',
-  'Выполнена реализация',
-];
+import { ORDER_STATUS_OPTIONS, normalizeOrderStatus } from './orderStatus';
+import { ORDER_TTN_STATUS_OPTIONS, normalizeOrderTtnStatus } from './orderTtnStatus';
 
 function getOrderStatusClass(status) {
-  if (status === 'Приход внесен') return 'editOrder-status-income';
-  if (status === 'Выполнена реализация') return 'editOrder-status-done';
+  const normalizedStatus = normalizeOrderStatus(status);
+  if (normalizedStatus === 'Заприходирована') return 'editOrder-status-income';
+  if (normalizedStatus === 'Реализована') return 'editOrder-status-done';
   return 'editOrder-status-created';
 }
 
-function EditOrderMobile({ order, setOrder, onSave, onBack }) {
+function EditOrderMobile({
+  mode = 'edit',
+  order,
+  setOrder,
+  onSave,
+  onBack,
+  onClear,
+  onPrint,
+  onHistory,
+  historyDisabled = false,
+  printDisabled = false,
+  saveLabel = 'Записать',
+}) {
   const { user } = useContext(userContext);
   const bgColorH = 'rgba(127, 244, 166, 0.22)';
+  const isEditMode = mode === 'edit';
   const canEditOrderStatus = !!user?.rights?.finBlockAccess;
-  const orderStatus = order.orderStatus || ORDER_STATUS_OPTIONS[0];
+  const orderStatus = normalizeOrderStatus(order.orderStatus);
+  const ttnStatus = normalizeOrderTtnStatus(order.ttnStatus);
+  const managerOptions = user?.managerOptions || [];
 
   const [deleteElement, setDeleteElement] = useState(null);
   const [show, setShow] = useState(false);
@@ -231,12 +245,42 @@ function EditOrderMobile({ order, setOrder, onSave, onBack }) {
                 as='input'
                 type='number'
                 min='1'
-                value={order.orderNumber || order.id || ''}
+                placeholder='Авто'
+                value={order.orderNumber || (isEditMode ? order.id || '' : '')}
                 onChange={(evt) => {
                   order.orderNumber = evt.target.value;
                   refresh();
                 }}
               />
+            </div>
+            <div className={`editOrderMobile-statusField ${getOrderStatusClass(orderStatus)}`}>
+              <Form.Select
+                size='sm'
+                value={orderStatus}
+                disabled={!isEditMode || !canEditOrderStatus}
+                onChange={(evt) => {
+                  order.orderStatus = evt.target.value;
+                  refresh();
+                }}
+              >
+                {ORDER_STATUS_OPTIONS.map((status) => (
+                  <option key={status} value={status}>{status}</option>
+                ))}
+              </Form.Select>
+            </div>
+            <div className='editOrderMobile-ttnStatusField'>
+              <Form.Select
+                size='sm'
+                value={ttnStatus}
+                onChange={(evt) => {
+                  order.ttnStatus = evt.target.value;
+                  refresh();
+                }}
+              >
+                {ORDER_TTN_STATUS_OPTIONS.map((status) => (
+                  <option key={status.value} value={status.value}>{status.label}</option>
+                ))}
+              </Form.Select>
             </div>
             <div className='editOrderMobile-dateWrap'>
               <Form.Control
@@ -249,28 +293,47 @@ function EditOrderMobile({ order, setOrder, onSave, onBack }) {
                 }}
               />
             </div>
-            <Button size='sm' variant='primary' onClick={onBack}>Назад</Button>
-            <Button size='sm' variant='success' onClick={onSave}>Сохранить</Button>
+            {onClear &&
+              <Button
+                size='sm'
+                variant='outline-secondary'
+                className='editOrderMobile-clearBtn'
+                title='Очистить'
+                aria-label='Очистить'
+                onClick={onClear}
+            >
+                <FaArrowsRotate />
+              </Button>
+            }
+            <Button
+              size='sm'
+              variant='outline-secondary'
+              className='editOrderMobile-historyBtn'
+              title={historyDisabled ? 'История появится после создания заявки' : 'История изменений заявки'}
+              disabled={historyDisabled}
+              onClick={onHistory}
+            >
+              История
+            </Button>
+            {onBack && <Button size='sm' variant='primary' onClick={onBack}>Назад</Button>}
+            <Button size='sm' variant='success' onClick={onSave}>{saveLabel}</Button>
+            <Button
+              size='sm'
+              variant='outline-secondary'
+              className='editOrderMobile-printBtn'
+              title={printDisabled ? 'Печать доступна после создания заявки' : 'Печать заявки'}
+              aria-label='Печать заявки'
+              disabled={printDisabled}
+              onClick={onPrint}
+            >
+              <FaPrint />
+              <span>Печать</span>
+            </Button>
           </Stack>
 
           <Stack direction='horizontal' gap={2} className='editOrderMobile-topActions'>
-            <Button size='sm' variant='primary' onClick={addSupplier}>Добавить поставщика</Button>
-            <Button size='sm' variant='success' onClick={addBuyer}>Добавить покупателя</Button>
-            <div className={`editOrderMobile-statusField ${getOrderStatusClass(orderStatus)}`}>
-              <Form.Select
-                size='sm'
-                value={orderStatus}
-                disabled={!canEditOrderStatus}
-                onChange={(evt) => {
-                  order.orderStatus = evt.target.value;
-                  refresh();
-                }}
-              >
-                {ORDER_STATUS_OPTIONS.map((status) => (
-                  <option key={status} value={status}>{status}</option>
-                ))}
-              </Form.Select>
-            </div>
+            <Button size='sm' variant='success' onClick={addBuyer}>+ Покупатель</Button>
+            <Button size='sm' variant='primary' onClick={addSupplier}>+ Поставщик</Button>
           </Stack>
         </div>
 
@@ -592,6 +655,8 @@ function EditOrderMobile({ order, setOrder, onSave, onBack }) {
           ))}
         </div>
 
+        <OrderPaymentDates order={order} setOrder={setOrder} variant='mobile' />
+
         <div className='editOrderMobile-mainFields'>
           <div className='editOrderMobile-field'>
             <div className='editOrderMobile-label'>Менеджер</div>
@@ -603,7 +668,7 @@ function EditOrderMobile({ order, setOrder, onSave, onBack }) {
               }}
             >
               <option value="">Менеджер</option>
-              {getManagerOptions(order.manager).map((manager) => (
+              {getManagerOptions(order.manager, managerOptions).map((manager) => (
                 <option key={manager} value={manager}>{manager}</option>
               ))}
             </Form.Select>

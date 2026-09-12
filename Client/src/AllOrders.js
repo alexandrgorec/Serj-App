@@ -13,12 +13,8 @@ import { userContext } from './App';
 import { FaPeopleArrows, FaPrint } from "react-icons/fa6";
 import { FormLabel } from 'react-bootstrap';
 import { Typeahead } from "react-bootstrap-typeahead";
-
-const ORDER_STATUS_OPTIONS = [
-  'Создана',
-  'Приход внесен',
-  'Выполнена реализация',
-];
+import { ORDER_STATUS_OPTIONS, normalizeOrderStatus } from './orderStatus';
+import { ORDER_TTN_STATUS_OPTIONS, normalizeOrderTtnStatus } from './orderTtnStatus';
 
 function spisok(array) {
   {
@@ -101,17 +97,31 @@ function buyerNamesFromOrder(orderjson) {
   return out;
 }
 
+function supplierNamesFromOrder(orderjson) {
+  const out = [];
+  const suppliers = orderjson?.suppliers || [];
+  suppliers.forEach((supplier) => {
+    if (supplier?.name != null && String(supplier.name).trim() !== '') out.push(String(supplier.name).trim());
+  });
+  return out;
+}
+
 function getOrderNumber(order) {
   return order?.order_number || order?.orderjson?.orderNumber || order?.orderjson?.order_number || order?.id;
 }
 
 function getOrderStatus(orderjson) {
-  return orderjson?.orderStatus || 'Создана';
+  return normalizeOrderStatus(orderjson?.orderStatus);
+}
+
+function getOrderTtnStatus(orderjson) {
+  return normalizeOrderTtnStatus(orderjson?.ttnStatus);
 }
 
 function getOrderStatusClass(status) {
-  if (status === 'Приход внесен') return 'allOrders-status-income';
-  if (status === 'Выполнена реализация') return 'allOrders-status-done';
+  const normalizedStatus = normalizeOrderStatus(status);
+  if (normalizedStatus === 'Заприходирована') return 'allOrders-status-income';
+  if (normalizedStatus === 'Реализована') return 'allOrders-status-done';
   return 'allOrders-status-created';
 }
 
@@ -129,48 +139,6 @@ function getOrderManager(orderjson) {
     .find((value) => value !== '');
   return buyerHManager || '';
 }
-
-function orderRows(orderjson) {
-  const suppliers = Array.isArray(orderjson?.suppliers) ? orderjson.suppliers : [];
-  const buyers = Array.isArray(orderjson?.buyers) ? orderjson.buyers : [];
-  const buyersH = buyers.flatMap((buyer) => Array.isArray(buyer?.buyersH) ? buyer.buyersH : []);
-  return [...suppliers, ...buyers, ...buyersH];
-}
-
-function hasFilledValue(value) {
-  if (value === null || value === undefined) return false;
-  if (typeof value === 'number') return !Number.isNaN(value);
-  if (typeof value === 'string') return value.trim() !== '';
-  return true;
-}
-
-function isMeaningfulOrderRow(row) {
-  return ['name', 'typeOfProduct', 'liters', 'tons', 'price', 'sf', 'summa', 'akt']
-    .some((field) => hasFilledValue(row?.[field]));
-}
-
-function isFilledByManager(orderjson) {
-  const rows = orderRows(orderjson);
-  if (!rows.length) return false;
-  return rows.every((row) =>
-    hasFilledValue(row?.name) &&
-    hasFilledValue(row?.typeOfProduct) &&
-    hasFilledValue(row?.liters) &&
-    hasFilledValue(row?.tons) &&
-    hasFilledValue(row?.price)
-  );
-}
-
-function isFilledByAccountant(orderjson) {
-  const rows = orderRows(orderjson).filter(isMeaningfulOrderRow);
-  if (!rows.length) return false;
-  return rows.every((row) =>
-    hasFilledValue(row?.sf) &&
-    hasFilledValue(row?.summa) &&
-    hasFilledValue(row?.akt)
-  );
-}
-
 
 function formatDate(date) {
   date = new Date(Date.parse(date));
@@ -192,14 +160,14 @@ function AllOrders() {
   const { user, setToast, aAxios, setEditingOrder } = useContext(userContext);
   const navigate = useNavigate();
   const refFilter = useRef(null);
-  const refFilterSumH = useRef(null);
-  const refFilterUnfilledManager = useRef(null);
-  const refFilterUnfilledAccountant = useRef(null);
   const [buyerFilter, setBuyerFilter] = useState('');
   const buyerTypeaheadRef = useRef(null);
   const [managerFilter, setManagerFilter] = useState('');
   const managerTypeaheadRef = useRef(null);
+  const [supplierFilter, setSupplierFilter] = useState('');
+  const supplierTypeaheadRef = useRef(null);
   const [statusFilter, setStatusFilter] = useState('');
+  const [ttnStatusFilter, setTtnStatusFilter] = useState('');
   const openEditedOrder = () => {
     setOrders((orders) => {
       if (sessionStorage.createdOrderId) {
@@ -233,6 +201,13 @@ function AllOrders() {
       .filter((s) => s !== '')
   ));
 
+  const supplierOptions = Array.from(new Set(
+    orders
+      .flatMap((o) => supplierNamesFromOrder(o?.orderjson))
+      .map((s) => String(s).trim())
+      .filter((s) => s !== '')
+  ));
+
 
 
   const [orderForDelete, setOrderForDelete] = useState(null);
@@ -260,7 +235,6 @@ function AllOrders() {
   }
   const isPhone = window.innerWidth <= 480;
   const [state, reload] = useState(false);
-  const [allExpanded, setAllExpanded] = useState(false);
 
 
 
@@ -344,6 +318,19 @@ function AllOrders() {
     }
   }
 
+  const resetFilters = () => {
+    setStatusFilter('');
+    setTtnStatusFilter('');
+    setManagerFilter('');
+    setSupplierFilter('');
+    setBuyerFilter('');
+    if (refFilter.current) refFilter.current.checked = false;
+    managerTypeaheadRef.current?.clear();
+    supplierTypeaheadRef.current?.clear();
+    buyerTypeaheadRef.current?.clear();
+    reload(!state);
+  };
+
 
 
   useEffect(() => {
@@ -376,16 +363,19 @@ function AllOrders() {
     return sign + intFormatted + decSep + fracRaw;
   }
   const filterEmptyBuyerH = !!refFilter.current?.checked;
-  const filterSumH = !!refFilterSumH.current?.checked;
-  const filterUnfilledManager = !!refFilterUnfilledManager.current?.checked;
-  const filterUnfilledAccountant = !!refFilterUnfilledAccountant.current?.checked;
   const buyerQ = String(buyerFilter || '').trim().toLowerCase();
   const managerQ = String(managerFilter || '').trim().toLowerCase();
+  const supplierQ = String(supplierFilter || '').trim().toLowerCase();
   const filteredOrders = orders.filter((order) => {
     const matchBuyer =
       buyerQ === '' ||
       buyerNamesFromOrder(order.orderjson)
         .some((n) => String(n).toLowerCase().includes(buyerQ));
+
+    const matchSupplier =
+      supplierQ === '' ||
+      supplierNamesFromOrder(order.orderjson)
+        .some((n) => String(n).toLowerCase().includes(supplierQ));
 
     const matchManager =
       managerQ === '' ||
@@ -395,19 +385,19 @@ function AllOrders() {
       statusFilter === '' ||
       getOrderStatus(order.orderjson) === statusFilter;
 
+    const matchTtnStatus =
+      ttnStatusFilter === '' ||
+      getOrderTtnStatus(order.orderjson) === ttnStatusFilter;
+
     if (!matchBuyer) return false;
+    if (!matchSupplier) return false;
     if (!matchManager) return false;
     if (!matchStatus) return false;
-    if (filterEmptyBuyerH || filterSumH) {
+    if (!matchTtnStatus) return false;
+    if (filterEmptyBuyerH) {
       const matchEmptyBuyerH = !!order.orderjson.haveEmptyBuyerH;
-      const matchSumH = emptyBuyerHSummasDisplay(order.orderjson.buyers) !== '';
-      if (filterEmptyBuyerH && !filterSumH && !matchEmptyBuyerH) return false;
-      if (!filterEmptyBuyerH && filterSumH && !matchSumH) return false;
-      if (filterEmptyBuyerH && filterSumH && !(matchEmptyBuyerH && matchSumH)) return false;
+      if (!matchEmptyBuyerH) return false;
     }
-
-    if (filterUnfilledManager && isFilledByManager(order.orderjson)) return false;
-    if (filterUnfilledAccountant && isFilledByAccountant(order.orderjson)) return false;
 
     return true;
   });
@@ -416,22 +406,12 @@ function AllOrders() {
       <Stack direction='horizontal' gap={2} className='allOrders-toolbar'>
         <div className='allOrders-controls-row'>
           <Button
-            className='allOrders-toggleAllBtn'
-            onClick={() => {
-              const next = !allExpanded;
-              setOrders((orders) => {
-                orders.map(order => {
-                  order.open = next;
-                  return (order)
-                })
-                return (orders);
-              })
-              setAllExpanded(next);
-              reload(!state);
-            }}
-          > {allExpanded ? 'Свернуть все' : 'Развернуть все'}
+            variant="success"
+            className='allOrders-newOrderBtn'
+            onClick={() => navigate('/neworder')}
+          >
+            Новая заявка
           </Button>
-
           <div className='allOrders-switches-row'>
             <FormLabel className='noselect clickable mb-0'>
               <Stack direction='horizontal' gap={2}>
@@ -441,52 +421,38 @@ function AllOrders() {
                 Фильтр <FaPeopleArrows style={{ color: 'rgba(16, 188, 45, 0.79)' }} />
               </Stack>
             </FormLabel>
-            <FormLabel className='noselect clickable mb-0'>
-              <Stack direction='horizontal' gap={2}>
-                <Form.Check className='noselect' ref={refFilterSumH} onClick={() => { reload(!state) }}
-                  type="switch"
-                />
-                Фильтр ∑ &quot;H&quot;
-              </Stack>
-            </FormLabel>
-            <FormLabel className='noselect clickable mb-0'>
-              <Stack direction='horizontal' gap={2}>
-                <Form.Check className='noselect' ref={refFilterUnfilledManager} onClick={() => { reload(!state) }}
-                  type="switch"
-                />
-                Не заполнено менеджером
-              </Stack>
-            </FormLabel>
-            <FormLabel className='noselect clickable mb-0'>
-              <Stack direction='horizontal' gap={2}>
-                <Form.Check className='noselect' ref={refFilterUnfilledAccountant} onClick={() => { reload(!state) }}
-                  type="switch"
-                />
-                Не заполнено бухгалтером
-              </Stack>
-            </FormLabel>
           </div>
         </div>
 
         <div className="allOrders-textFilters">
-          <Typeahead
-            id="allorders-buyer-filter"
-            ref={buyerTypeaheadRef}
-            options={buyerOptions}
-            className="allOrders-filterTypeahead"
-            selected={buyerFilter ? [buyerFilter] : []}
-            onChange={(selected) => {
-              const v = selected.length ? String(selected[0]) : '';
-              setBuyerFilter(v);
+          <Form.Select
+            className="allOrders-statusFilter"
+            value={statusFilter}
+            onChange={(evt) => {
+              setStatusFilter(evt.target.value);
               reload(!state);
             }}
-            onInputChange={(text) => {
-              setBuyerFilter(text);
+            style={{ fontSize: window.innerWidth < 850 ? '12px' : '14px' }}
+          >
+            <option value="">Все статусы</option>
+            {ORDER_STATUS_OPTIONS.map((status) => (
+              <option key={status} value={status}>{status}</option>
+            ))}
+          </Form.Select>
+          <Form.Select
+            className="allOrders-ttnStatusFilter"
+            value={ttnStatusFilter}
+            onChange={(evt) => {
+              setTtnStatusFilter(evt.target.value);
+              reload(!state);
             }}
-            placeholder="Фильтр покупатель…"
-            highlightOnlyResult
-            inputProps={{ type: 'text', style: { fontSize: window.innerWidth < 850 ? '12px' : '14px' } }}
-          />
+            style={{ fontSize: window.innerWidth < 850 ? '12px' : '14px' }}
+          >
+            <option value="">Все ТТН</option>
+            {ORDER_TTN_STATUS_OPTIONS.map((status) => (
+              <option key={status.value} value={status.value}>{status.label}</option>
+            ))}
+          </Form.Select>
           <Typeahead
             id="allorders-manager-filter"
             ref={managerTypeaheadRef}
@@ -505,21 +471,50 @@ function AllOrders() {
             highlightOnlyResult
             inputProps={{ type: 'text', style: { fontSize: window.innerWidth < 850 ? '12px' : '14px' } }}
           />
-          <Form.Select
-            className="allOrders-statusFilter"
-            value={statusFilter}
-            onChange={(evt) => {
-              setStatusFilter(evt.target.value);
+          <Typeahead
+            id="allorders-supplier-filter"
+            ref={supplierTypeaheadRef}
+            options={supplierOptions}
+            className="allOrders-filterTypeahead"
+            selected={supplierFilter ? [supplierFilter] : []}
+            onChange={(selected) => {
+              const v = selected.length ? String(selected[0]) : '';
+              setSupplierFilter(v);
               reload(!state);
             }}
-            style={{ fontSize: window.innerWidth < 850 ? '12px' : '14px' }}
-          >
-            <option value="">Все статусы</option>
-            {ORDER_STATUS_OPTIONS.map((status) => (
-              <option key={status} value={status}>{status}</option>
-            ))}
-          </Form.Select>
+            onInputChange={(text) => {
+              setSupplierFilter(text);
+            }}
+            placeholder="Фильтр поставщик…"
+            highlightOnlyResult
+            inputProps={{ type: 'text', style: { fontSize: window.innerWidth < 850 ? '12px' : '14px' } }}
+          />
+          <Typeahead
+            id="allorders-buyer-filter"
+            ref={buyerTypeaheadRef}
+            options={buyerOptions}
+            className="allOrders-filterTypeahead"
+            selected={buyerFilter ? [buyerFilter] : []}
+            onChange={(selected) => {
+              const v = selected.length ? String(selected[0]) : '';
+              setBuyerFilter(v);
+              reload(!state);
+            }}
+            onInputChange={(text) => {
+              setBuyerFilter(text);
+            }}
+            placeholder="Фильтр покупатель…"
+            highlightOnlyResult
+            inputProps={{ type: 'text', style: { fontSize: window.innerWidth < 850 ? '12px' : '14px' } }}
+          />
         </div>
+        <Button
+          variant="outline-secondary"
+          className="allOrders-resetFiltersBtn"
+          onClick={resetFilters}
+        >
+          Сброс
+        </Button>
 
       </Stack>
       {isPhone &&
@@ -528,6 +523,7 @@ function AllOrders() {
             const emptyHSummas = emptyBuyerHSummasDisplay(order.orderjson.buyers);
             const orderNumber = getOrderNumber(order);
             const orderStatus = getOrderStatus(order.orderjson);
+            const orderTtnStatus = getOrderTtnStatus(order.orderjson);
             const orderStatusClass = getOrderStatusClass(orderStatus);
             const orderManager = getOrderManager(order.orderjson);
             const suppliersTons = suppliersTonsTotal(order.orderjson);
@@ -541,6 +537,7 @@ function AllOrders() {
                 <div className='allOrders-card-header clickable' onClick={toggleRow}>
                   <div className='allOrders-card-idGroup'>
                     <span className={`allOrders-status-dot ${orderStatusClass}`} title={orderStatus} />
+                    <span className='allOrders-card-ttnStatus' title={`Статус ТТН: ${orderTtnStatus}`}>ТТН: {orderTtnStatus}</span>
                     <div className='allOrders-card-id'>Заявка №{orderNumber}</div>
                   </div>
                   <div className='allOrders-card-date'>{formatDate(order.orderjson.date)}</div>
@@ -668,6 +665,7 @@ function AllOrders() {
         >
           <colgroup>
             <col className="allOrders-col-status" />
+            <col className="allOrders-col-ttn-status" />
             <col className="allOrders-col-num" />
             <col className="allOrders-col-date" />
             <col className="allOrders-col-manager" />
@@ -681,6 +679,7 @@ function AllOrders() {
           <thead>
             <tr>
               <th className="allOrders-head-status">Статус</th>
+              <th className="allOrders-head-ttn-status" title="Статус ТТН">ТТН</th>
               <th className="allOrders-head-num" style={{ textAlign: 'center' }}>№</th>
               <th className="allOrders-head-date">Дата</th>
               <th className="allOrders-head-manager">Менеджер</th>
@@ -698,6 +697,7 @@ function AllOrders() {
             const emptyHSummas = emptyBuyerHSummasDisplay(order.orderjson.buyers);
             const orderNumber = getOrderNumber(order);
             const orderStatus = getOrderStatus(order.orderjson);
+            const orderTtnStatus = getOrderTtnStatus(order.orderjson);
             const orderStatusClass = getOrderStatusClass(orderStatus);
             const orderManager = getOrderManager(order.orderjson);
             const suppliersTons = suppliersTonsTotal(order.orderjson);
@@ -721,6 +721,9 @@ function AllOrders() {
 
                       <td className="allOrders-cell-status" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
                         <span className={`allOrders-status-dot ${orderStatusClass}`} title={orderStatus} />
+                      </td>
+                      <td className="allOrders-cell-ttn-status" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }} title={`Статус ТТН: ${orderTtnStatus}`}>
+                        {orderTtnStatus}
                       </td>
                       <td className="allOrders-cell-num" style={{ overflow: "hidden", textAlign: 'center', backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>{orderNumber}</td>
                       <td className="allOrders-cell-date" style={{ overflow: "hidden", backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }} >{formatDate(order.orderjson.date)}</td>
@@ -778,7 +781,7 @@ function AllOrders() {
 
                 </tr>
                 <tr className="allOrders-expand-row">
-                  <td colSpan={isPhone ? 9 : 10} className="p-0 border-top-0">
+                  <td colSpan={isPhone ? 10 : 11} className="p-0 border-top-0">
                 <Collapse in={order.open}>
 
                   <div className='mb-3'>

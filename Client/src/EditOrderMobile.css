@@ -15,7 +15,7 @@
 }
 
 .editOrderMobile-topBar {
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     align-items: center;
 }
 
@@ -26,7 +26,7 @@
 }
 
 .editOrderMobile-orderNumberWrap {
-    flex: 0 0 86px;
+    flex: 0 0 82px;
 }
 
 .editOrderMobile-orderNumberWrap .form-control {
@@ -39,7 +39,7 @@
 }
 
 .editOrderMobile-dateWrap {
-    flex: 1 1 auto;
+    flex: 1 1 130px;
     min-width: 0;
 }
 
@@ -54,6 +54,49 @@
     padding: 4px 8px;
 }
 
+.editOrderMobile-clearBtn {
+    flex: 0 0 auto;
+    width: 31px;
+    min-width: 31px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(83, 92, 107, 0.95);
+    border-color: rgba(83, 92, 107, 0.35);
+    background: rgba(255, 255, 255, 0.72);
+}
+
+.editOrderMobile-printBtn {
+    flex: 0 0 auto;
+    min-width: 74px;
+    gap: 5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(47, 79, 112, 0.95);
+    border-color: rgba(47, 79, 112, 0.35);
+    background: rgba(255, 255, 255, 0.72);
+}
+
+.editOrderMobile-printBtn:disabled {
+    color: rgba(120, 128, 140, 0.78);
+    border-color: rgba(120, 128, 140, 0.25);
+    background: rgba(230, 234, 240, 0.66);
+}
+
+.editOrderMobile-historyBtn {
+    flex: 0 0 auto;
+    color: rgba(70, 82, 102, 0.98);
+    border-color: rgba(70, 82, 102, 0.35);
+    background: rgba(255, 255, 255, 0.72);
+}
+
+.editOrderMobile-historyBtn:disabled {
+    color: rgba(120, 128, 140, 0.78);
+    border-color: rgba(120, 128, 140, 0.25);
+    background: rgba(230, 234, 240, 0.66);
+}
+
 .editOrderMobile-topActions {
     flex-wrap: wrap;
     gap: 6px !important;
@@ -65,16 +108,25 @@
 }
 
 .editOrderMobile-statusField {
-    flex: 1 1 160px;
-    min-width: 150px;
+    flex: 1 1 150px;
+    min-width: 140px;
 }
 
-.editOrderMobile-statusField .form-select {
+.editOrderMobile-ttnStatusField {
+    flex: 0 0 58px;
+    min-width: 58px;
+}
+
+.editOrderMobile-statusField .form-select,
+.editOrderMobile-ttnStatusField .form-select {
     height: 31px;
     font-size: 11px;
     font-weight: 600;
     padding-top: 4px;
     padding-bottom: 4px;
+}
+
+.editOrderMobile-statusField .form-select {
     border-color: currentColor;
 }
 

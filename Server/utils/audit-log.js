@@ -99,6 +99,34 @@ async function listAuditLogs({ page = 1, pageSize = 20 } = {}) {
     };
 }
 
+async function listAuditLogsForEntity({ entityType, entityId, page = 1, pageSize = 100 } = {}) {
+    await ensureAuditLogTable();
+    const { page: safePage, pageSize: safePageSize, offset } = normalizePaging(page, pageSize);
+
+    const params = [String(entityType), String(entityId)];
+    const countRes = await pool.query(
+        "SELECT COUNT(*)::int AS total FROM audit_log WHERE entity_type = $1 AND entity_id = $2",
+        params
+    );
+    const total = countRes?.rows?.[0]?.total || 0;
+
+    const itemsRes = await pool.query(
+        `SELECT id, created_at, actor_user_id, actor_name, action, entity_type, entity_id, route, payload
+         FROM audit_log
+         WHERE entity_type = $1 AND entity_id = $2
+         ORDER BY created_at DESC, id DESC
+         LIMIT $3 OFFSET $4`,
+        [...params, safePageSize, offset]
+    );
+
+    return {
+        items: itemsRes.rows || [],
+        total,
+        page: safePage,
+        pageSize: safePageSize,
+    };
+}
+
 async function clearAuditLogs() {
     await ensureAuditLogTable();
     const res = await pool.query(`
@@ -116,5 +144,6 @@ module.exports = {
     ensureAuditLogTable,
     writeAuditLog,
     listAuditLogs,
+    listAuditLogsForEntity,
     clearAuditLogs,
 };

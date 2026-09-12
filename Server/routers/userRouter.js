@@ -11,6 +11,7 @@ userRouter.post("/neworder", orderController.neworder);
 userRouter.post("/getallorders", orderController.getallorders);
 userRouter.post("/deleteorder", orderController.deleteorder);
 userRouter.post("/editorder", orderController.editorder);
+userRouter.post("/orderhistory", orderController.orderhistory);
 userRouter.get("/printorder/:id", orderController.printorder);
 userRouter.get("*", (req, res) => { res.redirect("/"); })
 

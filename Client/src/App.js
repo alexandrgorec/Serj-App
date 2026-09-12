@@ -2,7 +2,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
 import { useState, useEffect, createContext } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import NewOrder from "./NewOrder";
+import OrderEditor from "./OrderEditor";
 import FooterApp from './FooterApp';
 import AllOrders from './AllOrders';
 import Login from './Login';
@@ -12,27 +12,13 @@ import AddUser from './AddUser';
 import DeleteUser from './DeleteUser';
 import Header from './Header';
 import AlertMessage from './AlertMessage';
-import EditOrder from './EditOrder';
 import AuditLog from './AuditLog';
 import { getApiBaseUrl } from './apiBaseUrl';
+import { createEmptyOrder } from './orderDefaults';
 
 
 
 export const userContext = createContext();
-
-const emptyOrderRow = () => ({
-  liters: '',
-  name: '',
-  price: '',
-  tons: '',
-  typeOfProduct: '',
-});
-
-const todayInputDate = () =>
-  Intl.DateTimeFormat('ru', { year: 'numeric' }).format(new Date()) + '-' +
-  Intl.DateTimeFormat('ru', { month: '2-digit' }).format(new Date()) + '-' +
-  Intl.DateTimeFormat('ru', { day: '2-digit' }).format(new Date());
-
 
 function App() {
   const apiBaseUrl = getApiBaseUrl();
@@ -85,12 +71,7 @@ function App() {
     return Promise.reject(error);
   })
 
-  const [newOrder, setNewOrder] = useState({
-    suppliers: [emptyOrderRow()],
-    buyers: [emptyOrderRow()],
-    orderNumber: '',
-    date: todayInputDate(),
-  });
+  const [newOrder, setNewOrder] = useState(createEmptyOrder());
 
 
 
@@ -143,9 +124,9 @@ function App() {
             <Header />
             <section className='content'>
               <Routes>
-                <Route path='/neworder' element={<NewOrder order={newOrder} setOrder={setNewOrder} />}></Route>
+                <Route path='/neworder' element={<OrderEditor mode="new" order={newOrder} setOrder={setNewOrder} />}></Route>
                 <Route path='/allorders' element={<AllOrders />}></Route>
-                <Route path='/editorder' element={<EditOrder />}></Route>
+                <Route path='/editorder' element={<OrderEditor mode="edit" />}></Route>
                 <Route path='/menu' >
                   <Route path='/menu' element={<Menu />}></Route>
                   {user.rights.adminAccess && <Route path='/menu/adduser' element={<AddUser />}></Route>}
