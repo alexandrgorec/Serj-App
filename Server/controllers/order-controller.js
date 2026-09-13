@@ -515,7 +515,7 @@ function buildReport(orderId, order, showFinBlock) {
     const buyersTable = makeBuyersTable(order, showFinBlock);
     const commentsTable = makeCommentsTable(order);
 
-    const tables = [metaTable, suppliersTable, buyersTable];
+    const tables = [suppliersTable, buyersTable, metaTable];
     if (commentsTable) tables.push(commentsTable);
     return { title: `Заявка №${orderId}`, tables };
 }
@@ -534,7 +534,7 @@ const ORDER_DIFF_FIELD_LABELS = {
     ttnStatus: "Статус ТТН",
     manager: "Менеджер",
     date: "Дата заявки",
-    ip: "ИП перевозчик",
+    ip: "Перевозчик",
     driver: "Водитель",
     cost: "Стоимость доставки",
     otk: "ОТК",
@@ -544,7 +544,7 @@ const ORDER_DIFF_FIELD_LABELS = {
     otkFormulaTotal: "ОТК формула (итого)",
     courier: "Курьер",
     shortage: "Недостача",
-    transWarehouse: "Транс.склад",
+    transWarehouse: "Транспорт Склад",
     loadingPlace: "Место загрузки",
     storageTon: "Хранение (тонна)",
     storagePrice: "Хранение цена",

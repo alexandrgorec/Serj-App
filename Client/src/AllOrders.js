@@ -140,6 +140,20 @@ function getOrderManager(orderjson) {
   return buyerHManager || '';
 }
 
+function getOrderDateForFilter(order) {
+  const rawDate = order?.orderjson?.date || order?.date || '';
+  if (!rawDate) return '';
+  const text = String(rawDate).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(text)) return text.slice(0, 10);
+
+  const parsedDate = new Date(Date.parse(text));
+  if (Number.isNaN(parsedDate.getTime())) return '';
+  const year = parsedDate.getFullYear();
+  const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+  const day = String(parsedDate.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function formatDate(date) {
   date = new Date(Date.parse(date));
   let dd = date.getDate();
@@ -168,6 +182,8 @@ function AllOrders() {
   const supplierTypeaheadRef = useRef(null);
   const [statusFilter, setStatusFilter] = useState('');
   const [ttnStatusFilter, setTtnStatusFilter] = useState('');
+  const [dateFromFilter, setDateFromFilter] = useState('');
+  const [dateToFilter, setDateToFilter] = useState('');
   const openEditedOrder = () => {
     setOrders((orders) => {
       if (sessionStorage.createdOrderId) {
@@ -324,6 +340,8 @@ function AllOrders() {
     setManagerFilter('');
     setSupplierFilter('');
     setBuyerFilter('');
+    setDateFromFilter('');
+    setDateToFilter('');
     if (refFilter.current) refFilter.current.checked = false;
     managerTypeaheadRef.current?.clear();
     supplierTypeaheadRef.current?.clear();
@@ -389,11 +407,21 @@ function AllOrders() {
       ttnStatusFilter === '' ||
       getOrderTtnStatus(order.orderjson) === ttnStatusFilter;
 
+    const orderDate = getOrderDateForFilter(order);
+    const matchDateFrom =
+      dateFromFilter === '' ||
+      (orderDate !== '' && orderDate >= dateFromFilter);
+    const matchDateTo =
+      dateToFilter === '' ||
+      (orderDate !== '' && orderDate <= dateToFilter);
+
     if (!matchBuyer) return false;
     if (!matchSupplier) return false;
     if (!matchManager) return false;
     if (!matchStatus) return false;
     if (!matchTtnStatus) return false;
+    if (!matchDateFrom) return false;
+    if (!matchDateTo) return false;
     if (filterEmptyBuyerH) {
       const matchEmptyBuyerH = !!order.orderjson.haveEmptyBuyerH;
       if (!matchEmptyBuyerH) return false;
@@ -467,7 +495,7 @@ function AllOrders() {
             onInputChange={(text) => {
               setManagerFilter(text);
             }}
-            placeholder="Фильтр менеджер…"
+            placeholder="Менеджер"
             highlightOnlyResult
             inputProps={{ type: 'text', style: { fontSize: window.innerWidth < 850 ? '12px' : '14px' } }}
           />
@@ -485,7 +513,7 @@ function AllOrders() {
             onInputChange={(text) => {
               setSupplierFilter(text);
             }}
-            placeholder="Фильтр поставщик…"
+            placeholder="Поставщик"
             highlightOnlyResult
             inputProps={{ type: 'text', style: { fontSize: window.innerWidth < 850 ? '12px' : '14px' } }}
           />
@@ -503,10 +531,36 @@ function AllOrders() {
             onInputChange={(text) => {
               setBuyerFilter(text);
             }}
-            placeholder="Фильтр покупатель…"
+            placeholder="Покупатель"
             highlightOnlyResult
             inputProps={{ type: 'text', style: { fontSize: window.innerWidth < 850 ? '12px' : '14px' } }}
           />
+          <div className="allOrders-dateRangeFilter">
+            <span className="allOrders-dateRangeLabel">с</span>
+            <Form.Control
+              type="date"
+              aria-label="Дата с"
+              title="Дата с"
+              value={dateFromFilter}
+              onChange={(evt) => {
+                setDateFromFilter(evt.target.value);
+                reload(!state);
+              }}
+              style={{ fontSize: window.innerWidth < 850 ? '12px' : '14px' }}
+            />
+            <span className="allOrders-dateRangeLabel">по</span>
+            <Form.Control
+              type="date"
+              aria-label="Дата по"
+              title="Дата по"
+              value={dateToFilter}
+              onChange={(evt) => {
+                setDateToFilter(evt.target.value);
+                reload(!state);
+              }}
+              style={{ fontSize: window.innerWidth < 850 ? '12px' : '14px' }}
+            />
+          </div>
         </div>
         <Button
           variant="outline-secondary"

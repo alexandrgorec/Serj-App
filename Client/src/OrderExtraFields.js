@@ -27,7 +27,7 @@ function calculateStorageTotal(order) {
   return formatCalculatedValue(ton * price);
 }
 
-function OrderExtraFields({ order, setOrder, variant = 'desktop' }) {
+function OrderExtraFields({ order, setOrder, variant = 'desktop', section = 'all' }) {
   const updateField = (field, value) => {
     setOrder((prev) => {
       const next = { ...prev, [field]: value };
@@ -46,68 +46,87 @@ function OrderExtraFields({ order, setOrder, variant = 'desktop' }) {
     onChange: (evt) => updateField(field, evt.target.value),
   });
 
+  const showMainFields = section === 'all' || section === 'main';
+  const showStorageFields = section === 'all' || section === 'storage';
+
   if (variant === 'mobile') {
     return (
       <div className='orderExtraFields orderExtraFields-mobile'>
-        <div className='orderExtraFields-mobileField'>
-          <div className='orderExtraFields-mobileLabel'>Курьер</div>
-          <Form.Control {...inputProps('courier')} />
-        </div>
-        <div className='orderExtraFields-mobileField'>
-          <div className='orderExtraFields-mobileLabel'>Недостача</div>
-          <Form.Control {...inputProps('shortage')} />
-        </div>
-        <div className='orderExtraFields-mobileField'>
-          <div className='orderExtraFields-mobileLabel'>Транс.склад</div>
-          <Form.Control {...inputProps('transWarehouse')} />
-        </div>
-        <div className='orderExtraFields-mobileField'>
-          <div className='orderExtraFields-mobileLabel'>Место загрузки</div>
-          <Form.Control {...inputProps('loadingPlace')} />
-        </div>
-        <div className='orderExtraFields-storageGrid'>
-          <div className='orderExtraFields-mobileField'>
-            <div className='orderExtraFields-mobileLabel'>Хранение (Тонна)</div>
-            <Form.Control {...inputProps('storageTon')} />
-          </div>
-          <div className='orderExtraFields-mobileField'>
-            <div className='orderExtraFields-mobileLabel'>Хранение цена</div>
-            <Form.Control {...inputProps('storagePrice')} />
-          </div>
-          <div className='orderExtraFields-mobileField'>
-            <div className='orderExtraFields-mobileLabel'>Хранение итого</div>
-            <Form.Control {...inputProps('storageTotal', true)} />
-          </div>
-        </div>
+        {showMainFields && (
+          <>
+            <div className='orderExtraFields-mobileField'>
+              <div className='orderExtraFields-mobileLabel'>Недостача</div>
+              <Form.Control {...inputProps('shortage')} />
+            </div>
+            <div className='orderExtraFields-mobileField'>
+              <div className='orderExtraFields-mobileLabel'>Транспорт Склад</div>
+              <Form.Control {...inputProps('transWarehouse')} />
+            </div>
+            <div className='orderExtraFields-mobileField'>
+              <div className='orderExtraFields-mobileLabel'>Курьер</div>
+              <Form.Control {...inputProps('courier')} />
+            </div>
+          </>
+        )}
+        {showStorageFields && (
+          <>
+            <div className='orderExtraFields-mobileField'>
+              <div className='orderExtraFields-mobileLabel'>Место загрузки</div>
+              <Form.Control {...inputProps('loadingPlace')} />
+            </div>
+            <div className='orderExtraFields-storageGrid'>
+              <div className='orderExtraFields-mobileField'>
+                <div className='orderExtraFields-mobileLabel'>Хранение (Тонна)</div>
+                <Form.Control {...inputProps('storageTon')} />
+              </div>
+              <div className='orderExtraFields-mobileField'>
+                <div className='orderExtraFields-mobileLabel'>Хранение цена</div>
+                <Form.Control {...inputProps('storagePrice')} />
+              </div>
+              <div className='orderExtraFields-mobileField'>
+                <div className='orderExtraFields-mobileLabel'>Хранение итого</div>
+                <Form.Control {...inputProps('storageTotal', true)} />
+              </div>
+            </div>
+          </>
+        )}
       </div>
     );
   }
 
   return (
-    <div className='orderExtraFields orderExtraFields-desktop'>
-      <FloatingLabel label='Курьер' className='orderExtraFields-wide'>
-        <Form.Control {...inputProps('courier')} />
-      </FloatingLabel>
-      <FloatingLabel label='Недостача' className='orderExtraFields-wide'>
-        <Form.Control {...inputProps('shortage')} />
-      </FloatingLabel>
-      <FloatingLabel label='Транс.склад' className='orderExtraFields-wide'>
-        <Form.Control {...inputProps('transWarehouse')} />
-      </FloatingLabel>
-      <FloatingLabel label='Место загрузки' className='orderExtraFields-wide'>
-        <Form.Control {...inputProps('loadingPlace')} />
-      </FloatingLabel>
-      <div className='orderExtraFields-storageGrid'>
-        <FloatingLabel label='Хранение (Тонна)'>
-          <Form.Control {...inputProps('storageTon')} />
-        </FloatingLabel>
-        <FloatingLabel label='Хранение цена'>
-          <Form.Control {...inputProps('storagePrice')} />
-        </FloatingLabel>
-        <FloatingLabel label='Хранение итого'>
-          <Form.Control {...inputProps('storageTotal', true)} />
-        </FloatingLabel>
-      </div>
+    <div className={`orderExtraFields orderExtraFields-desktop orderExtraFields-${section}`}>
+      {showMainFields && (
+        <>
+          <FloatingLabel label='Недостача' className='orderExtraFields-wide'>
+            <Form.Control {...inputProps('shortage')} />
+          </FloatingLabel>
+          <FloatingLabel label='Транспорт Склад' className='orderExtraFields-wide'>
+            <Form.Control {...inputProps('transWarehouse')} />
+          </FloatingLabel>
+          <FloatingLabel label='Курьер' className='orderExtraFields-wide'>
+            <Form.Control {...inputProps('courier')} />
+          </FloatingLabel>
+        </>
+      )}
+      {showStorageFields && (
+        <>
+          <FloatingLabel label='Место загрузки' className='orderExtraFields-wide'>
+            <Form.Control {...inputProps('loadingPlace')} />
+          </FloatingLabel>
+          <div className='orderExtraFields-storageGrid'>
+            <FloatingLabel label='Хранение (Тонна)'>
+              <Form.Control {...inputProps('storageTon')} />
+            </FloatingLabel>
+            <FloatingLabel label='Хранение цена'>
+              <Form.Control {...inputProps('storagePrice')} />
+            </FloatingLabel>
+            <FloatingLabel label='Хранение итого'>
+              <Form.Control {...inputProps('storageTotal', true)} />
+            </FloatingLabel>
+          </div>
+        </>
+      )}
     </div>
   );
 }

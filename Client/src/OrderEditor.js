@@ -13,6 +13,7 @@ import { syncOrderSelectLists } from './selectListsSync';
 import OtkFields, { getOrderOtkForSave, getOrderOtkTax } from './OtkFields';
 import OrderExtraFields from './OrderExtraFields';
 import OrderPaymentDates from './OrderPaymentDates';
+import OrderDeliveryFields from './OrderDeliveryFields';
 import { getManagerOptions } from './managerOptions';
 import { createEmptyOrder, emptyOrderRow } from './orderDefaults';
 import { ORDER_STATUS_OPTIONS, normalizeOrderStatus } from './orderStatus';
@@ -26,7 +27,7 @@ const HISTORY_FIELD_LABELS = {
   ttnStatus: 'Статус ТТН',
   manager: 'Менеджер',
   date: 'Дата заявки',
-  ip: 'ИП перевозчик',
+  ip: 'Перевозчик',
   driver: 'Водитель',
   cost: 'Стоимость доставки',
   otk: 'ОТК',
@@ -36,7 +37,7 @@ const HISTORY_FIELD_LABELS = {
   otkFormulaTotal: 'ОТК формула (итого)',
   courier: 'Курьер',
   shortage: 'Недостача',
-  transWarehouse: 'Транс.склад',
+  transWarehouse: 'Транспорт Склад',
   loadingPlace: 'Место загрузки',
   storageTon: 'Хранение (тонна)',
   storagePrice: 'Хранение цена',
@@ -154,6 +155,39 @@ function formatHistoryDetails(payload) {
   } catch (error) {
     return '—';
   }
+}
+
+function getVisibleHistoryChanges(payload) {
+  if (!Array.isArray(payload?.changes)) return [];
+
+  return payload.changes.filter((change) =>
+    normalizeHistoryComparable(change?.field, change?.before) !== normalizeHistoryComparable(change?.field, change?.after)
+  );
+}
+
+function renderHistoryDetails(payload) {
+  const changes = getVisibleHistoryChanges(payload);
+  if (changes.length > 0) {
+    return (
+      <div className='orderEditor-historyChanges'>
+        {changes.map((change, index) => (
+          <div className='orderEditor-historyChangeLine' key={`${change?.field || 'field'}-${index}`}>
+            <span className='orderEditor-historyField'>{getHistoryFieldLabel(change?.field)}:</span>
+            <span className='orderEditor-historyOldValue'>{formatHistoryValue(change?.before)}</span>
+            <span className='orderEditor-historyArrow'>→</span>
+            <span className='orderEditor-historyNewValue'>{formatHistoryValue(change?.after)}</span>
+          </div>
+        ))}
+        {payload?.truncated && (
+          <div className='orderEditor-historyMore'>
+            ... и еще {Math.max(0, (payload.totalChanges || 0) - (payload.shownChanges || 0))} изменений
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return formatHistoryDetails(payload);
 }
 
 function getOrderStatusClass(status) {
@@ -501,52 +535,29 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
       />
 
       <OrderPaymentDates order={activeOrder} setOrder={setActiveOrder} />
+      <OrderDeliveryFields order={activeOrder} setOrder={setActiveOrder} />
 
       <div className='newOrderDesktop-serviceArea'>
         <div className='newOrderDesktop-serviceFields'>
           <div className='newOrderDesktop-leftServiceColumn'>
-            <OrderExtraFields order={activeOrder} setOrder={setActiveOrder} />
+            <OrderExtraFields order={activeOrder} setOrder={setActiveOrder} section='main' />
+            <FloatingLabel label="Комментарии" className="newOrderDesktop-compactComments">
+              <Form.Control
+                as='input'
+                type='text'
+                value={activeOrder.comments || ''}
+                onChange={(evt) => updateOrderField('comments', evt.target.value)}
+              />
+            </FloatingLabel>
           </div>
 
           <div className='newOrderDesktop-requisites'>
-            <FloatingLabel label="ИП Перевозчик" className="mb-2">
-              <Form.Control
-                as="input"
-                type='text'
-                value={activeOrder.ip || ''}
-                onChange={(evt) => updateOrderField('ip', evt.target.value)}
-              />
-            </FloatingLabel>
-            <FloatingLabel label="Водитель" className="mb-2">
-              <Form.Control
-                as="input"
-                type='text'
-                value={activeOrder.driver || ''}
-                onChange={(evt) => updateOrderField('driver', evt.target.value)}
-              />
-            </FloatingLabel>
-            <FloatingLabel label="Стоимость доставки" className="mb-2">
-              <Form.Control
-                as="input"
-                type='number'
-                value={activeOrder.cost || ''}
-                onChange={(evt) => updateOrderField('cost', evt.target.value)}
-              />
-            </FloatingLabel>
+            <OrderExtraFields order={activeOrder} setOrder={setActiveOrder} section='storage' />
             <OtkFields order={activeOrder} setOrder={setActiveOrder} />
             <FloatingLabel label="Налог 42%" className="mb-0">
               <Form.Control as="input" type='number' readOnly value={getOrderOtkTax(activeOrder)} />
             </FloatingLabel>
           </div>
-        </div>
-
-        <div className='newOrderDesktop-comments'>
-          <Form.Control
-            as='textarea'
-            placeholder='Комментарии'
-            value={activeOrder.comments || ''}
-            onChange={(evt) => updateOrderField('comments', evt.target.value)}
-          />
         </div>
       </div>
     </>
@@ -601,7 +612,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
                       <td>{formatHistoryDateTime(item.created_at)}</td>
                       <td>{item.actor_name || item.actor_user_id || '—'}</td>
                       <td>{formatHistoryAction(item.action)}</td>
-                      <td className='orderEditor-historyDetails'>{formatHistoryDetails(item.payload)}</td>
+                      <td className='orderEditor-historyDetails'>{renderHistoryDetails(item.payload)}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -12,6 +12,7 @@ import { FaArrowsRotate, FaPrint } from 'react-icons/fa6';
 import OtkFields, { getOrderOtkTax } from './OtkFields';
 import OrderExtraFields from './OrderExtraFields';
 import OrderPaymentDates from './OrderPaymentDates';
+import OrderDeliveryFields from './OrderDeliveryFields';
 import { getManagerOptions } from './managerOptions';
 import { ORDER_STATUS_OPTIONS, normalizeOrderStatus } from './orderStatus';
 import { ORDER_TTN_STATUS_OPTIONS, normalizeOrderTtnStatus } from './orderTtnStatus';
@@ -656,6 +657,7 @@ function EditOrderMobile({
         </div>
 
         <OrderPaymentDates order={order} setOrder={setOrder} variant='mobile' />
+        <OrderDeliveryFields order={order} setOrder={setOrder} variant='mobile' />
 
         <div className='editOrderMobile-mainFields'>
           <div className='editOrderMobile-field'>
@@ -681,42 +683,6 @@ function EditOrderMobile({
               value={order.comments || ''}
               onChange={(evt) => {
                 order.comments = evt.target.value;
-                refresh();
-              }}
-            />
-          </div>
-          <div className='editOrderMobile-field'>
-            <div className='editOrderMobile-label'>ИП Перевозчик</div>
-            <Form.Control
-              as='input'
-              type='text'
-              value={order.ip || ''}
-              onChange={(evt) => {
-                order.ip = evt.target.value;
-                refresh();
-              }}
-            />
-          </div>
-          <div className='editOrderMobile-field'>
-            <div className='editOrderMobile-label'>Водитель</div>
-            <Form.Control
-              as='input'
-              type='text'
-              value={order.driver || ''}
-              onChange={(evt) => {
-                order.driver = evt.target.value;
-                refresh();
-              }}
-            />
-          </div>
-          <div className='editOrderMobile-field'>
-            <div className='editOrderMobile-label'>Стоимость доставки</div>
-            <Form.Control
-              as='input'
-              type='number'
-              value={order.cost || ''}
-              onChange={(evt) => {
-                order.cost = evt.target.value;
                 refresh();
               }}
             />

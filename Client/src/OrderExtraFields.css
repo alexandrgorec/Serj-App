@@ -26,6 +26,10 @@
     font-weight: 400;
 }
 
+.orderExtraFields-storage {
+    margin-bottom: 8px;
+}
+
 .orderExtraFields .form-control:read-only {
     background-color: rgba(235, 241, 248, 0.9);
 }

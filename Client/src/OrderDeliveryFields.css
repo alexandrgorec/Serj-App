@@ -1,0 +1,30 @@
+.orderDeliveryFields {
+    width: 100%;
+}
+
+.orderDeliveryFields-desktop {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin: 0 6px 10px;
+}
+
+.orderDeliveryFields-mobile {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.orderDeliveryFields .form-floating {
+    min-width: 0;
+}
+
+.orderDeliveryFields .form-control {
+    font-weight: 400;
+}
+
+@media (max-width: 850px) {
+    .orderDeliveryFields-desktop {
+        grid-template-columns: 1fr;
+    }
+}

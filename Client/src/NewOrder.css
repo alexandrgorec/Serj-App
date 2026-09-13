@@ -114,8 +114,48 @@
 
 .orderEditor-historyDetails {
     white-space: pre-wrap;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
     font-size: 0.86rem;
+}
+
+.orderEditor-historyChanges {
+    display: grid;
+    gap: 6px;
+}
+
+.orderEditor-historyChangeLine {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px;
+    line-height: 1.35;
+}
+
+.orderEditor-historyField {
+    font-weight: 700;
+}
+
+.orderEditor-historyOldValue {
+    color: #b42318;
+    background: rgba(244, 67, 54, 0.09);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+.orderEditor-historyArrow {
+    color: rgba(47, 58, 79, 0.62);
+    font-weight: 700;
+}
+
+.orderEditor-historyNewValue {
+    color: #087443;
+    background: rgba(22, 163, 74, 0.11);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+.orderEditor-historyMore {
+    color: rgba(47, 58, 79, 0.72);
+    font-style: italic;
 }
 
 .newOrderDesktop-topBar .form-floating {
@@ -159,15 +199,8 @@
     align-content: start;
 }
 
-.newOrderDesktop-comments {
-    display: flex;
-    height: 64px;
-    margin-top: 12px;
-}
-
-.newOrderDesktop-comments textarea {
-    height: 100%;
-    resize: none;
+.newOrderDesktop-compactComments .form-control {
+    font-weight: 400;
 }
 
 .newOrderDesktop-requisites {

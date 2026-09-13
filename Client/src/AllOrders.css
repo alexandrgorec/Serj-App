@@ -187,6 +187,27 @@
     min-width: 100px;
 }
 
+.allOrders-dateRangeFilter {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 0 0 314px;
+    min-width: 270px;
+}
+
+.allOrders-dateRangeFilter .form-control {
+    min-width: 0;
+}
+
+.allOrders-dateRangeLabel {
+    flex: 0 0 auto;
+    color: rgba(47, 58, 79, 0.75);
+    font-size: 0.9rem;
+    font-weight: 600;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
 .allOrders-resetFiltersBtn {
     flex: 0 0 auto;
     margin-left: auto;
@@ -454,6 +475,11 @@
 
     .allOrders-ttnStatusFilter {
         flex: 1 1 calc(42% - 3px);
+        min-width: 0;
+    }
+
+    .allOrders-dateRangeFilter {
+        flex: 1 1 100%;
         min-width: 0;
     }
 
