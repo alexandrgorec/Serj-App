@@ -596,6 +596,10 @@ function AllOrders() {
                   </div>
                   <div className='allOrders-card-date'>{formatDate(order.orderjson.date)}</div>
                   <Stack direction="horizontal" gap={2} className="allOrders-card-actions">
+                    <FaPrint title='Печать заявки' size='1.35em' className='clickable icon' style={{ color: 'rgba(47, 79, 112, 0.95)' }} onClick={(e) => {
+                      e.stopPropagation();
+                      printOrder(order.id);
+                    }} />
                     <BiEditAlt size='1.6em' className='clickable icon' style={{ color: 'rgba(1, 87, 248, 0.85)' }} onClick={(e) => {
                       e.stopPropagation();
                       setEditingOrder(() => order.orderjson);

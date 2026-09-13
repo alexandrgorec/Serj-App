@@ -130,7 +130,7 @@ function normalizeWeights(columns) {
     return columns.map((col) => ({ ...col, weight: (Number(col.weight) || 0) / sum }));
 }
 
-function makeMetaTable(orderId, order, printedAt) {
+function makeMetaTable(order) {
     const columns = normalizeWeights([
         { key: "k1", label: "Поле", weight: 0.20, align: "left" },
         { key: "v1", label: "Значение", weight: 0.30, align: "left" },
@@ -138,11 +138,11 @@ function makeMetaTable(orderId, order, printedAt) {
         { key: "v2", label: "Значение", weight: 0.30, align: "left" },
     ]);
     const rows = [
-        { cells: ["Заявка №", String(orderId), "Дата заявки", formatDateRu(order?.date)] },
-        { cells: ["Менеджер", textValue(order?.manager), "Дата печати", printedAt] },
-        { cells: ["Перевозчик", textValue(order?.ip), "Водитель", textValue(order?.driver)] },
-        { cells: ["Сумма доставки", numberValue(order?.cost), "ОТК", textValue(order?.otk)] },
-        { cells: ["Налог 42%", String(calculateOtkTax(order)), "", ""] },
+        { cells: ["Хранение Тонны", numberValue(order?.storageTon), "Недостача", textValue(order?.shortage)] },
+        { cells: ["Цена за тонну хранение", numberValue(order?.storagePrice), "Склад", textValue(order?.transWarehouse)] },
+        { cells: ["Итого за хранение", numberValue(order?.storageTotal), "ОТК", textValue(order?.otk)] },
+        { cells: ["Курьер", textValue(order?.courier), "Налог 42%", String(calculateOtkTax(order))] },
+        { cells: ["Дата оплаты поставщику", formatDateRu(order?.supplierPaymentDate), "", ""] },
     ];
     return { title: "Реквизиты", columns, rows };
 }
@@ -268,6 +268,39 @@ function makeCommentsTable(order) {
         columns: normalizeWeights([{ key: "comments", label: "Текст", weight: 1, align: "left" }]),
         rows: [{ cells: [comments] }],
     };
+}
+
+function findFirstAkt(order) {
+    const suppliers = Array.isArray(order?.suppliers) ? order.suppliers : [];
+    for (let i = 0; i < suppliers.length; i += 1) {
+        if (hasValue(suppliers[i]?.akt)) return suppliers[i].akt;
+    }
+
+    const buyers = Array.isArray(order?.buyers) ? order.buyers : [];
+    for (let i = 0; i < buyers.length; i += 1) {
+        if (hasValue(buyers[i]?.akt)) return buyers[i].akt;
+
+        const buyersH = Array.isArray(buyers[i]?.buyersH) ? buyers[i].buyersH : [];
+        for (let j = 0; j < buyersH.length; j += 1) {
+            if (hasValue(buyersH[j]?.akt)) return buyersH[j].akt;
+        }
+    }
+
+    return "";
+}
+
+function makeCarrierTable(order) {
+    const columns = normalizeWeights([
+        { key: "k1", label: "Поле", weight: 0.20, align: "left" },
+        { key: "v1", label: "Значение", weight: 0.30, align: "left" },
+        { key: "k2", label: "Поле", weight: 0.20, align: "left" },
+        { key: "v2", label: "Значение", weight: 0.30, align: "left" },
+    ]);
+    const rows = [
+        { cells: ["Перевозчик", textValue(order?.ip), "Водитель", textValue(order?.driver)] },
+        { cells: ["Стоимость доставки", numberValue(order?.cost), "Номер акта", textValue(findFirstAkt(order))] },
+    ];
+    return { title: "Перевозчик", columns, rows };
 }
 
 function estimateTextHeight(text, fontSize, width) {
@@ -509,14 +542,15 @@ function renderReport(doc, report, profile, fonts) {
 }
 
 function buildReport(orderId, order, showFinBlock) {
-    const printedAt = new Date().toLocaleString("ru-RU");
-    const metaTable = makeMetaTable(orderId, order, printedAt);
+    const metaTable = makeMetaTable(order);
     const suppliersTable = makeSuppliersTable(order, showFinBlock);
     const buyersTable = makeBuyersTable(order, showFinBlock);
     const commentsTable = makeCommentsTable(order);
+    const carrierTable = makeCarrierTable(order);
 
     const tables = [suppliersTable, buyersTable, metaTable];
     if (commentsTable) tables.push(commentsTable);
+    tables.push(carrierTable);
     return { title: `Заявка №${orderId}`, tables };
 }
 

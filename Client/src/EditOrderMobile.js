@@ -8,7 +8,7 @@ import Stack from 'react-bootstrap/Stack';
 import Modal from 'react-bootstrap/Modal';
 import InputGroup from 'react-bootstrap/InputGroup';
 import { MdDelete } from "react-icons/md";
-import { FaArrowsRotate, FaPrint } from 'react-icons/fa6';
+import { FaArrowsRotate, FaClockRotateLeft, FaPrint } from 'react-icons/fa6';
 import OtkFields, { getOrderOtkTax } from './OtkFields';
 import OrderExtraFields from './OrderExtraFields';
 import OrderPaymentDates from './OrderPaymentDates';
@@ -294,6 +294,11 @@ function EditOrderMobile({
                 }}
               />
             </div>
+          </Stack>
+
+          <Stack direction='horizontal' gap={2} className='editOrderMobile-actionsRow'>
+            <Button size='sm' variant='success' onClick={addBuyer}>+ Покупатель</Button>
+            <Button size='sm' variant='primary' onClick={addSupplier}>+ Поставщик</Button>
             {onClear &&
               <Button
                 size='sm'
@@ -311,10 +316,11 @@ function EditOrderMobile({
               variant='outline-secondary'
               className='editOrderMobile-historyBtn'
               title={historyDisabled ? 'История появится после создания заявки' : 'История изменений заявки'}
+              aria-label='История изменений заявки'
               disabled={historyDisabled}
               onClick={onHistory}
             >
-              История
+              <FaClockRotateLeft />
             </Button>
             {onBack && <Button size='sm' variant='primary' onClick={onBack}>Назад</Button>}
             <Button size='sm' variant='success' onClick={onSave}>{saveLabel}</Button>
@@ -328,13 +334,7 @@ function EditOrderMobile({
               onClick={onPrint}
             >
               <FaPrint />
-              <span>Печать</span>
             </Button>
-          </Stack>
-
-          <Stack direction='horizontal' gap={2} className='editOrderMobile-topActions'>
-            <Button size='sm' variant='success' onClick={addBuyer}>+ Покупатель</Button>
-            <Button size='sm' variant='primary' onClick={addSupplier}>+ Поставщик</Button>
           </Stack>
         </div>
 
