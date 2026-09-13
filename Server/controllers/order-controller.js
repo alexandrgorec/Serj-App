@@ -197,7 +197,7 @@ function makeBuyersTable(order, showFinBlock) {
     const buyers = Array.isArray(order?.buyers) ? order.buyers : [];
     const columns = normalizeWeights(showFinBlock
         ? [
-            { key: "type", label: "Тип", weight: 0.04, align: "center" },
+            { key: "type", label: "Р", weight: 0.04, align: "center" },
             { key: "n", label: "№", weight: 0.05, align: "center" },
             { key: "name", label: "Покупатель", weight: 0.165, align: "left" },
             { key: "product", label: "Продукт", weight: 0.125, align: "left" },
@@ -210,7 +210,7 @@ function makeBuyersTable(order, showFinBlock) {
             { key: "akt", label: "Акт", weight: 0.06, align: "left" },
         ]
         : [
-            { key: "type", label: "Тип", weight: 0.06, align: "center" },
+            { key: "type", label: "Р", weight: 0.06, align: "center" },
             { key: "n", label: "№", weight: 0.06, align: "center" },
             { key: "name", label: "Покупатель", weight: 0.30, align: "left" },
             { key: "product", label: "Продукт", weight: 0.26, align: "left" },
