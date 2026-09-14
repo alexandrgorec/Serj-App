@@ -48,6 +48,19 @@
     padding: 5px 8px;
 }
 
+.editOrderMobile-clientPaidField {
+    flex: 0 0 104px;
+    min-width: 104px;
+}
+
+.editOrderMobile-clientPaidField .form-select {
+    height: 31px;
+    font-size: 11px;
+    font-weight: 600;
+    padding-top: 4px;
+    padding-bottom: 4px;
+}
+
 .editOrderMobile-topBar .btn {
     white-space: nowrap;
     font-size: 11px;
@@ -147,6 +160,11 @@
 .editOrder-status-income .form-select {
     background-color: rgba(245, 158, 11, 0.2);
     color: rgba(145, 83, 10, 0.98);
+}
+
+.editOrder-status-loaded .form-select {
+    background-color: rgba(217, 45, 32, 0.16);
+    color: rgba(145, 32, 24, 0.98);
 }
 
 .editOrder-status-done .form-select {

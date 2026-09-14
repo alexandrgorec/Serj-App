@@ -16,6 +16,11 @@ import { Typeahead } from "react-bootstrap-typeahead";
 import { ORDER_STATUS_OPTIONS, normalizeOrderStatus } from './orderStatus';
 import { ORDER_TTN_STATUS_OPTIONS, normalizeOrderTtnStatus } from './orderTtnStatus';
 
+const DATE_FILTER_TYPE_OPTIONS = [
+  { value: 'created', label: 'Дата создания' },
+  { value: 'loading', label: 'Дата загрузки' },
+];
+
 function spisok(array) {
   {
     let result = [];
@@ -118,9 +123,14 @@ function getOrderTtnStatus(orderjson) {
   return normalizeOrderTtnStatus(orderjson?.ttnStatus);
 }
 
+function getOrderClientPaid(orderjson) {
+  return String(orderjson?.clientPaid || 'Нет').trim() || 'Нет';
+}
+
 function getOrderStatusClass(status) {
   const normalizedStatus = normalizeOrderStatus(status);
   if (normalizedStatus === 'Заприходирована') return 'allOrders-status-income';
+  if (normalizedStatus === 'Машина загружена') return 'allOrders-status-loaded';
   if (normalizedStatus === 'Реализована') return 'allOrders-status-done';
   return 'allOrders-status-created';
 }
@@ -140,8 +150,10 @@ function getOrderManager(orderjson) {
   return buyerHManager || '';
 }
 
-function getOrderDateForFilter(order) {
-  const rawDate = order?.orderjson?.date || order?.date || '';
+function getOrderDateForFilter(order, dateFilterType = 'created') {
+  const rawDate = dateFilterType === 'loading'
+    ? order?.orderjson?.loadingDate || ''
+    : order?.orderjson?.date || order?.date || '';
   if (!rawDate) return '';
   const text = String(rawDate).trim();
   if (/^\d{4}-\d{2}-\d{2}/.test(text)) return text.slice(0, 10);
@@ -155,7 +167,9 @@ function getOrderDateForFilter(order) {
 }
 
 function formatDate(date) {
+  if (!date) return '—';
   date = new Date(Date.parse(date));
+  if (Number.isNaN(date.getTime())) return '—';
   let dd = date.getDate();
   if (dd < 10) dd = '0' + dd;
 
@@ -182,6 +196,8 @@ function AllOrders() {
   const supplierTypeaheadRef = useRef(null);
   const [statusFilter, setStatusFilter] = useState('');
   const [ttnStatusFilter, setTtnStatusFilter] = useState('');
+  const [clientPaidFilter, setClientPaidFilter] = useState('');
+  const [dateFilterType, setDateFilterType] = useState('created');
   const [dateFromFilter, setDateFromFilter] = useState('');
   const [dateToFilter, setDateToFilter] = useState('');
   const openEditedOrder = () => {
@@ -337,9 +353,11 @@ function AllOrders() {
   const resetFilters = () => {
     setStatusFilter('');
     setTtnStatusFilter('');
+    setClientPaidFilter('');
     setManagerFilter('');
     setSupplierFilter('');
     setBuyerFilter('');
+    setDateFilterType('created');
     setDateFromFilter('');
     setDateToFilter('');
     if (refFilter.current) refFilter.current.checked = false;
@@ -407,7 +425,11 @@ function AllOrders() {
       ttnStatusFilter === '' ||
       getOrderTtnStatus(order.orderjson) === ttnStatusFilter;
 
-    const orderDate = getOrderDateForFilter(order);
+    const matchClientPaid =
+      clientPaidFilter === '' ||
+      getOrderClientPaid(order.orderjson) === clientPaidFilter;
+
+    const orderDate = getOrderDateForFilter(order, dateFilterType);
     const matchDateFrom =
       dateFromFilter === '' ||
       (orderDate !== '' && orderDate >= dateFromFilter);
@@ -420,6 +442,7 @@ function AllOrders() {
     if (!matchManager) return false;
     if (!matchStatus) return false;
     if (!matchTtnStatus) return false;
+    if (!matchClientPaid) return false;
     if (!matchDateFrom) return false;
     if (!matchDateTo) return false;
     if (filterEmptyBuyerH) {
@@ -481,6 +504,19 @@ function AllOrders() {
               <option key={status.value} value={status.value}>{status.label}</option>
             ))}
           </Form.Select>
+          <Form.Select
+            className="allOrders-clientPaidFilter"
+            value={clientPaidFilter}
+            onChange={(evt) => {
+              setClientPaidFilter(evt.target.value);
+              reload(!state);
+            }}
+            style={{ fontSize: window.innerWidth < 850 ? '12px' : '14px' }}
+          >
+            <option value="">Статус оплаты</option>
+            <option value="Да">Оплачено</option>
+            <option value="Нет">Не оплачено</option>
+          </Form.Select>
           <Typeahead
             id="allorders-manager-filter"
             ref={managerTypeaheadRef}
@@ -536,6 +572,20 @@ function AllOrders() {
             inputProps={{ type: 'text', style: { fontSize: window.innerWidth < 850 ? '12px' : '14px' } }}
           />
           <div className="allOrders-dateRangeFilter">
+            <Form.Select
+              className="allOrders-dateTypeFilter"
+              aria-label="Выбор даты для фильтра"
+              title="Выбор даты для фильтра"
+              value={dateFilterType}
+              onChange={(evt) => {
+                setDateFilterType(evt.target.value);
+                reload(!state);
+              }}
+            >
+              {DATE_FILTER_TYPE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </Form.Select>
             <span className="allOrders-dateRangeLabel">с</span>
             <Form.Control
               type="date"
@@ -578,6 +628,7 @@ function AllOrders() {
             const orderNumber = getOrderNumber(order);
             const orderStatus = getOrderStatus(order.orderjson);
             const orderTtnStatus = getOrderTtnStatus(order.orderjson);
+            const orderClientPaid = getOrderClientPaid(order.orderjson);
             const orderStatusClass = getOrderStatusClass(orderStatus);
             const orderManager = getOrderManager(order.orderjson);
             const suppliersTons = suppliersTonsTotal(order.orderjson);
@@ -620,12 +671,20 @@ function AllOrders() {
                       <div className='allOrders-card-value'>{spisok(order.orderjson.buyers) || '—'}</div>
                     </div>
                     <div className='allOrders-card-row'>
+                      <div className='allOrders-card-label'>Оплачено клиентом</div>
+                      <div className='allOrders-card-value'>{orderClientPaid}</div>
+                    </div>
+                    <div className='allOrders-card-row'>
                       <div className='allOrders-card-label'>Поставщики</div>
                       <div className='allOrders-card-value'>{spisok(order.orderjson.suppliers) || '—'}</div>
                     </div>
                     <div className='allOrders-card-row allOrders-card-row-full'>
                       <div className='allOrders-card-label'>Менеджер</div>
                       <div className='allOrders-card-value'>{orderManager || '—'}</div>
+                    </div>
+                    <div className='allOrders-card-row allOrders-card-row-full'>
+                      <div className='allOrders-card-label'>Дата загрузки</div>
+                      <div className='allOrders-card-value'>{formatDate(order.orderjson.loadingDate)}</div>
                     </div>
                     <div className='allOrders-card-row allOrders-card-row-full'>
                       <div className='allOrders-card-label'>Тонны поставщиков</div>
@@ -722,12 +781,14 @@ function AllOrders() {
           style={{ width: '100%', margin: 0 }}
         >
           <colgroup>
+            <col className="allOrders-col-created-date" />
             <col className="allOrders-col-status" />
             <col className="allOrders-col-ttn-status" />
             <col className="allOrders-col-num" />
-            <col className="allOrders-col-date" />
+            <col className="allOrders-col-loading-date" />
             <col className="allOrders-col-manager" />
             <col className="allOrders-col-buyers" />
+            <col className="allOrders-col-client-paid" />
             {!isPhone && <col className="allOrders-col-hsum" />}
             <col className="allOrders-col-suppliers" />
             <col className="allOrders-col-tons" />
@@ -736,12 +797,14 @@ function AllOrders() {
           </colgroup>
           <thead>
             <tr>
+              <th className="allOrders-head-created-date">Дата<br />создания</th>
               <th className="allOrders-head-status">Статус</th>
               <th className="allOrders-head-ttn-status" title="Статус ТТН">ТТН</th>
               <th className="allOrders-head-num" style={{ textAlign: 'center' }}>№</th>
-              <th className="allOrders-head-date">Дата</th>
+              <th className="allOrders-head-loading-date">Дата<br />загрузки</th>
               <th className="allOrders-head-manager">Менеджер</th>
               <th className="allOrders-head-buyers">Покупатели</th>
+              <th className="allOrders-head-client-paid">Оплачено клиентом</th>
               {!isPhone && <th className="allOrders-head-hsum" title='Суммы подпокупателей (buyerH) без заполненного имени'>Суммы &quot;H&quot;</th>}
               <th className="allOrders-head-suppliers">Поставщики</th>
               <th className="allOrders-head-tons">Тонны</th>
@@ -756,6 +819,7 @@ function AllOrders() {
             const orderNumber = getOrderNumber(order);
             const orderStatus = getOrderStatus(order.orderjson);
             const orderTtnStatus = getOrderTtnStatus(order.orderjson);
+            const orderClientPaid = getOrderClientPaid(order.orderjson);
             const orderStatusClass = getOrderStatusClass(orderStatus);
             const orderManager = getOrderManager(order.orderjson);
             const suppliersTons = suppliersTonsTotal(order.orderjson);
@@ -777,6 +841,7 @@ function AllOrders() {
                   }}
                 >
 
+                      <td className="allOrders-cell-created-date" style={{ overflow: "hidden", backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }} >{formatDate(order.orderjson.date)}</td>
                       <td className="allOrders-cell-status" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
                         <span className={`allOrders-status-dot ${orderStatusClass}`} title={orderStatus} />
                       </td>
@@ -784,7 +849,7 @@ function AllOrders() {
                         {orderTtnStatus}
                       </td>
                       <td className="allOrders-cell-num" style={{ overflow: "hidden", textAlign: 'center', backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>{orderNumber}</td>
-                      <td className="allOrders-cell-date" style={{ overflow: "hidden", backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }} >{formatDate(order.orderjson.date)}</td>
+                      <td className="allOrders-cell-loading-date" style={{ overflow: "hidden", backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }} >{formatDate(order.orderjson.loadingDate)}</td>
                       <td className="allOrders-cell-manager" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>{orderManager}</td>
                       <td className="allOrders-cell-buyers" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>{
                         <Stack direction="horizontal" gap={3} className="allOrders-buyers-stack" >
@@ -796,6 +861,9 @@ function AllOrders() {
                           }
                         </Stack>
                       }</td>
+                      <td className="allOrders-cell-client-paid" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
+                        {orderClientPaid}
+                      </td>
 
                       {!isPhone &&
                         <td className="allOrders-cell-hsum" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '', overflow: 'hidden', fontSize: '0.9em' }} title={emptyHSummas}>
@@ -839,7 +907,7 @@ function AllOrders() {
 
                 </tr>
                 <tr className="allOrders-expand-row">
-                  <td colSpan={isPhone ? 10 : 11} className="p-0 border-top-0">
+                  <td colSpan={isPhone ? 10 : 13} className="p-0 border-top-0">
                 <Collapse in={order.open}>
 
                   <div className='mb-3'>

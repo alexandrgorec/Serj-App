@@ -20,6 +20,7 @@ import { ORDER_TTN_STATUS_OPTIONS, normalizeOrderTtnStatus } from './orderTtnSta
 function getOrderStatusClass(status) {
   const normalizedStatus = normalizeOrderStatus(status);
   if (normalizedStatus === 'Заприходирована') return 'editOrder-status-income';
+  if (normalizedStatus === 'Машина загружена') return 'editOrder-status-loaded';
   if (normalizedStatus === 'Реализована') return 'editOrder-status-done';
   return 'editOrder-status-created';
 }
@@ -293,6 +294,19 @@ function EditOrderMobile({
                   refresh();
                 }}
               />
+            </div>
+            <div className='editOrderMobile-clientPaidField'>
+              <Form.Select
+                size='sm'
+                value={order.clientPaid || 'Нет'}
+                onChange={(evt) => {
+                  order.clientPaid = evt.target.value;
+                  refresh();
+                }}
+              >
+                <option value="Нет">Клиент: нет</option>
+                <option value="Да">Клиент: да</option>
+              </Form.Select>
             </div>
           </Stack>
 

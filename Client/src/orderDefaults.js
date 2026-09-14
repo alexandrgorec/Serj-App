@@ -20,6 +20,7 @@ export const createEmptyOrder = (overrides = {}) => ({
   orderNumber: '',
   orderStatus: ORDER_STATUS_OPTIONS[0],
   ttnStatus: ORDER_TTN_STATUS_OPTIONS[0].value,
+  clientPaid: 'Нет',
   supplierPaymentDate: '',
   supplierPaymentDeferred: false,
   loadingDate: '',

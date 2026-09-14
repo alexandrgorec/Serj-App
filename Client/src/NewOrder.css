@@ -45,6 +45,20 @@
     width: 136px;
 }
 
+.orderEditor-clientPaid {
+    flex: 0 0 122px;
+    width: 122px;
+}
+
+.orderEditor-clientPaid > .form-select {
+    font-size: 0.92rem;
+}
+
+.orderEditor-clientPaid > label,
+.orderEditor-clientPaid > label::after {
+    background: transparent !important;
+}
+
 .newOrderDesktop-topBar .btn {
     height: var(--new-order-topbar-item-height);
     display: inline-flex;

@@ -22,8 +22,8 @@
 }
 
 .editOrderDesktop-status {
-    width: 150px;
-    flex: 0 0 150px;
+    width: 182px;
+    flex: 0 0 182px;
 }
 
 .editOrderDesktop-ttnStatus {
@@ -34,6 +34,7 @@
 .editOrderDesktop-status > .form-select {
     color: inherit;
     border-color: currentColor;
+    font-size: 0.92rem;
 }
 
 .editOrderDesktop-ttnStatus > .form-select {
@@ -55,6 +56,11 @@
 .editOrder-status-income > .form-select {
     background-color: rgba(245, 158, 11, 0.2);
     color: rgba(145, 83, 10, 0.98);
+}
+
+.editOrder-status-loaded > .form-select {
+    background-color: rgba(217, 45, 32, 0.16);
+    color: rgba(145, 32, 24, 0.98);
 }
 
 .editOrder-status-done > .form-select {
@@ -93,8 +99,8 @@
 }
 
 .editOrderDesktop-orderNumber {
-    flex: 0 0 118px;
-    width: 118px;
+    flex: 0 0 108px;
+    width: 108px;
 }
 
 .editOrderDesktop-orderNumber > .form-control {
@@ -117,8 +123,8 @@
 }
 
 .editOrderDesktop-date {
-    flex: 0 0 136px;
-    width: 136px;
+    flex: 0 0 128px;
+    width: 128px;
 }
 
 .editOrderDesktop-topBar .btn {

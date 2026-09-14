@@ -25,6 +25,7 @@ const HISTORY_FIELD_LABELS = {
   order_number: '№ заявки',
   orderStatus: 'Статус заявки',
   ttnStatus: 'Статус ТТН',
+  clientPaid: 'Оплачено клиент',
   manager: 'Менеджер',
   date: 'Дата заявки',
   ip: 'Перевозчик',
@@ -82,6 +83,7 @@ function normalizeHistoryStatus(value) {
   const text = isBlankHistoryValue(value) ? 'Новая' : String(value).trim();
   if (text === 'Создана') return 'Новая';
   if (text === 'Приход внесен') return 'Заприходирована';
+  if (text === 'Машина загружена') return 'Машина загружена';
   if (text === 'Выполнена реализация') return 'Реализована';
   return text;
 }
@@ -95,9 +97,14 @@ function normalizeHistoryTtnStatus(value) {
   return text;
 }
 
+function normalizeHistoryClientPaid(value) {
+  return isBlankHistoryValue(value) ? 'Нет' : String(value).trim();
+}
+
 function normalizeHistoryComparable(field, value) {
   if (field === 'orderStatus' || field === 'Статус заявки') return normalizeHistoryStatus(value);
   if (field === 'ttnStatus' || field === 'Статус ТТН') return normalizeHistoryTtnStatus(value);
+  if (field === 'clientPaid' || field === 'Оплачено клиент') return normalizeHistoryClientPaid(value);
 
   if (field === 'orderNumber' || field === 'order_number' || field === '№ заявки') {
     const number = Number(String(value || '').replace(/\s/g, '').trim());
@@ -193,6 +200,7 @@ function renderHistoryDetails(payload) {
 function getOrderStatusClass(status) {
   const normalizedStatus = normalizeOrderStatus(status);
   if (normalizedStatus === 'Заприходирована') return 'editOrder-status-income';
+  if (normalizedStatus === 'Машина загружена') return 'editOrder-status-loaded';
   if (normalizedStatus === 'Реализована') return 'editOrder-status-done';
   return 'editOrder-status-created';
 }
@@ -308,6 +316,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
     ...activeOrder,
     orderStatus: isNewMode ? ORDER_STATUS_OPTIONS[0] : normalizeOrderStatus(activeOrder?.orderStatus),
     ttnStatus: normalizeOrderTtnStatus(activeOrder?.ttnStatus),
+    clientPaid: activeOrder?.clientPaid || 'Нет',
     otk: getOrderOtkForSave(activeOrder),
     haveEmptyBuyerH: hasEmptyBuyerH(activeOrder),
   });
@@ -451,6 +460,18 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
     </FloatingLabel>
   );
 
+  const renderClientPaidField = () => (
+    <FloatingLabel label="Оплачено клиент" className="p-0 orderEditor-clientPaid">
+      <Form.Select
+        value={activeOrder.clientPaid || 'Нет'}
+        onChange={(evt) => updateOrderField('clientPaid', evt.target.value)}
+      >
+        <option value="Нет">Нет</option>
+        <option value="Да">Да</option>
+      </Form.Select>
+    </FloatingLabel>
+  );
+
   const renderDesktop = () => (
     <>
       <div className={`${isEditMode ? 'mb-2 editOrderDesktop-topBar' : 'orderTable-topActions newOrderDesktop-topBar'} noselect`}>
@@ -475,7 +496,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
           {renderOrderNumberField()}
           {renderStatusField()}
           {renderTtnStatusField()}
-          <FloatingLabel label="Дата" className={`p-0 ${isEditMode ? 'editOrderDesktop-date' : 'newOrderDesktop-date'}`}>
+          <FloatingLabel label="Дата создания" className={`p-0 ${isEditMode ? 'editOrderDesktop-date' : 'newOrderDesktop-date'}`}>
             <Form.Control
               as="input"
               type='date'
@@ -483,6 +504,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
               onChange={(evt) => updateOrderField('date', evt.target.value)}
             />
           </FloatingLabel>
+          {renderClientPaidField()}
         </div>
 
         <div className={isEditMode ? 'editOrderDesktop-topBarRight' : 'newOrderDesktop-topBarRight'}>

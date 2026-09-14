@@ -560,12 +560,14 @@ const ORDER_DIFF_MAX_VALUE_LEN = 180;
 const ORDER_DIFF_DEFAULT_VALUES = {
     orderStatus: "Новая",
     ttnStatus: "Х",
+    clientPaid: "Нет",
 };
 const ORDER_DIFF_FIELD_LABELS = {
     orderNumber: "№ заявки",
     order_number: "№ заявки",
     orderStatus: "Статус заявки",
     ttnStatus: "Статус ТТН",
+    clientPaid: "Оплачено клиент",
     manager: "Менеджер",
     date: "Дата заявки",
     ip: "Перевозчик",
@@ -607,6 +609,7 @@ function normalizeAuditStatus(value) {
     const text = isBlankAuditValue(value) ? ORDER_DIFF_DEFAULT_VALUES.orderStatus : String(value).trim();
     if (text === "Создана") return "Новая";
     if (text === "Приход внесен") return "Заприходирована";
+    if (text === "Машина загружена") return "Машина загружена";
     if (text === "Выполнена реализация") return "Реализована";
     return text;
 }
@@ -620,9 +623,14 @@ function normalizeAuditTtnStatus(value) {
     return text;
 }
 
+function normalizeAuditClientPaid(value) {
+    return isBlankAuditValue(value) ? ORDER_DIFF_DEFAULT_VALUES.clientPaid : String(value).trim();
+}
+
 function normalizeAuditComparable(path, value) {
     if (path === "orderStatus") return normalizeAuditStatus(value);
     if (path === "ttnStatus") return normalizeAuditTtnStatus(value);
+    if (path === "clientPaid") return normalizeAuditClientPaid(value);
 
     if (path === "orderNumber" || path === "order_number") {
         const parsed = parseOrderNumber(value);
