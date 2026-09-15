@@ -205,7 +205,7 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
               {user.rights.finBlockAccess &&
                 <>
                   <th width='6%' style={{ display: display }}>С/Ф</th>
-                  <th width='1%' style={{ display: display }} className='th-date'>Дата</th>
+                  <th width='1%' style={{ display: display }} className='th-date'>Дата СФ</th>
                   <th width='8%' style={{ display: display }} className='th-summa'>Сумма</th>
                   <th width='5%' style={{ display: display }} className='th-akt'>Акт транспорт</th>
                 </>
@@ -241,7 +241,7 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
                   {user.rights.finBlockAccess &&
                     <>
                       <TDInput object={supplier} field={'sf'} type={'text'} display={display} />
-                      <TDInput object={order} field={'loadingDate'} type={'date'} disabled={true} value={true} display={display} tdClassName="td-date" inputClassName="date-input" fontSize="12px" />
+                      <TDInput object={supplier} field={'date'} type={'date'} display={display} tdClassName="td-date" inputClassName="date-input" fontSize="12px" />
                       <TDSumma object={supplier} field={'summa'} display={display} calcTrigger={summaKeys[index] || 0} />
                       <TDInput object={supplier} field={'akt'} type={'text'} display={display}/>
                     </>
@@ -284,13 +284,14 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
           </thead>
           <tbody>
             {order.buyers.map((buyer, index) => {
+              const hasBuyerH = (buyer.buyersH || []).length > 0;
               return (
                 <>
 
                   <tr key={getRowKey(buyer, 'buyer', index)} className='buyers-tr' style={{ borderTop: '2px solid pink' }}>
                     <td className='orderTable-col-actions p-0 pt-1 pr-1'>
                       <Stack gap={1} direction='horizontal' >
-                        <Button className='m-1 mt-0 mb-0 p-2 pt-0 pb-0 ' tabIndex={-1} variant="warning" style={{ backgroundColor: buyer.buyersH?.length > 0 ? bgColorH : '' }} onClick={() => {
+                        <Button className='m-1 mt-0 mb-0 p-2 pt-0 pb-0 ' tabIndex={-1} variant="warning" style={{ backgroundColor: hasBuyerH ? bgColorH : '' }} onClick={() => {
                           const orderSave = order;
                           orderSave.buyers[index].buyersH = orderSave.buyers[index].buyersH || [];
                           const copyBuyer = { ...orderSave.buyers[index] };
@@ -299,7 +300,7 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
                           orderSave.buyers[index].buyersH.push(copyBuyer);
                           setOrder({ ...orderSave });
 
-                        }}>н</Button>
+                        }}>{hasBuyerH ? 'Н' : 'Б'}</Button>
                         <MdDelete size='1.7em' className='icon' style={{ color: 'rgb(194, 65, 65)' }} onClick={() => {
                           setDeleteElement({
                             element: 'buyers',
@@ -324,7 +325,7 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
                     {user.rights.finBlockAccess &&
                       <>
                         <TDInput object={buyer} field={'sf'} type={'text'} display={display} />
-                        <TDInput object={order} field={'shipmentDate'} type={'date'} disabled={true} value={true} display={display} tdClassName="td-date" inputClassName="date-input" fontSize="12px" />
+                        <TDInput object={buyer} field={'date'} type={'date'} display={display} tdClassName="td-date" inputClassName="date-input" fontSize="12px" />
                         <TDSumma object={buyer} field={'summa'} display={display} calcTrigger={buyerSummaKeys[index] || 0} />
                         <TDInput object={buyer} field={'akt'} type={'number'} display={display} />
                       </>
@@ -360,7 +361,7 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
                           {user.rights.finBlockAccess &&
                             <>
                               <TDInput object={buyerH} field={'sf'} type={'text'} display={display} />
-                              <TDInput object={order} field={'shipmentDate'} type={'date'} disabled={true} value={true} display={display} tdClassName="td-date" inputClassName="date-input" fontSize="12px" />
+                              <TDInput object={buyerH} field={'date'} type={'date'} display={display} tdClassName="td-date" inputClassName="date-input" fontSize="12px" />
                               <TDSumma object={buyerH} field={'summa'} display={display} calcTrigger={buyerHSummaKeys[`${index}-${indexBuyerH}`] || 0} />
                               <TDInput object={buyerH} field={'akt'} type={'number'} display={display} />
                             </>

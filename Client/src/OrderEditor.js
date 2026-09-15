@@ -26,6 +26,7 @@ const HISTORY_FIELD_LABELS = {
   orderStatus: 'Статус заявки',
   ttnStatus: 'Статус ТТН',
   clientPaid: 'Оплачено клиент',
+  salaryIncluded: 'Учтено в ЗП',
   manager: 'Менеджер',
   date: 'Дата заявки',
   ip: 'Перевозчик',
@@ -55,6 +56,7 @@ const HISTORY_FIELD_LABELS = {
   tons: 'тонны',
   price: 'цена',
   sf: 'С/Ф',
+  rowDate: 'Дата СФ',
   summa: 'сумма',
   akt: 'акт транспорт',
 };
@@ -82,7 +84,8 @@ function isBlankHistoryValue(value) {
 function normalizeHistoryStatus(value) {
   const text = isBlankHistoryValue(value) ? 'Новая' : String(value).trim();
   if (text === 'Создана') return 'Новая';
-  if (text === 'Приход внесен') return 'Заприходирована';
+  if (text === 'Приход внесен') return 'Заприходована';
+  if (text === 'Заприходирована') return 'Заприходована';
   if (text === 'Машина загружена') return 'Машина загружена';
   if (text === 'Выполнена реализация') return 'Реализована';
   return text;
@@ -101,10 +104,15 @@ function normalizeHistoryClientPaid(value) {
   return isBlankHistoryValue(value) ? 'Нет' : String(value).trim();
 }
 
+function normalizeHistoryYesNo(value) {
+  return isBlankHistoryValue(value) ? 'Нет' : String(value).trim();
+}
+
 function normalizeHistoryComparable(field, value) {
   if (field === 'orderStatus' || field === 'Статус заявки') return normalizeHistoryStatus(value);
   if (field === 'ttnStatus' || field === 'Статус ТТН') return normalizeHistoryTtnStatus(value);
   if (field === 'clientPaid' || field === 'Оплачено клиент') return normalizeHistoryClientPaid(value);
+  if (field === 'salaryIncluded' || field === 'Учтено в ЗП') return normalizeHistoryYesNo(value);
 
   if (field === 'orderNumber' || field === 'order_number' || field === '№ заявки') {
     const number = Number(String(value || '').replace(/\s/g, '').trim());
@@ -125,7 +133,9 @@ function getHistoryFieldLabel(field) {
   if (buyerHMatch) {
     const buyerIndex = Number(buyerHMatch[1]) + 1;
     const buyerHIndex = Number(buyerHMatch[2]) + 1;
-    const fieldLabel = HISTORY_FIELD_LABELS[buyerHMatch[3]] || buyerHMatch[3];
+    const fieldLabel = buyerHMatch[3] === 'date'
+      ? HISTORY_FIELD_LABELS.rowDate
+      : HISTORY_FIELD_LABELS[buyerHMatch[3]] || buyerHMatch[3];
     return `Покупатель №${buyerIndex}, Н №${buyerHIndex}: ${fieldLabel}`;
   }
 
@@ -133,7 +143,9 @@ function getHistoryFieldLabel(field) {
   if (rowMatch) {
     const sectionLabel = rowMatch[1] === 'suppliers' ? 'Поставщик' : 'Покупатель';
     const rowIndex = Number(rowMatch[2]) + 1;
-    const fieldLabel = HISTORY_FIELD_LABELS[rowMatch[3]] || rowMatch[3];
+    const fieldLabel = rowMatch[3] === 'date'
+      ? HISTORY_FIELD_LABELS.rowDate
+      : HISTORY_FIELD_LABELS[rowMatch[3]] || rowMatch[3];
     return `${sectionLabel} №${rowIndex}: ${fieldLabel}`;
   }
 
@@ -199,7 +211,8 @@ function renderHistoryDetails(payload) {
 
 function getOrderStatusClass(status) {
   const normalizedStatus = normalizeOrderStatus(status);
-  if (normalizedStatus === 'Заприходирована') return 'editOrder-status-income';
+  if (normalizedStatus === 'Отложенная') return 'editOrder-status-postponed';
+  if (normalizedStatus === 'Заприходована') return 'editOrder-status-income';
   if (normalizedStatus === 'Машина загружена') return 'editOrder-status-loaded';
   if (normalizedStatus === 'Реализована') return 'editOrder-status-done';
   return 'editOrder-status-created';
@@ -317,6 +330,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
     orderStatus: isNewMode ? ORDER_STATUS_OPTIONS[0] : normalizeOrderStatus(activeOrder?.orderStatus),
     ttnStatus: normalizeOrderTtnStatus(activeOrder?.ttnStatus),
     clientPaid: activeOrder?.clientPaid || 'Нет',
+    salaryIncluded: activeOrder?.salaryIncluded || 'Нет',
     otk: getOrderOtkForSave(activeOrder),
     haveEmptyBuyerH: hasEmptyBuyerH(activeOrder),
   });
@@ -361,13 +375,20 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
         await syncOrderSelectLists({ order: orderToSave, user, setUser, aAxios }).catch((error) => {
           console.error('Select lists sync error:', error);
         });
-        const createdOrderNumber = response.data?.orderNumber || orderToSave.orderNumber || response.data?.id || response.data;
+        const createdOrderId = response.data?.id || response.data;
+        const createdOrderNumber = response.data?.orderNumber || orderToSave.orderNumber || createdOrderId;
+        setEditingOrder({
+          ...orderToSave,
+          id: createdOrderId,
+          orderNumber: createdOrderNumber,
+          order_number: createdOrderNumber,
+        });
         resetNewOrder();
         setAlertVariant('success');
-        sessionStorage.createdOrderId = response.data?.id || response.data;
+        sessionStorage.createdOrderId = createdOrderId;
         sessionStorage.bgColor = 'rgba(61, 174, 12, 0.44)';
         setToast(createdOrderNumber ? `Заявка №${createdOrderNumber} создана` : 'Заявка создана');
-        navigate('/allorders');
+        navigate('/editorder', { replace: true });
       }
     } catch (error) {
       if (error?.response?.status === 409) {
@@ -472,6 +493,18 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
     </FloatingLabel>
   );
 
+  const renderSalaryIncludedField = () => (
+    <FloatingLabel label="Учтено в ЗП" className="p-0 orderEditor-salaryIncluded">
+      <Form.Select
+        value={activeOrder.salaryIncluded || 'Нет'}
+        onChange={(evt) => updateOrderField('salaryIncluded', evt.target.value)}
+      >
+        <option value="Нет">Нет</option>
+        <option value="Да">Да</option>
+      </Form.Select>
+    </FloatingLabel>
+  );
+
   const renderDesktop = () => (
     <>
       <div className={`${isEditMode ? 'mb-2 editOrderDesktop-topBar' : 'orderTable-topActions newOrderDesktop-topBar'} noselect`}>
@@ -505,6 +538,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
             />
           </FloatingLabel>
           {renderClientPaidField()}
+          {renderSalaryIncludedField()}
         </div>
 
         <div className={isEditMode ? 'editOrderDesktop-topBarRight' : 'newOrderDesktop-topBarRight'}>

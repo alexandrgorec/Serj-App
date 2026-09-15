@@ -53,6 +53,11 @@
     color: rgba(32, 80, 145, 0.96);
 }
 
+.editOrder-status-postponed > .form-select {
+    background-color: rgba(17, 24, 39, 0.14);
+    color: #111827;
+}
+
 .editOrder-status-income > .form-select {
     background-color: rgba(245, 158, 11, 0.2);
     color: rgba(145, 83, 10, 0.98);

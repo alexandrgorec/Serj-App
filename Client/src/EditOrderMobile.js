@@ -19,7 +19,8 @@ import { ORDER_TTN_STATUS_OPTIONS, normalizeOrderTtnStatus } from './orderTtnSta
 
 function getOrderStatusClass(status) {
   const normalizedStatus = normalizeOrderStatus(status);
-  if (normalizedStatus === 'Заприходирована') return 'editOrder-status-income';
+  if (normalizedStatus === 'Отложенная') return 'editOrder-status-postponed';
+  if (normalizedStatus === 'Заприходована') return 'editOrder-status-income';
   if (normalizedStatus === 'Машина загружена') return 'editOrder-status-loaded';
   if (normalizedStatus === 'Реализована') return 'editOrder-status-done';
   return 'editOrder-status-created';
@@ -308,6 +309,19 @@ function EditOrderMobile({
                 <option value="Да">Клиент: да</option>
               </Form.Select>
             </div>
+            <div className='editOrderMobile-salaryIncludedField'>
+              <Form.Select
+                size='sm'
+                value={order.salaryIncluded || 'Нет'}
+                onChange={(evt) => {
+                  order.salaryIncluded = evt.target.value;
+                  refresh();
+                }}
+              >
+                <option value="Нет">ЗП: нет</option>
+                <option value="Да">ЗП: да</option>
+              </Form.Select>
+            </div>
           </Stack>
 
           <Stack direction='horizontal' gap={2} className='editOrderMobile-actionsRow'>
@@ -400,7 +414,7 @@ function EditOrderMobile({
 
               {user.rights.finBlockAccess &&
                 <>
-                  <div className='editOrderMobile-grid2'>
+                  <div className='editOrderMobile-grid3'>
                     <div className='editOrderMobile-field'>
                       <div className='editOrderMobile-label'>С/Ф</div>
                       <Form.Control
@@ -408,6 +422,17 @@ function EditOrderMobile({
                         value={supplier.sf || ''}
                         onChange={(evt) => {
                           supplier.sf = evt.target.value;
+                          refresh();
+                        }}
+                      />
+                    </div>
+                    <div className='editOrderMobile-field'>
+                      <div className='editOrderMobile-label'>Дата СФ</div>
+                      <Form.Control
+                        type='date'
+                        value={supplier.date || ''}
+                        onChange={(evt) => {
+                          supplier.date = evt.target.value;
                           refresh();
                         }}
                       />
@@ -462,7 +487,9 @@ function EditOrderMobile({
             <div className='editOrderMobile-sectionTitle'>Покупатели</div>
           </Stack>
 
-          {(order.buyers || []).map((buyer, index) => (
+          {(order.buyers || []).map((buyer, index) => {
+            const hasBuyerH = (buyer.buyersH || []).length > 0;
+            return (
             <div className='editOrderMobile-card' key={getRowKey(buyer, 'buyer', index)}>
               <Stack direction='horizontal' className='editOrderMobile-cardHeader'>
                 <strong className='editOrderMobile-cardTitle'>Покупатель #{index + 1}</strong>
@@ -471,10 +498,10 @@ function EditOrderMobile({
                     size='sm'
                     variant='warning'
                     className='editOrderMobile-hBtn'
-                    style={{ backgroundColor: buyer.buyersH?.length > 0 ? bgColorH : '' }}
+                    style={{ backgroundColor: hasBuyerH ? bgColorH : '' }}
                     onClick={() => addBuyerH(index)}
                   >
-                    н
+                    {hasBuyerH ? 'Н' : 'Б'}
                   </Button>
                   <MdDelete
                     size='1.4em'
@@ -514,7 +541,7 @@ function EditOrderMobile({
 
               {user.rights.finBlockAccess &&
                 <>
-                  <div className='editOrderMobile-grid2'>
+                  <div className='editOrderMobile-grid3'>
                     <div className='editOrderMobile-field'>
                       <div className='editOrderMobile-label'>С/Ф</div>
                       <Form.Control
@@ -522,6 +549,17 @@ function EditOrderMobile({
                         value={buyer.sf || ''}
                         onChange={(evt) => {
                           buyer.sf = evt.target.value;
+                          refresh();
+                        }}
+                      />
+                    </div>
+                    <div className='editOrderMobile-field'>
+                      <div className='editOrderMobile-label'>Дата СФ</div>
+                      <Form.Control
+                        type='date'
+                        value={buyer.date || ''}
+                        onChange={(evt) => {
+                          buyer.date = evt.target.value;
                           refresh();
                         }}
                       />
@@ -611,7 +649,7 @@ function EditOrderMobile({
 
                   {user.rights.finBlockAccess &&
                     <>
-                      <div className='editOrderMobile-grid2'>
+                      <div className='editOrderMobile-grid3'>
                         <div className='editOrderMobile-field'>
                           <div className='editOrderMobile-label'>С/Ф</div>
                           <Form.Control
@@ -619,6 +657,17 @@ function EditOrderMobile({
                             value={buyerH.sf || ''}
                             onChange={(evt) => {
                               buyerH.sf = evt.target.value;
+                              refresh();
+                            }}
+                          />
+                        </div>
+                        <div className='editOrderMobile-field'>
+                          <div className='editOrderMobile-label'>Дата СФ</div>
+                          <Form.Control
+                            type='date'
+                            value={buyerH.date || ''}
+                            onChange={(evt) => {
+                              buyerH.date = evt.target.value;
                               refresh();
                             }}
                           />
@@ -667,7 +716,8 @@ function EditOrderMobile({
                 </div>
               ))}
             </div>
-          ))}
+            );
+          })}
         </div>
 
         <OrderPaymentDates order={order} setOrder={setOrder} variant='mobile' />

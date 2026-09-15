@@ -85,8 +85,8 @@ function FinBlockEdit({ setOrder, handleCloseFinBlock, showFinBlock, order, curr
                 <FloatingLabel label="С/Ф" className="mb-3" >
                     <Form.Control autoComplete="off" as="input" type='text' defaultValue={`${current.sf ? current.sf : ''}`} id="finBlock-sf" ref={refSf} onKeyUp={nextFocus} />
                 </FloatingLabel>
-                <FloatingLabel label="Дата" className="mb-3">
-                    <Form.Control autoComplete="off" as="input" type='text' defaultValue={`${current.date ? current.date : ''}`} id="finBlock-date" ref={refDate} onKeyUp={nextFocus} />
+                <FloatingLabel label="Дата СФ" className="mb-3">
+                    <Form.Control autoComplete="off" as="input" type='date' defaultValue={`${current.date ? current.date : ''}`} id="finBlock-date" ref={refDate} onKeyUp={nextFocus} />
                 </FloatingLabel>
                 <FloatingLabel label="Сумма" className="mb-3">
                     <Form.Control autoComplete="off" as="input" type='text' defaultValue={`${current.summa ? current.summa : ''}`} id="finBlock-summa" ref={refSumma} onKeyUp={nextFocus} />

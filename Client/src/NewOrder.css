@@ -50,12 +50,20 @@
     width: 122px;
 }
 
-.orderEditor-clientPaid > .form-select {
+.orderEditor-salaryIncluded {
+    flex: 0 0 112px;
+    width: 112px;
+}
+
+.orderEditor-clientPaid > .form-select,
+.orderEditor-salaryIncluded > .form-select {
     font-size: 0.92rem;
 }
 
 .orderEditor-clientPaid > label,
-.orderEditor-clientPaid > label::after {
+.orderEditor-clientPaid > label::after,
+.orderEditor-salaryIncluded > label,
+.orderEditor-salaryIncluded > label::after {
     background: transparent !important;
 }
 

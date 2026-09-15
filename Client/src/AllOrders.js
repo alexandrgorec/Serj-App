@@ -10,7 +10,7 @@ import Stack from 'react-bootstrap/Stack';
 import { BiEditAlt } from "react-icons/bi";
 import { MdDelete } from "react-icons/md";
 import { userContext } from './App';
-import { FaPeopleArrows, FaPrint } from "react-icons/fa6";
+import { FaChevronDown, FaChevronUp, FaPeopleArrows, FaPrint } from "react-icons/fa6";
 import { FormLabel } from 'react-bootstrap';
 import { Typeahead } from "react-bootstrap-typeahead";
 import { ORDER_STATUS_OPTIONS, normalizeOrderStatus } from './orderStatus';
@@ -127,9 +127,14 @@ function getOrderClientPaid(orderjson) {
   return String(orderjson?.clientPaid || 'Нет').trim() || 'Нет';
 }
 
+function getOrderSalaryIncluded(orderjson) {
+  return String(orderjson?.salaryIncluded || 'Нет').trim() || 'Нет';
+}
+
 function getOrderStatusClass(status) {
   const normalizedStatus = normalizeOrderStatus(status);
-  if (normalizedStatus === 'Заприходирована') return 'allOrders-status-income';
+  if (normalizedStatus === 'Отложенная') return 'allOrders-status-postponed';
+  if (normalizedStatus === 'Заприходована') return 'allOrders-status-income';
   if (normalizedStatus === 'Машина загружена') return 'allOrders-status-loaded';
   if (normalizedStatus === 'Реализована') return 'allOrders-status-done';
   return 'allOrders-status-created';
@@ -197,9 +202,11 @@ function AllOrders() {
   const [statusFilter, setStatusFilter] = useState('');
   const [ttnStatusFilter, setTtnStatusFilter] = useState('');
   const [clientPaidFilter, setClientPaidFilter] = useState('');
+  const [salaryIncludedFilter, setSalaryIncludedFilter] = useState('');
   const [dateFilterType, setDateFilterType] = useState('created');
   const [dateFromFilter, setDateFromFilter] = useState('');
   const [dateToFilter, setDateToFilter] = useState('');
+  const [mobileFiltersExpanded, setMobileFiltersExpanded] = useState(false);
   const openEditedOrder = () => {
     setOrders((orders) => {
       if (sessionStorage.createdOrderId) {
@@ -354,6 +361,7 @@ function AllOrders() {
     setStatusFilter('');
     setTtnStatusFilter('');
     setClientPaidFilter('');
+    setSalaryIncludedFilter('');
     setManagerFilter('');
     setSupplierFilter('');
     setBuyerFilter('');
@@ -429,6 +437,10 @@ function AllOrders() {
       clientPaidFilter === '' ||
       getOrderClientPaid(order.orderjson) === clientPaidFilter;
 
+    const matchSalaryIncluded =
+      salaryIncludedFilter === '' ||
+      getOrderSalaryIncluded(order.orderjson) === salaryIncludedFilter;
+
     const orderDate = getOrderDateForFilter(order, dateFilterType);
     const matchDateFrom =
       dateFromFilter === '' ||
@@ -443,6 +455,7 @@ function AllOrders() {
     if (!matchStatus) return false;
     if (!matchTtnStatus) return false;
     if (!matchClientPaid) return false;
+    if (!matchSalaryIncluded) return false;
     if (!matchDateFrom) return false;
     if (!matchDateTo) return false;
     if (filterEmptyBuyerH) {
@@ -463,19 +476,52 @@ function AllOrders() {
           >
             Новая заявка
           </Button>
-          <div className='allOrders-switches-row'>
-            <FormLabel className='noselect clickable mb-0'>
-              <Stack direction='horizontal' gap={2}>
-                <Form.Check className='noselect' ref={refFilter} onClick={() => { reload(!state) }}
-                  type="switch"
-                />
-                Фильтр <FaPeopleArrows style={{ color: 'rgba(16, 188, 45, 0.79)' }} />
-              </Stack>
-            </FormLabel>
-          </div>
+          {isPhone &&
+            <Button
+              variant="outline-secondary"
+              className="allOrders-mobileFiltersToggle"
+              aria-label={mobileFiltersExpanded ? 'Свернуть фильтры' : 'Развернуть фильтры'}
+              aria-expanded={mobileFiltersExpanded}
+              onClick={() => setMobileFiltersExpanded((expanded) => !expanded)}
+            >
+              <span>Фильтры</span>
+              {mobileFiltersExpanded ? <FaChevronUp /> : <FaChevronDown />}
+            </Button>
+          }
         </div>
 
-        <div className="allOrders-textFilters">
+        <div className={`allOrders-textFilters ${isPhone && !mobileFiltersExpanded ? 'allOrders-textFiltersCollapsed' : ''}`}>
+          {isPhone &&
+            <div className='allOrders-mobileFilterActions'>
+              <FormLabel className='allOrders-switches-row noselect clickable mb-0'>
+                <Stack direction='horizontal' gap={2}>
+                  <Form.Check className='noselect' ref={refFilter} onClick={() => { reload(!state) }}
+                    type="switch"
+                  />
+                  Фильтр <FaPeopleArrows style={{ color: 'rgba(16, 188, 45, 0.79)' }} />
+                </Stack>
+              </FormLabel>
+              <Button
+                variant="outline-secondary"
+                className="allOrders-resetFiltersBtn allOrders-mobileResetFiltersBtn"
+                onClick={resetFilters}
+              >
+                Сброс
+              </Button>
+            </div>
+          }
+          {!isPhone &&
+            <div className='allOrders-switches-row allOrders-filterSwitchDesktop'>
+              <FormLabel className='noselect clickable mb-0'>
+                <Stack direction='horizontal' gap={2}>
+                  <Form.Check className='noselect' ref={refFilter} onClick={() => { reload(!state) }}
+                    type="switch"
+                  />
+                  Фильтр <FaPeopleArrows style={{ color: 'rgba(16, 188, 45, 0.79)' }} />
+                </Stack>
+              </FormLabel>
+            </div>
+          }
           <Form.Select
             className="allOrders-statusFilter"
             value={statusFilter}
@@ -516,6 +562,19 @@ function AllOrders() {
             <option value="">Статус оплаты</option>
             <option value="Да">Оплачено</option>
             <option value="Нет">Не оплачено</option>
+          </Form.Select>
+          <Form.Select
+            className="allOrders-salaryIncludedFilter"
+            value={salaryIncludedFilter}
+            onChange={(evt) => {
+              setSalaryIncludedFilter(evt.target.value);
+              reload(!state);
+            }}
+            style={{ fontSize: window.innerWidth < 850 ? '12px' : '14px' }}
+          >
+            <option value="">Учтено в ЗП</option>
+            <option value="Да">Да</option>
+            <option value="Нет">Нет</option>
           </Form.Select>
           <Typeahead
             id="allorders-manager-filter"
@@ -612,13 +671,15 @@ function AllOrders() {
             />
           </div>
         </div>
-        <Button
-          variant="outline-secondary"
-          className="allOrders-resetFiltersBtn"
-          onClick={resetFilters}
-        >
-          Сброс
-        </Button>
+        {!isPhone &&
+          <Button
+            variant="outline-secondary"
+            className="allOrders-resetFiltersBtn"
+            onClick={resetFilters}
+          >
+            Сброс
+          </Button>
+        }
 
       </Stack>
       {isPhone &&
@@ -926,7 +987,7 @@ function AllOrders() {
                           {user.rights.finBlockAccess &&
                             <>
                               <th width='6%' style={{ display: display }}>С/Ф</th>
-                              <th width='6%' style={{ display: display }}>Дата</th>
+                              <th width='6%' style={{ display: display }}>Дата СФ</th>
                               <th width='6%' style={{ display: display }}>Сумма</th>
                               <th width='6%' style={{ display: display }}>Акт транспорт</th>
                             </>

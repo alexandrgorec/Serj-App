@@ -5,9 +5,12 @@
 }
 
 .allOrders-toolbar {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    column-gap: 12px;
     flex-wrap: wrap;
     row-gap: 8px;
-    align-items: center;
+    align-items: start;
     position: sticky;
     top: 0;
     z-index: 1200;
@@ -26,6 +29,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    grid-column: 1;
     flex: 0 0 auto;
     flex-wrap: nowrap;
 }
@@ -140,6 +144,10 @@
     background: #2138d0;
 }
 
+.allOrders-status-postponed {
+    background: #111827;
+}
+
 .allOrders-status-income {
     background: #f27a30;
 }
@@ -192,10 +200,16 @@
 .allOrders-textFilters {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
+    grid-column: 2;
     flex: 1 1 auto;
     min-width: 0;
     flex-wrap: wrap;
+}
+
+.allOrders-filterSwitchDesktop {
+    flex: 0 0 auto;
 }
 
 .allOrders-filterTypeahead {
@@ -225,6 +239,11 @@
 .allOrders-clientPaidFilter {
     flex: 0 0 156px;
     min-width: 156px;
+}
+
+.allOrders-salaryIncludedFilter {
+    flex: 0 0 142px;
+    min-width: 142px;
 }
 
 .allOrders-dateRangeFilter {
@@ -258,8 +277,10 @@
 }
 
 .allOrders-resetFiltersBtn {
+    grid-column: 3;
+    align-self: start;
     flex: 0 0 auto;
-    margin-left: auto;
+    margin-left: 0;
     white-space: nowrap;
     color: rgba(70, 82, 102, 0.98);
     border-color: rgba(70, 82, 102, 0.35);
@@ -271,6 +292,10 @@
     color: rgba(43, 52, 66, 1);
     border-color: rgba(70, 82, 102, 0.52);
     background: rgba(232, 238, 248, 0.9);
+}
+
+.allOrders-mobileFiltersToggle {
+    display: none;
 }
 
 .allOrders-switches-row {
@@ -478,6 +503,7 @@
     }
 
     .allOrders-toolbar {
+        display: flex !important;
         flex-wrap: wrap;
         row-gap: 6px;
         overflow-x: visible;
@@ -486,12 +512,28 @@
     .allOrders-controls-row {
         width: 100%;
         gap: 6px;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+        overflow: visible;
     }
 
     .allOrders-controls-row::-webkit-scrollbar {
         display: none;
+    }
+
+    .allOrders-mobileFiltersToggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        width: auto;
+        min-width: 82px;
+        height: 32px;
+        padding: 0 9px;
+        margin-left: auto;
+        font-size: 12px;
+        font-weight: 600;
+        color: rgba(59, 72, 96, 0.92);
+        border-color: rgba(70, 82, 102, 0.32);
+        background: rgba(255, 255, 255, 0.78);
     }
 
     .allOrders-newOrderBtn {
@@ -500,7 +542,7 @@
     }
 
     .allOrders-switches-row {
-        flex: 1 1 auto;
+        flex: 0 0 auto;
         width: auto;
         flex-wrap: nowrap;
         justify-content: flex-start;
@@ -514,9 +556,20 @@
         white-space: nowrap;
     }
 
+    .allOrders-mobileFilterActions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1 1 100%;
+    }
+
     .allOrders-textFilters {
         gap: 6px;
         flex-wrap: wrap;
+    }
+
+    .allOrders-textFiltersCollapsed {
+        display: none;
     }
 
     .allOrders-statusFilter {
@@ -534,6 +587,11 @@
         min-width: 0;
     }
 
+    .allOrders-salaryIncludedFilter {
+        flex: 1 1 calc(50% - 3px);
+        min-width: 0;
+    }
+
     .allOrders-dateRangeFilter {
         flex: 1 1 100%;
         min-width: 0;
@@ -547,6 +605,12 @@
         margin-left: 0;
         font-size: 12px;
         padding: 5px 12px;
+    }
+
+    .allOrders-mobileResetFiltersBtn {
+        flex: 0 0 auto;
+        padding-left: 10px;
+        padding-right: 10px;
     }
 
     .allOrders-main-table {

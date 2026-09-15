@@ -158,7 +158,7 @@ function makeSuppliersTable(order, showFinBlock) {
             { key: "tons", label: "Т", weight: 0.08, align: "right", noWrap: true },
             { key: "price", label: "Цена", weight: 0.085, align: "right", noWrap: true },
             { key: "sf", label: "С/Ф", weight: 0.075, align: "left" },
-            { key: "date", label: "Дата", weight: 0.095, align: "center", noWrap: true },
+            { key: "date", label: "Дата СФ", weight: 0.095, align: "center", noWrap: true },
             { key: "summa", label: "Σ", weight: 0.16, align: "right", noWrap: true, bodyFontScale: 0.92 },
             { key: "akt", label: "Акт", weight: 0.08, align: "left" },
         ]
@@ -181,7 +181,7 @@ function makeSuppliersTable(order, showFinBlock) {
             numberValue(supplier?.price),
         ];
         const fin = showFinBlock
-            ? [textValue(supplier?.sf), formatDateRuShort(supplier?.date || order?.date), numberValue(supplier?.summa), textValue(supplier?.akt)]
+            ? [textValue(supplier?.sf), formatDateRuShort(supplier?.date), numberValue(supplier?.summa), textValue(supplier?.akt)]
             : [];
         return { cells: [...base, ...fin] };
     });
@@ -205,7 +205,7 @@ function makeBuyersTable(order, showFinBlock) {
             { key: "tons", label: "Т", weight: 0.085, align: "right", noWrap: true },
             { key: "price", label: "Цена", weight: 0.09, align: "right", noWrap: true, bodyFontScale: 0.92 },
             { key: "sf", label: "С/Ф", weight: 0.075, align: "left" },
-            { key: "date", label: "Дата", weight: 0.095, align: "center", noWrap: true },
+            { key: "date", label: "Дата СФ", weight: 0.095, align: "center", noWrap: true },
             { key: "summa", label: "Σ", weight: 0.13, align: "right", noWrap: true, bodyFontScale: 0.92 },
             { key: "akt", label: "Акт", weight: 0.06, align: "left" },
         ]
@@ -231,7 +231,7 @@ function makeBuyersTable(order, showFinBlock) {
             numberValue(buyer?.price),
         ];
         const fin = showFinBlock
-            ? [textValue(buyer?.sf), formatDateRuShort(buyer?.date || order?.date), numberValue(buyer?.summa), textValue(buyer?.akt)]
+            ? [textValue(buyer?.sf), formatDateRuShort(buyer?.date), numberValue(buyer?.summa), textValue(buyer?.akt)]
             : [];
         rows.push({ rowType: "buyer", cells: [...base, ...fin] });
 
@@ -247,7 +247,7 @@ function makeBuyersTable(order, showFinBlock) {
                 numberValue(buyerH?.price),
             ];
             const finH = showFinBlock
-                ? [textValue(buyerH?.sf), formatDateRuShort(buyerH?.date || order?.date), numberValue(buyerH?.summa), textValue(buyerH?.akt)]
+                ? [textValue(buyerH?.sf), formatDateRuShort(buyerH?.date), numberValue(buyerH?.summa), textValue(buyerH?.akt)]
                 : [];
             rows.push({ rowType: "buyerH", cells: [...baseH, ...finH] });
         });
@@ -561,6 +561,7 @@ const ORDER_DIFF_DEFAULT_VALUES = {
     orderStatus: "Новая",
     ttnStatus: "Х",
     clientPaid: "Нет",
+    salaryIncluded: "Нет",
 };
 const ORDER_DIFF_FIELD_LABELS = {
     orderNumber: "№ заявки",
@@ -568,6 +569,7 @@ const ORDER_DIFF_FIELD_LABELS = {
     orderStatus: "Статус заявки",
     ttnStatus: "Статус ТТН",
     clientPaid: "Оплачено клиент",
+    salaryIncluded: "Учтено в ЗП",
     manager: "Менеджер",
     date: "Дата заявки",
     ip: "Перевозчик",
@@ -597,6 +599,7 @@ const ORDER_DIFF_FIELD_LABELS = {
     tons: "тонны",
     price: "цена",
     sf: "С/Ф",
+    rowDate: "Дата СФ",
     summa: "сумма",
     akt: "акт транспорт",
 };
@@ -608,7 +611,8 @@ function isBlankAuditValue(value) {
 function normalizeAuditStatus(value) {
     const text = isBlankAuditValue(value) ? ORDER_DIFF_DEFAULT_VALUES.orderStatus : String(value).trim();
     if (text === "Создана") return "Новая";
-    if (text === "Приход внесен") return "Заприходирована";
+    if (text === "Приход внесен") return "Заприходована";
+    if (text === "Заприходирована") return "Заприходована";
     if (text === "Машина загружена") return "Машина загружена";
     if (text === "Выполнена реализация") return "Реализована";
     return text;
@@ -627,10 +631,15 @@ function normalizeAuditClientPaid(value) {
     return isBlankAuditValue(value) ? ORDER_DIFF_DEFAULT_VALUES.clientPaid : String(value).trim();
 }
 
+function normalizeAuditYesNo(path, value) {
+    return isBlankAuditValue(value) ? ORDER_DIFF_DEFAULT_VALUES[path] : String(value).trim();
+}
+
 function normalizeAuditComparable(path, value) {
     if (path === "orderStatus") return normalizeAuditStatus(value);
     if (path === "ttnStatus") return normalizeAuditTtnStatus(value);
     if (path === "clientPaid") return normalizeAuditClientPaid(value);
+    if (path === "salaryIncluded") return normalizeAuditYesNo(path, value);
 
     if (path === "orderNumber" || path === "order_number") {
         const parsed = parseOrderNumber(value);
@@ -647,7 +656,9 @@ function getOrderDiffFieldLabel(path) {
     if (buyerHMatch) {
         const buyerIndex = Number(buyerHMatch[1]) + 1;
         const buyerHIndex = Number(buyerHMatch[2]) + 1;
-        const fieldLabel = ORDER_DIFF_FIELD_LABELS[buyerHMatch[3]] || buyerHMatch[3];
+        const fieldLabel = buyerHMatch[3] === "date"
+            ? ORDER_DIFF_FIELD_LABELS.rowDate
+            : ORDER_DIFF_FIELD_LABELS[buyerHMatch[3]] || buyerHMatch[3];
         return `Покупатель №${buyerIndex}, Н №${buyerHIndex}: ${fieldLabel}`;
     }
 
@@ -655,7 +666,9 @@ function getOrderDiffFieldLabel(path) {
     if (rowMatch) {
         const sectionLabel = rowMatch[1] === "suppliers" ? "Поставщик" : "Покупатель";
         const rowIndex = Number(rowMatch[2]) + 1;
-        const fieldLabel = ORDER_DIFF_FIELD_LABELS[rowMatch[3]] || rowMatch[3];
+        const fieldLabel = rowMatch[3] === "date"
+            ? ORDER_DIFF_FIELD_LABELS.rowDate
+            : ORDER_DIFF_FIELD_LABELS[rowMatch[3]] || rowMatch[3];
         return `${sectionLabel} №${rowIndex}: ${fieldLabel}`;
     }
 
