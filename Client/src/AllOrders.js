@@ -5,23 +5,39 @@ import { useState, useEffect, useContext, useRef, Fragment } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Collapse from 'react-bootstrap/Collapse';
 import Button from 'react-bootstrap/Button';
+import Dropdown from 'react-bootstrap/Dropdown';
 import Form from 'react-bootstrap/Form';
 import Stack from 'react-bootstrap/Stack';
 import { BiEditAlt } from "react-icons/bi";
 import { MdDelete } from "react-icons/md";
 import { userContext } from './App';
-import { FaChevronDown, FaChevronUp, FaEye, FaEyeSlash, FaGear, FaPeopleArrows, FaPrint } from "react-icons/fa6";
+import { FaChevronDown, FaChevronUp, FaEye, FaEyeSlash, FaGear, FaPeopleArrows, FaPrint, FaXmark } from "react-icons/fa6";
 import { FormLabel } from 'react-bootstrap';
 import { Typeahead } from "react-bootstrap-typeahead";
 import { ORDER_STATUS_OPTIONS, normalizeOrderStatus } from './orderStatus';
 import { ORDER_TTN_STATUS_OPTIONS, normalizeOrderTtnStatus } from './orderTtnStatus';
 
 const DATE_FILTER_TYPE_OPTIONS = [
-  { value: 'created', label: 'Дата создания' },
-  { value: 'loading', label: 'Дата загрузки' },
+  { value: 'created', label: 'Создания' },
+  { value: 'loading', label: 'Загрузки' },
 ];
 
 const USER_UI_STATE_PREFIX = 'serjApp:userUiState:';
+
+const DEFAULT_FILTER_SETTINGS = {
+  orderNumber: '',
+  statuses: [],
+  ttnStatus: '',
+  clientPaid: '',
+  salaryIncluded: '',
+  manager: '',
+  supplier: '',
+  buyer: '',
+  dateType: 'created',
+  dateFrom: '',
+  dateTo: '',
+  emptyBuyerH: false,
+};
 
 const ALL_ORDERS_COLUMNS = [
   { id: 'realizationDate', colClass: 'allOrders-col-realization-date', defaultWidth: 7 },
@@ -74,6 +90,32 @@ function normalizeColumnWidths(value) {
     acc[column.id] = Math.min(Math.max(width, COLUMN_MIN_WIDTH), COLUMN_MAX_WIDTH);
     return acc;
   }, {});
+}
+
+function normalizeFilterSettings(value) {
+  const dateType = DATE_FILTER_TYPE_OPTIONS.some((option) => option.value === value?.dateType)
+    ? value.dateType
+    : DEFAULT_FILTER_SETTINGS.dateType;
+  const rawStatuses = Array.isArray(value?.statuses)
+    ? value.statuses
+    : (value?.status ? [value.status] : []);
+  const statuses = rawStatuses
+    .map((status) => normalizeOrderStatus(status))
+    .filter((status) => ORDER_STATUS_OPTIONS.includes(status));
+  return {
+    orderNumber: String(value?.orderNumber || ''),
+    statuses: Array.from(new Set(statuses)),
+    ttnStatus: String(value?.ttnStatus || ''),
+    clientPaid: String(value?.clientPaid || ''),
+    salaryIncluded: String(value?.salaryIncluded || ''),
+    manager: String(value?.manager || ''),
+    supplier: String(value?.supplier || ''),
+    buyer: String(value?.buyer || ''),
+    dateType,
+    dateFrom: String(value?.dateFrom || ''),
+    dateTo: String(value?.dateTo || ''),
+    emptyBuyerH: value?.emptyBuyerH === true,
+  };
 }
 
 function spisok(array) {
@@ -256,8 +298,8 @@ function AllOrders() {
   const { user, setToast, aAxios, setEditingOrder } = useContext(userContext);
   const navigate = useNavigate();
   const userUiStateKey = getUserUiStateKey(user);
-  const refFilter = useRef(null);
   const tableRef = useRef(null);
+  const skipFilterPersistRef = useRef(false);
   const [lastActiveOrderId, setLastActiveOrderId] = useState(() => {
     const savedState = readUserUiState(getUserUiStateKey(user));
     return String(savedState?.lastActiveOrder?.id || '');
@@ -280,19 +322,57 @@ function AllOrders() {
     const savedState = readUserUiState(getUserUiStateKey(user));
     return normalizeColumnWidths(savedState?.columnWidths);
   });
-  const [buyerFilter, setBuyerFilter] = useState('');
+  const [buyerFilter, setBuyerFilter] = useState(() => {
+    const savedState = readUserUiState(getUserUiStateKey(user));
+    return normalizeFilterSettings(savedState?.filters).buyer;
+  });
   const buyerTypeaheadRef = useRef(null);
-  const [managerFilter, setManagerFilter] = useState('');
+  const [managerFilter, setManagerFilter] = useState(() => {
+    const savedState = readUserUiState(getUserUiStateKey(user));
+    return normalizeFilterSettings(savedState?.filters).manager;
+  });
   const managerTypeaheadRef = useRef(null);
-  const [supplierFilter, setSupplierFilter] = useState('');
+  const [supplierFilter, setSupplierFilter] = useState(() => {
+    const savedState = readUserUiState(getUserUiStateKey(user));
+    return normalizeFilterSettings(savedState?.filters).supplier;
+  });
   const supplierTypeaheadRef = useRef(null);
-  const [statusFilter, setStatusFilter] = useState('');
-  const [ttnStatusFilter, setTtnStatusFilter] = useState('');
-  const [clientPaidFilter, setClientPaidFilter] = useState('');
-  const [salaryIncludedFilter, setSalaryIncludedFilter] = useState('');
-  const [dateFilterType, setDateFilterType] = useState('created');
-  const [dateFromFilter, setDateFromFilter] = useState('');
-  const [dateToFilter, setDateToFilter] = useState('');
+  const [orderNumberFilter, setOrderNumberFilter] = useState(() => {
+    const savedState = readUserUiState(getUserUiStateKey(user));
+    return normalizeFilterSettings(savedState?.filters).orderNumber;
+  });
+  const [statusFilters, setStatusFilters] = useState(() => {
+    const savedState = readUserUiState(getUserUiStateKey(user));
+    return normalizeFilterSettings(savedState?.filters).statuses;
+  });
+  const [ttnStatusFilter, setTtnStatusFilter] = useState(() => {
+    const savedState = readUserUiState(getUserUiStateKey(user));
+    return normalizeFilterSettings(savedState?.filters).ttnStatus;
+  });
+  const [clientPaidFilter, setClientPaidFilter] = useState(() => {
+    const savedState = readUserUiState(getUserUiStateKey(user));
+    return normalizeFilterSettings(savedState?.filters).clientPaid;
+  });
+  const [salaryIncludedFilter, setSalaryIncludedFilter] = useState(() => {
+    const savedState = readUserUiState(getUserUiStateKey(user));
+    return normalizeFilterSettings(savedState?.filters).salaryIncluded;
+  });
+  const [dateFilterType, setDateFilterType] = useState(() => {
+    const savedState = readUserUiState(getUserUiStateKey(user));
+    return normalizeFilterSettings(savedState?.filters).dateType;
+  });
+  const [dateFromFilter, setDateFromFilter] = useState(() => {
+    const savedState = readUserUiState(getUserUiStateKey(user));
+    return normalizeFilterSettings(savedState?.filters).dateFrom;
+  });
+  const [dateToFilter, setDateToFilter] = useState(() => {
+    const savedState = readUserUiState(getUserUiStateKey(user));
+    return normalizeFilterSettings(savedState?.filters).dateTo;
+  });
+  const [emptyBuyerHFilter, setEmptyBuyerHFilter] = useState(() => {
+    const savedState = readUserUiState(getUserUiStateKey(user));
+    return normalizeFilterSettings(savedState?.filters).emptyBuyerH;
+  });
   const [mobileFiltersExpanded, setMobileFiltersExpanded] = useState(false);
   const openEditedOrder = () => {
     setOrders((orders) => {
@@ -537,7 +617,8 @@ function AllOrders() {
   }
 
   const resetFilters = () => {
-    setStatusFilter('');
+    setOrderNumberFilter('');
+    setStatusFilters([]);
     setTtnStatusFilter('');
     setClientPaidFilter('');
     setSalaryIncludedFilter('');
@@ -547,7 +628,7 @@ function AllOrders() {
     setDateFilterType('created');
     setDateFromFilter('');
     setDateToFilter('');
-    if (refFilter.current) refFilter.current.checked = false;
+    setEmptyBuyerHFilter(false);
     managerTypeaheadRef.current?.clear();
     supplierTypeaheadRef.current?.clear();
     buyerTypeaheadRef.current?.clear();
@@ -566,13 +647,68 @@ function AllOrders() {
     setLastActiveOrderId(String(savedState?.lastActiveOrder?.id || ''));
     const savedVisibility = normalizeColumnVisibility(savedState?.visibleColumns);
     const savedWidths = normalizeColumnWidths(savedState?.columnWidths);
+    const savedFilters = normalizeFilterSettings(savedState?.filters);
+    skipFilterPersistRef.current = true;
     setColumnVisibility(savedVisibility);
     setDraftColumnVisibility(savedVisibility);
     setColumnWidths(savedWidths);
     setDraftColumnWidths(savedWidths);
     setColumnSettingsMode('');
     setColumnSettingsMenuOpen(false);
+    setOrderNumberFilter(savedFilters.orderNumber);
+    setStatusFilters(savedFilters.statuses);
+    setTtnStatusFilter(savedFilters.ttnStatus);
+    setClientPaidFilter(savedFilters.clientPaid);
+    setSalaryIncludedFilter(savedFilters.salaryIncluded);
+    setManagerFilter(savedFilters.manager);
+    setSupplierFilter(savedFilters.supplier);
+    setBuyerFilter(savedFilters.buyer);
+    setDateFilterType(savedFilters.dateType);
+    setDateFromFilter(savedFilters.dateFrom);
+    setDateToFilter(savedFilters.dateTo);
+    setEmptyBuyerHFilter(savedFilters.emptyBuyerH);
   }, [userUiStateKey]);
+
+  useEffect(() => {
+    if (skipFilterPersistRef.current) {
+      skipFilterPersistRef.current = false;
+      return;
+    }
+
+    const previousState = readUserUiState(userUiStateKey);
+    const filters = normalizeFilterSettings({
+      orderNumber: orderNumberFilter,
+      statuses: statusFilters,
+      ttnStatus: ttnStatusFilter,
+      clientPaid: clientPaidFilter,
+      salaryIncluded: salaryIncludedFilter,
+      manager: managerFilter,
+      supplier: supplierFilter,
+      buyer: buyerFilter,
+      dateType: dateFilterType,
+      dateFrom: dateFromFilter,
+      dateTo: dateToFilter,
+      emptyBuyerH: emptyBuyerHFilter,
+    });
+    window.localStorage.setItem(userUiStateKey, JSON.stringify({
+      ...previousState,
+      filters,
+    }));
+  }, [
+    userUiStateKey,
+    orderNumberFilter,
+    statusFilters,
+    ttnStatusFilter,
+    clientPaidFilter,
+    salaryIncludedFilter,
+    managerFilter,
+    supplierFilter,
+    buyerFilter,
+    dateFilterType,
+    dateFromFilter,
+    dateToFilter,
+    emptyBuyerHFilter,
+  ]);
 
 
   const NumberFormat = (num) => {
@@ -598,11 +734,16 @@ function AllOrders() {
     const decSep = originalHadComma ? ',' : '.';
     return sign + intFormatted + decSep + fracRaw;
   }
-  const filterEmptyBuyerH = !!refFilter.current?.checked;
+  const filterEmptyBuyerH = emptyBuyerHFilter;
+  const orderNumberQ = String(orderNumberFilter || '').replace(/\s/g, '').trim();
   const buyerQ = String(buyerFilter || '').trim().toLowerCase();
   const managerQ = String(managerFilter || '').trim().toLowerCase();
   const supplierQ = String(supplierFilter || '').trim().toLowerCase();
   const filteredOrders = orders.filter((order) => {
+    const matchOrderNumber =
+      orderNumberQ === '' ||
+      String(getOrderNumber(order) || '').replace(/\s/g, '').trim() === orderNumberQ;
+
     const matchBuyer =
       buyerQ === '' ||
       buyerNamesFromOrder(order.orderjson)
@@ -618,8 +759,8 @@ function AllOrders() {
       getOrderManager(order.orderjson).toLowerCase().includes(managerQ);
 
     const matchStatus =
-      statusFilter === '' ||
-      getOrderStatus(order.orderjson) === statusFilter;
+      statusFilters.length === 0 ||
+      statusFilters.includes(getOrderStatus(order.orderjson));
 
     const matchTtnStatus =
       ttnStatusFilter === '' ||
@@ -641,6 +782,7 @@ function AllOrders() {
       dateToFilter === '' ||
       (orderDate !== '' && orderDate <= dateToFilter);
 
+    if (!matchOrderNumber) return false;
     if (!matchBuyer) return false;
     if (!matchSupplier) return false;
     if (!matchManager) return false;
@@ -705,6 +847,31 @@ function AllOrders() {
     );
   };
 
+  const statusFilterLabel = statusFilters.length === 0
+    ? 'Все'
+    : statusFilters.length === 1
+      ? statusFilters[0]
+      : String(statusFilters.length);
+  const isFilterValueActive = (value) => String(value || '').trim() !== '';
+  const activeFilterClass = (isActive) => isActive ? ' allOrders-filterActive' : '';
+  const isDateFilterActive = isFilterValueActive(dateFromFilter) || isFilterValueActive(dateToFilter);
+
+  const toggleStatusFilter = (status) => {
+    setStatusFilters((currentStatuses) => {
+      if (currentStatuses.includes(status)) {
+        return currentStatuses.filter((item) => item !== status);
+      }
+      return [...currentStatuses, status];
+    });
+    reload(!state);
+  };
+
+  const clearTypeaheadFilter = (setFilter, typeaheadRef) => {
+    setFilter('');
+    typeaheadRef.current?.clear();
+    reload(!state);
+  };
+
   return (
     <>
       <Stack direction='horizontal' gap={2} className='allOrders-toolbar'>
@@ -734,8 +901,14 @@ function AllOrders() {
           {isPhone &&
             <div className='allOrders-mobileFilterActions'>
               <FormLabel className='allOrders-switches-row noselect clickable mb-0'>
-                <Stack direction='horizontal' gap={2}>
-                  <Form.Check className='noselect' ref={refFilter} onClick={() => { reload(!state) }}
+                <Stack direction='horizontal' gap={2} className={emptyBuyerHFilter ? 'allOrders-filterSwitchActive' : ''}>
+                  <Form.Check
+                    className='noselect'
+                    checked={emptyBuyerHFilter}
+                    onChange={(evt) => {
+                      setEmptyBuyerHFilter(evt.target.checked);
+                      reload(!state);
+                    }}
                     type="switch"
                   />
                   Фильтр <FaPeopleArrows style={{ color: 'rgba(16, 188, 45, 0.79)' }} />
@@ -753,8 +926,14 @@ function AllOrders() {
           {!isPhone &&
             <div className='allOrders-switches-row allOrders-filterSwitchDesktop'>
               <FormLabel className='noselect clickable mb-0'>
-                <Stack direction='horizontal' gap={2}>
-                  <Form.Check className='noselect' ref={refFilter} onClick={() => { reload(!state) }}
+                <Stack direction='horizontal' gap={2} className={emptyBuyerHFilter ? 'allOrders-filterSwitchActive' : ''}>
+                  <Form.Check
+                    className='noselect'
+                    checked={emptyBuyerHFilter}
+                    onChange={(evt) => {
+                      setEmptyBuyerHFilter(evt.target.checked);
+                      reload(!state);
+                    }}
                     type="switch"
                   />
                   Фильтр <FaPeopleArrows style={{ color: 'rgba(16, 188, 45, 0.79)' }} />
@@ -762,153 +941,251 @@ function AllOrders() {
               </FormLabel>
             </div>
           }
-          <Form.Select
-            className="allOrders-statusFilter"
-            value={statusFilter}
-            onChange={(evt) => {
-              setStatusFilter(evt.target.value);
-              reload(!state);
-            }}
-            style={{ fontSize: window.innerWidth < 850 ? '12px' : '14px' }}
-          >
-            <option value="">Все статусы</option>
-            {ORDER_STATUS_OPTIONS.map((status) => (
-              <option key={status} value={status}>{status}</option>
-            ))}
-          </Form.Select>
-          <Form.Select
-            className="allOrders-ttnStatusFilter"
-            value={ttnStatusFilter}
-            onChange={(evt) => {
-              setTtnStatusFilter(evt.target.value);
-              reload(!state);
-            }}
-            style={{ fontSize: window.innerWidth < 850 ? '12px' : '14px' }}
-          >
-            <option value="">Все ТТН</option>
-            {ORDER_TTN_STATUS_OPTIONS.map((status) => (
-              <option key={status.value} value={status.value}>{status.label}</option>
-            ))}
-          </Form.Select>
-          <Form.Select
-            className="allOrders-clientPaidFilter"
-            value={clientPaidFilter}
-            onChange={(evt) => {
-              setClientPaidFilter(evt.target.value);
-              reload(!state);
-            }}
-            style={{ fontSize: window.innerWidth < 850 ? '12px' : '14px' }}
-          >
-            <option value="">Статус оплаты</option>
-            <option value="Да">Оплачено</option>
-            <option value="Нет">Не оплачено</option>
-          </Form.Select>
-          <Form.Select
-            className="allOrders-salaryIncludedFilter"
-            value={salaryIncludedFilter}
-            onChange={(evt) => {
-              setSalaryIncludedFilter(evt.target.value);
-              reload(!state);
-            }}
-            style={{ fontSize: window.innerWidth < 850 ? '12px' : '14px' }}
-          >
-            <option value="">Учтено в ЗП</option>
-            <option value="Да">Да</option>
-            <option value="Нет">Нет</option>
-          </Form.Select>
-          <Typeahead
-            id="allorders-manager-filter"
-            ref={managerTypeaheadRef}
-            options={managerOptions}
-            className="allOrders-filterTypeahead"
-            selected={managerFilter ? [managerFilter] : []}
-            onChange={(selected) => {
-              const v = selected.length ? String(selected[0]) : '';
-              setManagerFilter(v);
-              reload(!state);
-            }}
-            onInputChange={(text) => {
-              setManagerFilter(text);
-            }}
-            placeholder="Менеджер"
-            highlightOnlyResult
-            inputProps={{ type: 'text', style: { fontSize: window.innerWidth < 850 ? '12px' : '14px' } }}
-          />
-          <Typeahead
-            id="allorders-supplier-filter"
-            ref={supplierTypeaheadRef}
-            options={supplierOptions}
-            className="allOrders-filterTypeahead"
-            selected={supplierFilter ? [supplierFilter] : []}
-            onChange={(selected) => {
-              const v = selected.length ? String(selected[0]) : '';
-              setSupplierFilter(v);
-              reload(!state);
-            }}
-            onInputChange={(text) => {
-              setSupplierFilter(text);
-            }}
-            placeholder="Поставщик"
-            highlightOnlyResult
-            inputProps={{ type: 'text', style: { fontSize: window.innerWidth < 850 ? '12px' : '14px' } }}
-          />
-          <Typeahead
-            id="allorders-buyer-filter"
-            ref={buyerTypeaheadRef}
-            options={buyerOptions}
-            className="allOrders-filterTypeahead"
-            selected={buyerFilter ? [buyerFilter] : []}
-            onChange={(selected) => {
-              const v = selected.length ? String(selected[0]) : '';
-              setBuyerFilter(v);
-              reload(!state);
-            }}
-            onInputChange={(text) => {
-              setBuyerFilter(text);
-            }}
-            placeholder="Покупатель"
-            highlightOnlyResult
-            inputProps={{ type: 'text', style: { fontSize: window.innerWidth < 850 ? '12px' : '14px' } }}
-          />
-          <div className="allOrders-dateRangeFilter">
+          <Dropdown className={`allOrders-statusFilter allOrders-filterWithLabel${activeFilterClass(statusFilters.length > 0)}`} autoClose="outside">
+            <span className="allOrders-filterInlineLabel">Статус</span>
+            <Dropdown.Toggle
+              variant="outline-secondary"
+              className="allOrders-statusFilterToggle allOrders-filterLabeledControl"
+              style={{ fontSize: window.innerWidth < 850 ? '12px' : '14px' }}
+            >
+              {statusFilterLabel}
+            </Dropdown.Toggle>
+            <Dropdown.Menu className="allOrders-statusFilterMenu">
+              <Form.Check
+                type="checkbox"
+                id="allorders-status-filter-all"
+                className="allOrders-statusFilterOption"
+                label="Все"
+                checked={statusFilters.length === 0}
+                onChange={() => {
+                  setStatusFilters([]);
+                  reload(!state);
+                }}
+              />
+              {ORDER_STATUS_OPTIONS.map((status) => (
+                <Form.Check
+                  key={status}
+                  type="checkbox"
+                  id={`allorders-status-filter-${status}`}
+                  className="allOrders-statusFilterOption"
+                  label={status}
+                  checked={statusFilters.includes(status)}
+                  onChange={() => toggleStatusFilter(status)}
+                />
+              ))}
+            </Dropdown.Menu>
+          </Dropdown>
+          <div className={`allOrders-ttnStatusFilter allOrders-filterWithLabel${activeFilterClass(isFilterValueActive(ttnStatusFilter))}`}>
+            <span className="allOrders-filterInlineLabel">ТТН</span>
             <Form.Select
-              className="allOrders-dateTypeFilter"
-              aria-label="Выбор даты для фильтра"
-              title="Выбор даты для фильтра"
-              value={dateFilterType}
+              className="allOrders-filterLabeledControl"
+              value={ttnStatusFilter}
               onChange={(evt) => {
-                setDateFilterType(evt.target.value);
+                setTtnStatusFilter(evt.target.value);
                 reload(!state);
               }}
+              style={{ fontSize: window.innerWidth < 850 ? '12px' : '14px' }}
             >
-              {DATE_FILTER_TYPE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>{option.label}</option>
+              <option value="">Все</option>
+              {ORDER_TTN_STATUS_OPTIONS.map((status) => (
+                <option key={status.value} value={status.value}>{status.label}</option>
               ))}
             </Form.Select>
-            <span className="allOrders-dateRangeLabel">с</span>
+          </div>
+          <div className={`allOrders-orderNumberFilter allOrders-filterWithLabel${activeFilterClass(isFilterValueActive(orderNumberFilter))}`}>
+            <span className="allOrders-filterInlineLabel">№ заявки</span>
             <Form.Control
-              type="date"
-              aria-label="Дата с"
-              title="Дата с"
-              value={dateFromFilter}
+              className="allOrders-filterLabeledControl"
+              type="text"
+              inputMode="numeric"
+              aria-label="Фильтр по номеру заявки"
+              value={orderNumberFilter}
               onChange={(evt) => {
-                setDateFromFilter(evt.target.value);
+                setOrderNumberFilter(evt.target.value);
                 reload(!state);
               }}
               style={{ fontSize: window.innerWidth < 850 ? '12px' : '14px' }}
             />
-            <span className="allOrders-dateRangeLabel">по</span>
-            <Form.Control
-              type="date"
-              aria-label="Дата по"
-              title="Дата по"
-              value={dateToFilter}
+          </div>
+          <div className={`allOrders-clientPaidFilter allOrders-filterWithLabel${activeFilterClass(isFilterValueActive(clientPaidFilter))}`}>
+            <span className="allOrders-filterInlineLabel">Оплата</span>
+            <Form.Select
+              className="allOrders-filterLabeledControl"
+              value={clientPaidFilter}
               onChange={(evt) => {
-                setDateToFilter(evt.target.value);
+                setClientPaidFilter(evt.target.value);
                 reload(!state);
               }}
               style={{ fontSize: window.innerWidth < 850 ? '12px' : '14px' }}
+            >
+              <option value="">Все</option>
+              <option value="Да">Да</option>
+              <option value="Нет">Нет</option>
+            </Form.Select>
+          </div>
+          <div className={`allOrders-salaryIncludedFilter allOrders-filterWithLabel${activeFilterClass(isFilterValueActive(salaryIncludedFilter))}`}>
+            <span className="allOrders-filterInlineLabel">ЗП</span>
+            <Form.Select
+              className="allOrders-filterLabeledControl"
+              value={salaryIncludedFilter}
+              onChange={(evt) => {
+                setSalaryIncludedFilter(evt.target.value);
+                reload(!state);
+              }}
+              style={{ fontSize: window.innerWidth < 850 ? '12px' : '14px' }}
+            >
+              <option value="">Все</option>
+              <option value="Да">Да</option>
+              <option value="Нет">Нет</option>
+            </Form.Select>
+          </div>
+          <div className={`allOrders-filterTypeahead allOrders-filterWithLabel${activeFilterClass(isFilterValueActive(managerFilter))}`}>
+            <span className="allOrders-filterInlineLabel">Менеджер</span>
+            <Typeahead
+              id="allorders-manager-filter"
+              ref={managerTypeaheadRef}
+              options={managerOptions}
+              className="allOrders-filterTypeaheadControl"
+              selected={managerFilter ? [managerFilter] : []}
+              onChange={(selected) => {
+                const v = selected.length ? String(selected[0]) : '';
+                setManagerFilter(v);
+                reload(!state);
+              }}
+              onInputChange={(text) => {
+                setManagerFilter(text);
+              }}
+              placeholder=""
+              highlightOnlyResult
+              inputProps={{ type: 'text', style: { fontSize: window.innerWidth < 850 ? '12px' : '14px' } }}
             />
+            {isFilterValueActive(managerFilter) &&
+              <button
+                type="button"
+                className="allOrders-typeaheadClearBtn"
+                aria-label="Очистить фильтр Менеджер"
+                title="Очистить"
+                onMouseDown={(evt) => evt.preventDefault()}
+                onClick={() => clearTypeaheadFilter(setManagerFilter, managerTypeaheadRef)}
+              >
+                <FaXmark />
+              </button>
+            }
+          </div>
+          <div className={`allOrders-filterTypeahead allOrders-filterWithLabel${activeFilterClass(isFilterValueActive(supplierFilter))}`}>
+            <span className="allOrders-filterInlineLabel">Поставщик</span>
+            <Typeahead
+              id="allorders-supplier-filter"
+              ref={supplierTypeaheadRef}
+              options={supplierOptions}
+              className="allOrders-filterTypeaheadControl"
+              selected={supplierFilter ? [supplierFilter] : []}
+              onChange={(selected) => {
+                const v = selected.length ? String(selected[0]) : '';
+                setSupplierFilter(v);
+                reload(!state);
+              }}
+              onInputChange={(text) => {
+                setSupplierFilter(text);
+              }}
+              placeholder=""
+              highlightOnlyResult
+              inputProps={{ type: 'text', style: { fontSize: window.innerWidth < 850 ? '12px' : '14px' } }}
+            />
+            {isFilterValueActive(supplierFilter) &&
+              <button
+                type="button"
+                className="allOrders-typeaheadClearBtn"
+                aria-label="Очистить фильтр Поставщик"
+                title="Очистить"
+                onMouseDown={(evt) => evt.preventDefault()}
+                onClick={() => clearTypeaheadFilter(setSupplierFilter, supplierTypeaheadRef)}
+              >
+                <FaXmark />
+              </button>
+            }
+          </div>
+          <div className={`allOrders-filterTypeahead allOrders-filterWithLabel${activeFilterClass(isFilterValueActive(buyerFilter))}`}>
+            <span className="allOrders-filterInlineLabel">Покупатель</span>
+            <Typeahead
+              id="allorders-buyer-filter"
+              ref={buyerTypeaheadRef}
+              options={buyerOptions}
+              className="allOrders-filterTypeaheadControl"
+              selected={buyerFilter ? [buyerFilter] : []}
+              onChange={(selected) => {
+                const v = selected.length ? String(selected[0]) : '';
+                setBuyerFilter(v);
+                reload(!state);
+              }}
+              onInputChange={(text) => {
+                setBuyerFilter(text);
+              }}
+              placeholder=""
+              highlightOnlyResult
+              inputProps={{ type: 'text', style: { fontSize: window.innerWidth < 850 ? '12px' : '14px' } }}
+            />
+            {isFilterValueActive(buyerFilter) &&
+              <button
+                type="button"
+                className="allOrders-typeaheadClearBtn"
+                aria-label="Очистить фильтр Покупатель"
+                title="Очистить"
+                onMouseDown={(evt) => evt.preventDefault()}
+                onClick={() => clearTypeaheadFilter(setBuyerFilter, buyerTypeaheadRef)}
+              >
+                <FaXmark />
+              </button>
+            }
+          </div>
+          <div className={`allOrders-dateRangeFilter${activeFilterClass(isDateFilterActive)}`}>
+            <div className={`allOrders-dateTypeFilter allOrders-filterWithLabel${activeFilterClass(isDateFilterActive)}`}>
+              <span className="allOrders-filterInlineLabel">Дата</span>
+              <Form.Select
+                className="allOrders-filterLabeledControl"
+                aria-label="Выбор даты для фильтра"
+                title="Выбор даты для фильтра"
+                value={dateFilterType}
+                onChange={(evt) => {
+                  setDateFilterType(evt.target.value);
+                  reload(!state);
+                }}
+              >
+                {DATE_FILTER_TYPE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </Form.Select>
+            </div>
+            <div className={`allOrders-dateInputFilter allOrders-filterWithLabel${activeFilterClass(isFilterValueActive(dateFromFilter))}`}>
+              <span className="allOrders-filterInlineLabel">Дата с</span>
+              <Form.Control
+                className="allOrders-filterLabeledControl"
+                type="date"
+                aria-label="Дата с"
+                title="Дата с"
+                value={dateFromFilter}
+                onChange={(evt) => {
+                  setDateFromFilter(evt.target.value);
+                  reload(!state);
+                }}
+                style={{ fontSize: window.innerWidth < 850 ? '12px' : '14px' }}
+              />
+            </div>
+            <div className={`allOrders-dateInputFilter allOrders-filterWithLabel${activeFilterClass(isFilterValueActive(dateToFilter))}`}>
+              <span className="allOrders-filterInlineLabel">Дата по</span>
+              <Form.Control
+                className="allOrders-filterLabeledControl"
+                type="date"
+                aria-label="Дата по"
+                title="Дата по"
+                value={dateToFilter}
+                onChange={(evt) => {
+                  setDateToFilter(evt.target.value);
+                  reload(!state);
+                }}
+                style={{ fontSize: window.innerWidth < 850 ? '12px' : '14px' }}
+              />
+            </div>
           </div>
         </div>
         {!isPhone &&
