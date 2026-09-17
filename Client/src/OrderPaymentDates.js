@@ -82,7 +82,7 @@ function OrderPaymentDates({ order, setOrder, variant = 'desktop' }) {
       </div>
 
       <div className='orderPaymentDates-field'>
-        <div className='orderPaymentDates-label'>Дата отгрузки</div>
+        <div className='orderPaymentDates-label'>Дата реализации</div>
         <Form.Control
           type='date'
           value={order?.shipmentDate || ''}

@@ -10,7 +10,7 @@ import Stack from 'react-bootstrap/Stack';
 import { BiEditAlt } from "react-icons/bi";
 import { MdDelete } from "react-icons/md";
 import { userContext } from './App';
-import { FaChevronDown, FaChevronUp, FaPeopleArrows, FaPrint } from "react-icons/fa6";
+import { FaChevronDown, FaChevronUp, FaEye, FaEyeSlash, FaGear, FaPeopleArrows, FaPrint } from "react-icons/fa6";
 import { FormLabel } from 'react-bootstrap';
 import { Typeahead } from "react-bootstrap-typeahead";
 import { ORDER_STATUS_OPTIONS, normalizeOrderStatus } from './orderStatus';
@@ -20,6 +20,61 @@ const DATE_FILTER_TYPE_OPTIONS = [
   { value: 'created', label: 'Дата создания' },
   { value: 'loading', label: 'Дата загрузки' },
 ];
+
+const USER_UI_STATE_PREFIX = 'serjApp:userUiState:';
+
+const ALL_ORDERS_COLUMNS = [
+  { id: 'realizationDate', colClass: 'allOrders-col-realization-date', defaultWidth: 7 },
+  { id: 'orderNumber', colClass: 'allOrders-col-num', defaultWidth: 6 },
+  { id: 'status', colClass: 'allOrders-col-status', defaultWidth: 4 },
+  { id: 'ttnStatus', colClass: 'allOrders-col-ttn-status', defaultWidth: 4 },
+  { id: 'suppliers', colClass: 'allOrders-col-suppliers', defaultWidth: 7 },
+  { id: 'loadingDate', colClass: 'allOrders-col-loading-date', defaultWidth: 6 },
+  { id: 'products', colClass: 'allOrders-col-products', defaultWidth: 6 },
+  { id: 'tons', colClass: 'allOrders-col-tons', defaultWidth: 5 },
+  { id: 'buyers', colClass: 'allOrders-col-buyers', defaultWidth: 8 },
+  { id: 'clientPaid', colClass: 'allOrders-col-client-paid', defaultWidth: 7 },
+  { id: 'hsum', colClass: 'allOrders-col-hsum', defaultWidth: 5 },
+  { id: 'invoiceSent', colClass: 'allOrders-col-invoice-sent', defaultWidth: 6 },
+  { id: 'reconciliationAct', colClass: 'allOrders-col-reconciliation-act', defaultWidth: 6 },
+  { id: 'salaryIncluded', colClass: 'allOrders-col-salary-included', defaultWidth: 6 },
+  { id: 'manager', colClass: 'allOrders-col-manager', defaultWidth: 7 },
+  { id: 'createdDate', colClass: 'allOrders-col-created-date', defaultWidth: 7 },
+  { id: 'menu', colClass: 'allOrders-col-menu', defaultWidth: 6 },
+];
+
+const COLUMN_MIN_WIDTH = 3;
+const COLUMN_MAX_WIDTH = 24;
+
+function getUserUiStateKey(user) {
+  const rawKey = user?.id || user?.userId || user?.name || 'anonymous';
+  return `${USER_UI_STATE_PREFIX}${encodeURIComponent(String(rawKey))}`;
+}
+
+function readUserUiState(storageKey) {
+  try {
+    const raw = window.localStorage.getItem(storageKey);
+    return raw ? JSON.parse(raw) : {};
+  } catch (error) {
+    return {};
+  }
+}
+
+function normalizeColumnVisibility(value) {
+  return ALL_ORDERS_COLUMNS.reduce((acc, column) => {
+    acc[column.id] = value?.[column.id] !== false;
+    return acc;
+  }, {});
+}
+
+function normalizeColumnWidths(value) {
+  return ALL_ORDERS_COLUMNS.reduce((acc, column) => {
+    const rawWidth = Number(value?.[column.id]);
+    const width = Number.isFinite(rawWidth) ? rawWidth : column.defaultWidth;
+    acc[column.id] = Math.min(Math.max(width, COLUMN_MIN_WIDTH), COLUMN_MAX_WIDTH);
+    return acc;
+  }, {});
+}
 
 function spisok(array) {
   {
@@ -131,11 +186,19 @@ function getOrderSalaryIncluded(orderjson) {
   return String(orderjson?.salaryIncluded || 'Нет').trim() || 'Нет';
 }
 
+function getOrderInvoiceSent(orderjson) {
+  return String(orderjson?.invoiceSent || 'Нет').trim() || 'Нет';
+}
+
+function getOrderReconciliationAct(orderjson) {
+  return String(orderjson?.reconciliationAct || 'Нет').trim() || 'Нет';
+}
+
 function getOrderStatusClass(status) {
   const normalizedStatus = normalizeOrderStatus(status);
   if (normalizedStatus === 'Отложенная') return 'allOrders-status-postponed';
   if (normalizedStatus === 'Заприходована') return 'allOrders-status-income';
-  if (normalizedStatus === 'Машина загружена') return 'allOrders-status-loaded';
+  if (normalizedStatus === 'Заполнена') return 'allOrders-status-loaded';
   if (normalizedStatus === 'Реализована') return 'allOrders-status-done';
   return 'allOrders-status-created';
 }
@@ -192,7 +255,31 @@ function formatDate(date) {
 function AllOrders() {
   const { user, setToast, aAxios, setEditingOrder } = useContext(userContext);
   const navigate = useNavigate();
+  const userUiStateKey = getUserUiStateKey(user);
   const refFilter = useRef(null);
+  const tableRef = useRef(null);
+  const [lastActiveOrderId, setLastActiveOrderId] = useState(() => {
+    const savedState = readUserUiState(getUserUiStateKey(user));
+    return String(savedState?.lastActiveOrder?.id || '');
+  });
+  const [columnSettingsMode, setColumnSettingsMode] = useState('');
+  const [columnSettingsMenuOpen, setColumnSettingsMenuOpen] = useState(false);
+  const [columnVisibility, setColumnVisibility] = useState(() => {
+    const savedState = readUserUiState(getUserUiStateKey(user));
+    return normalizeColumnVisibility(savedState?.visibleColumns);
+  });
+  const [draftColumnVisibility, setDraftColumnVisibility] = useState(() => {
+    const savedState = readUserUiState(getUserUiStateKey(user));
+    return normalizeColumnVisibility(savedState?.visibleColumns);
+  });
+  const [columnWidths, setColumnWidths] = useState(() => {
+    const savedState = readUserUiState(getUserUiStateKey(user));
+    return normalizeColumnWidths(savedState?.columnWidths);
+  });
+  const [draftColumnWidths, setDraftColumnWidths] = useState(() => {
+    const savedState = readUserUiState(getUserUiStateKey(user));
+    return normalizeColumnWidths(savedState?.columnWidths);
+  });
   const [buyerFilter, setBuyerFilter] = useState('');
   const buyerTypeaheadRef = useRef(null);
   const [managerFilter, setManagerFilter] = useState('');
@@ -274,6 +361,98 @@ function AllOrders() {
   }
   const isPhone = window.innerWidth <= 480;
   const [state, reload] = useState(false);
+
+  const rememberActiveOrder = (order) => {
+    const orderId = order?.id || order?.orderjson?.id;
+    if (!orderId) return;
+    const activeOrderId = String(orderId);
+    const previousState = readUserUiState(userUiStateKey);
+    const nextState = {
+      ...previousState,
+      lastActiveOrder: {
+        id: activeOrderId,
+        orderNumber: getOrderNumber(order),
+        updatedAt: new Date().toISOString(),
+      },
+    };
+    window.localStorage.setItem(userUiStateKey, JSON.stringify(nextState));
+    setLastActiveOrderId(activeOrderId);
+  };
+
+  const saveColumnSettings = (nextVisibility, nextWidths) => {
+    const normalizedVisibility = normalizeColumnVisibility(nextVisibility);
+    const normalizedWidths = normalizeColumnWidths(nextWidths);
+    const previousState = readUserUiState(userUiStateKey);
+    window.localStorage.setItem(userUiStateKey, JSON.stringify({
+      ...previousState,
+      visibleColumns: normalizedVisibility,
+      columnWidths: normalizedWidths,
+    }));
+    setColumnVisibility(normalizedVisibility);
+    setColumnWidths(normalizedWidths);
+  };
+
+  const saveDraftColumnSettings = () => {
+    const normalizedVisibility = normalizeColumnVisibility(draftColumnVisibility);
+    const normalizedWidths = normalizeColumnWidths(draftColumnWidths);
+    saveColumnSettings(normalizedVisibility, normalizedWidths);
+    setDraftColumnVisibility(normalizedVisibility);
+    setDraftColumnWidths(normalizedWidths);
+  };
+
+  const openColumnSettingsMode = (mode) => {
+    if (columnSettingsMode) saveDraftColumnSettings();
+    else {
+      setDraftColumnVisibility(normalizeColumnVisibility(columnVisibility));
+      setDraftColumnWidths(normalizeColumnWidths(columnWidths));
+    }
+    setColumnSettingsMode(mode);
+    setColumnSettingsMenuOpen(false);
+  };
+
+  const exitColumnSettingsMode = () => {
+    if (columnSettingsMode) saveDraftColumnSettings();
+    setColumnSettingsMode('');
+    setColumnSettingsMenuOpen(false);
+  };
+
+  const toggleDraftColumnVisibility = (columnId) => {
+    setDraftColumnVisibility((currentVisibility) => {
+      const normalizedVisibility = normalizeColumnVisibility(currentVisibility);
+      return {
+        ...normalizedVisibility,
+        [columnId]: !normalizedVisibility[columnId],
+      };
+    });
+  };
+
+  const startColumnResize = (columnId, evt) => {
+    evt.preventDefault();
+    evt.stopPropagation();
+    const tableWidth = tableRef.current?.offsetWidth || 1120;
+    const startX = evt.clientX;
+    const startWidths = normalizeColumnWidths(draftColumnWidths);
+    const startWidth = startWidths[columnId];
+
+    const handleMouseMove = (moveEvt) => {
+      const deltaWidth = ((moveEvt.clientX - startX) / tableWidth) * 100;
+      const nextWidth = Math.min(Math.max(startWidth + deltaWidth, COLUMN_MIN_WIDTH), COLUMN_MAX_WIDTH);
+      setDraftColumnWidths((currentWidths) => ({
+        ...normalizeColumnWidths(currentWidths),
+        [columnId]: Number(nextWidth.toFixed(2)),
+      }));
+    };
+
+    const handleMouseUp = () => {
+      document.body.classList.remove('allOrders-column-resizing');
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.body.classList.add('allOrders-column-resizing');
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
 
 
 
@@ -382,6 +561,19 @@ function AllOrders() {
     openEditedOrder();
   }, [null])
 
+  useEffect(() => {
+    const savedState = readUserUiState(userUiStateKey);
+    setLastActiveOrderId(String(savedState?.lastActiveOrder?.id || ''));
+    const savedVisibility = normalizeColumnVisibility(savedState?.visibleColumns);
+    const savedWidths = normalizeColumnWidths(savedState?.columnWidths);
+    setColumnVisibility(savedVisibility);
+    setDraftColumnVisibility(savedVisibility);
+    setColumnWidths(savedWidths);
+    setDraftColumnWidths(savedWidths);
+    setColumnSettingsMode('');
+    setColumnSettingsMenuOpen(false);
+  }, [userUiStateKey]);
+
 
   const NumberFormat = (num) => {
     if (num === undefined || num === null) return '';
@@ -465,6 +657,54 @@ function AllOrders() {
 
     return true;
   });
+
+  const isColumnVisibilityMode = columnSettingsMode === 'visibility';
+  const isColumnWidthMode = columnSettingsMode === 'width';
+  const activeColumnVisibility = columnSettingsMode ? draftColumnVisibility : columnVisibility;
+  const activeColumnWidths = isColumnWidthMode ? draftColumnWidths : columnWidths;
+  const isColumnRendered = (columnId) => isColumnVisibilityMode || activeColumnVisibility[columnId] !== false;
+  const getColumnWidth = (columnId) => normalizeColumnWidths(activeColumnWidths)[columnId];
+  const visibleColumnCount = Math.max(ALL_ORDERS_COLUMNS.filter((column) => isColumnRendered(column.id)).length, 1);
+
+  const renderColumnHeader = (columnId, content, props = {}) => {
+    const isVisible = draftColumnVisibility[columnId] !== false;
+    const { className = '', children, ...restProps } = props;
+    return (
+      <th {...restProps} className={className}>
+        <span className="allOrders-columnHeaderContent">
+          <span>{children || content}</span>
+          {isColumnVisibilityMode &&
+            <span className="allOrders-columnHeaderControls">
+              <button
+                type="button"
+                className={`allOrders-columnEyeBtn ${isVisible ? '' : 'allOrders-columnEyeBtnHidden'}`}
+                title={isVisible ? 'Скрыть столбец' : 'Показать столбец'}
+                aria-label={isVisible ? 'Скрыть столбец' : 'Показать столбец'}
+                onClick={(evt) => {
+                  evt.stopPropagation();
+                  toggleDraftColumnVisibility(columnId);
+                }}
+              >
+                {isVisible ? <FaEye /> : <FaEyeSlash />}
+              </button>
+            </span>
+          }
+          {isColumnWidthMode &&
+            <span className="allOrders-columnHeaderControls">
+              <span
+                role="separator"
+                aria-orientation="vertical"
+                className="allOrders-columnResizeHandle"
+                title="Изменить ширину столбца"
+                onMouseDown={(evt) => startColumnResize(columnId, evt)}
+              />
+            </span>
+          }
+        </span>
+      </th>
+    );
+  };
+
   return (
     <>
       <Stack direction='horizontal' gap={2} className='allOrders-toolbar'>
@@ -672,13 +912,53 @@ function AllOrders() {
           </div>
         </div>
         {!isPhone &&
-          <Button
-            variant="outline-secondary"
-            className="allOrders-resetFiltersBtn"
-            onClick={resetFilters}
-          >
-            Сброс
-          </Button>
+          <div className="allOrders-toolbarActions">
+            <Button
+              variant="outline-secondary"
+              className="allOrders-resetFiltersBtn"
+              onClick={resetFilters}
+            >
+              Сброс
+            </Button>
+            <Button
+              variant="outline-secondary"
+              className={`allOrders-settingsBtn ${columnSettingsMode ? 'allOrders-settingsBtnActive' : ''}`}
+              title="Настройки столбцов"
+              aria-label="Настройки столбцов"
+              aria-expanded={columnSettingsMenuOpen}
+              aria-pressed={!!columnSettingsMode}
+              onClick={() => setColumnSettingsMenuOpen((opened) => !opened)}
+            >
+              <FaGear />
+            </Button>
+            {columnSettingsMenuOpen &&
+              <div className="allOrders-settingsMenu">
+                <button
+                  type="button"
+                  className={`allOrders-settingsMenuItem ${isColumnVisibilityMode ? 'allOrders-settingsMenuItemActive' : ''}`}
+                  onClick={() => openColumnSettingsMode('visibility')}
+                >
+                  Отображение столбцов
+                </button>
+                <button
+                  type="button"
+                  className={`allOrders-settingsMenuItem ${isColumnWidthMode ? 'allOrders-settingsMenuItemActive' : ''}`}
+                  onClick={() => openColumnSettingsMode('width')}
+                >
+                  Ширина столбцов
+                </button>
+                {columnSettingsMode &&
+                  <button
+                    type="button"
+                    className="allOrders-settingsMenuItem allOrders-settingsMenuItemSave"
+                    onClick={exitColumnSettingsMode}
+                  >
+                    Сохранить и выйти
+                  </button>
+                }
+              </div>
+            }
+          </div>
         }
 
       </Stack>
@@ -694,15 +974,17 @@ function AllOrders() {
             const orderManager = getOrderManager(order.orderjson);
             const suppliersTons = suppliersTonsTotal(order.orderjson);
             const supplierProducts = supplierProductsDisplay(order.orderjson);
+            const isLastActiveOrder = String(order.id) === String(lastActiveOrderId);
             const orderIndex = orders.findIndex((o) => o.id === order.id);
             const toggleRow = () => {
+              rememberActiveOrder(order);
               if (orderIndex >= 0) showHideOrder(orderIndex);
             };
             return (
-              <div key={order.id} className={`allOrders-card ${order.orderjson.haveEmptyBuyerH ? 'allOrders-card-warning' : ''}`}>
+              <div key={order.id} className={`allOrders-card ${order.orderjson.haveEmptyBuyerH ? 'allOrders-card-warning' : ''} ${isLastActiveOrder ? 'allOrders-card-lastActive' : ''}`}>
                 <div className='allOrders-card-header clickable' onClick={toggleRow}>
                   <div className='allOrders-card-idGroup'>
-                    <span className={`allOrders-status-dot ${orderStatusClass}`} title={orderStatus} />
+                    <span className={`allOrders-status-dot ${orderStatusClass}`} aria-label={orderStatus} />
                     <span className='allOrders-card-ttnStatus' title={`Статус ТТН: ${orderTtnStatus}`}>ТТН: {orderTtnStatus}</span>
                     <div className='allOrders-card-id'>Заявка №{orderNumber}</div>
                   </div>
@@ -710,10 +992,12 @@ function AllOrders() {
                   <Stack direction="horizontal" gap={2} className="allOrders-card-actions">
                     <FaPrint title='Печать заявки' size='1.35em' className='clickable icon' style={{ color: 'rgba(47, 79, 112, 0.95)' }} onClick={(e) => {
                       e.stopPropagation();
+                      rememberActiveOrder(order);
                       printOrder(order.id);
                     }} />
                     <BiEditAlt size='1.6em' className='clickable icon' style={{ color: 'rgba(1, 87, 248, 0.85)' }} onClick={(e) => {
                       e.stopPropagation();
+                      rememberActiveOrder(order);
                       setEditingOrder(() => order.orderjson);
                       navigate("/editorder");
                     }} />
@@ -835,6 +1119,7 @@ function AllOrders() {
       {!isPhone &&
       <div className='allOrdersTable noselect'>
         <Table
+          ref={tableRef}
           className={`allOrders-main-table ${isPhone ? 'allOrders-main-table-compact' : ''}`}
           striped
           bordered
@@ -842,35 +1127,29 @@ function AllOrders() {
           style={{ width: '100%', margin: 0 }}
         >
           <colgroup>
-            <col className="allOrders-col-created-date" />
-            <col className="allOrders-col-status" />
-            <col className="allOrders-col-ttn-status" />
-            <col className="allOrders-col-num" />
-            <col className="allOrders-col-loading-date" />
-            <col className="allOrders-col-manager" />
-            <col className="allOrders-col-buyers" />
-            <col className="allOrders-col-client-paid" />
-            {!isPhone && <col className="allOrders-col-hsum" />}
-            <col className="allOrders-col-suppliers" />
-            <col className="allOrders-col-tons" />
-            <col className="allOrders-col-products" />
-            <col className="allOrders-col-menu" />
+            {ALL_ORDERS_COLUMNS.map((column) => (
+              isColumnRendered(column.id) && <col key={column.id} className={column.colClass} style={{ width: `${getColumnWidth(column.id)}%` }} />
+            ))}
           </colgroup>
           <thead>
             <tr>
-              <th className="allOrders-head-created-date">Дата<br />создания</th>
-              <th className="allOrders-head-status">Статус</th>
-              <th className="allOrders-head-ttn-status" title="Статус ТТН">ТТН</th>
-              <th className="allOrders-head-num" style={{ textAlign: 'center' }}>№</th>
-              <th className="allOrders-head-loading-date">Дата<br />загрузки</th>
-              <th className="allOrders-head-manager">Менеджер</th>
-              <th className="allOrders-head-buyers">Покупатели</th>
-              <th className="allOrders-head-client-paid">Оплачено клиентом</th>
-              {!isPhone && <th className="allOrders-head-hsum" title='Суммы подпокупателей (buyerH) без заполненного имени'>Суммы &quot;H&quot;</th>}
-              <th className="allOrders-head-suppliers">Поставщики</th>
-              <th className="allOrders-head-tons">Тонны</th>
-              <th className="allOrders-head-products">Вид продукта</th>
-              <th className="allOrders-th-menu">Меню</th>
+              {isColumnRendered('realizationDate') && renderColumnHeader('realizationDate', <>Дата<br />реализации</>, { className: 'allOrders-head-realization-date' })}
+              {isColumnRendered('orderNumber') && renderColumnHeader('orderNumber', '№ Заявки', { className: 'allOrders-head-num', style: { textAlign: 'center' } })}
+              {isColumnRendered('status') && renderColumnHeader('status', 'Статус', { className: 'allOrders-head-status' })}
+              {isColumnRendered('ttnStatus') && renderColumnHeader('ttnStatus', 'ТТН', { className: 'allOrders-head-ttn-status', title: 'Статус ТТН' })}
+              {isColumnRendered('suppliers') && renderColumnHeader('suppliers', 'Поставщики', { className: 'allOrders-head-suppliers' })}
+              {isColumnRendered('loadingDate') && renderColumnHeader('loadingDate', <>Дата<br />загрузки</>, { className: 'allOrders-head-loading-date' })}
+              {isColumnRendered('products') && renderColumnHeader('products', 'Вид продукта', { className: 'allOrders-head-products' })}
+              {isColumnRendered('tons') && renderColumnHeader('tons', 'Тонны', { className: 'allOrders-head-tons' })}
+              {isColumnRendered('buyers') && renderColumnHeader('buyers', 'Покупатели', { className: 'allOrders-head-buyers' })}
+              {isColumnRendered('clientPaid') && renderColumnHeader('clientPaid', 'Оплачено клиентом', { className: 'allOrders-head-client-paid' })}
+              {isColumnRendered('hsum') && renderColumnHeader('hsum', 'Суммы H', { className: 'allOrders-head-hsum', title: 'Суммы подпокупателей (buyerH) без заполненного имени' })}
+              {isColumnRendered('invoiceSent') && renderColumnHeader('invoiceSent', 'Счет отправлен', { className: 'allOrders-head-invoice-sent' })}
+              {isColumnRendered('reconciliationAct') && renderColumnHeader('reconciliationAct', 'Акт сверки', { className: 'allOrders-head-reconciliation-act' })}
+              {isColumnRendered('salaryIncluded') && renderColumnHeader('salaryIncluded', 'ЗП', { className: 'allOrders-head-salary-included' })}
+              {isColumnRendered('manager') && renderColumnHeader('manager', 'Менеджер', { className: 'allOrders-head-manager' })}
+              {isColumnRendered('createdDate') && renderColumnHeader('createdDate', <>Дата<br />создания</>, { className: 'allOrders-head-created-date' })}
+              {isColumnRendered('menu') && renderColumnHeader('menu', 'Меню', { className: 'allOrders-th-menu' })}
             </tr>
           </thead>
           <tbody>
@@ -881,19 +1160,24 @@ function AllOrders() {
             const orderStatus = getOrderStatus(order.orderjson);
             const orderTtnStatus = getOrderTtnStatus(order.orderjson);
             const orderClientPaid = getOrderClientPaid(order.orderjson);
+            const orderSalaryIncluded = getOrderSalaryIncluded(order.orderjson);
+            const orderInvoiceSent = getOrderInvoiceSent(order.orderjson);
+            const orderReconciliationAct = getOrderReconciliationAct(order.orderjson);
             const orderStatusClass = getOrderStatusClass(orderStatus);
             const orderManager = getOrderManager(order.orderjson);
             const suppliersTons = suppliersTonsTotal(order.orderjson);
             const supplierProducts = supplierProductsDisplay(order.orderjson);
+            const isLastActiveOrder = String(order.id) === String(lastActiveOrderId);
             const orderIndex = orders.findIndex((o) => o.id === order.id);
             const toggleRow = () => {
+              rememberActiveOrder(order);
               if (orderIndex >= 0) showHideOrder(orderIndex);
             };
             return (
               <Fragment key={order.id}>
                 <tr
                   id={`order-${order.id}`}
-                  className='colorborder clickable'
+                  className={`colorborder clickable ${isLastActiveOrder ? 'allOrders-row-lastActive' : ''}`}
                   onClick={toggleRow}
                   onDoubleClick={() => {
                     toggleRow();
@@ -901,74 +1185,115 @@ function AllOrders() {
                     navigate("/editorder");
                   }}
                 >
-
-                      <td className="allOrders-cell-created-date" style={{ overflow: "hidden", backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }} >{formatDate(order.orderjson.date)}</td>
-                      <td className="allOrders-cell-status" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
-                        <span className={`allOrders-status-dot ${orderStatusClass}`} title={orderStatus} />
-                      </td>
-                      <td className="allOrders-cell-ttn-status" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }} title={`Статус ТТН: ${orderTtnStatus}`}>
-                        {orderTtnStatus}
-                      </td>
-                      <td className="allOrders-cell-num" style={{ overflow: "hidden", textAlign: 'center', backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>{orderNumber}</td>
-                      <td className="allOrders-cell-loading-date" style={{ overflow: "hidden", backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }} >{formatDate(order.orderjson.loadingDate)}</td>
-                      <td className="allOrders-cell-manager" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>{orderManager}</td>
-                      <td className="allOrders-cell-buyers" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>{
-                        <Stack direction="horizontal" gap={3} className="allOrders-buyers-stack" >
-                          {
-                            order.orderjson.haveEmptyBuyerH && < FaPeopleArrows style={{ color: 'rgba(16, 188, 45, 0.79)' }} />
-                          }
-                          {
-                            spisok(order.orderjson.buyers)
-                          }
-                        </Stack>
-                      }</td>
-                      <td className="allOrders-cell-client-paid" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
-                        {orderClientPaid}
-                      </td>
-
-                      {!isPhone &&
+                      {isColumnRendered('realizationDate') &&
+                        <td className="allOrders-cell-realization-date" style={{ overflow: "hidden", backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }} >{formatDate(order.orderjson.shipmentDate)}</td>
+                      }
+                      {isColumnRendered('orderNumber') &&
+                        <td className="allOrders-cell-num" style={{ overflow: "hidden", textAlign: 'center', backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>{orderNumber}</td>
+                      }
+                      {isColumnRendered('status') &&
+                        <td className="allOrders-cell-status" data-status={orderStatus} aria-label={orderStatus} style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
+                          <span className={`allOrders-status-dot ${orderStatusClass}`} />
+                        </td>
+                      }
+                      {isColumnRendered('ttnStatus') &&
+                        <td className="allOrders-cell-ttn-status" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }} title={`Статус ТТН: ${orderTtnStatus}`}>
+                          {orderTtnStatus}
+                        </td>
+                      }
+                      {isColumnRendered('suppliers') &&
+                        <td className="allOrders-cell-suppliers" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
+                          {spisok(order.orderjson.suppliers)}
+                        </td>
+                      }
+                      {isColumnRendered('loadingDate') &&
+                        <td className="allOrders-cell-loading-date" style={{ overflow: "hidden", backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }} >{formatDate(order.orderjson.loadingDate)}</td>
+                      }
+                      {isColumnRendered('products') &&
+                        <td className="allOrders-cell-products" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
+                          {supplierProducts}
+                        </td>
+                      }
+                      {isColumnRendered('tons') &&
+                        <td className="allOrders-cell-tons" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
+                          {NumberFormat(suppliersTons)}
+                        </td>
+                      }
+                      {isColumnRendered('buyers') &&
+                        <td className="allOrders-cell-buyers" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>{
+                          <Stack direction="horizontal" gap={3} className="allOrders-buyers-stack" >
+                            {
+                              order.orderjson.haveEmptyBuyerH && < FaPeopleArrows style={{ color: 'rgba(16, 188, 45, 0.79)' }} />
+                            }
+                            {
+                              spisok(order.orderjson.buyers)
+                            }
+                          </Stack>
+                        }</td>
+                      }
+                      {isColumnRendered('clientPaid') &&
+                        <td className="allOrders-cell-client-paid" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
+                          {orderClientPaid}
+                        </td>
+                      }
+                      {isColumnRendered('hsum') &&
                         <td className="allOrders-cell-hsum" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '', overflow: 'hidden', fontSize: '0.9em' }} title={emptyHSummas}>
                           {emptyHSummas}
                         </td>
                       }
+                      {isColumnRendered('invoiceSent') &&
+                        <td className="allOrders-cell-invoice-sent" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
+                          {orderInvoiceSent}
+                        </td>
+                      }
+                      {isColumnRendered('reconciliationAct') &&
+                        <td className="allOrders-cell-reconciliation-act" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
+                          {orderReconciliationAct}
+                        </td>
+                      }
+                      {isColumnRendered('salaryIncluded') &&
+                        <td className="allOrders-cell-salary-included" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
+                          {orderSalaryIncluded}
+                        </td>
+                      }
+                      {isColumnRendered('manager') &&
+                        <td className="allOrders-cell-manager" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>{orderManager}</td>
+                      }
+                      {isColumnRendered('createdDate') &&
+                        <td className="allOrders-cell-created-date" style={{ overflow: "hidden", backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }} >{formatDate(order.orderjson.date)}</td>
+                      }
+                      {isColumnRendered('menu') &&
+                        <td className="allOrders-td-menu" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
+                          <Stack direction="horizontal" gap={2} className="allOrders-menu-stack">
+                            <FaPrint title='Печать заявки' size='1.3em' className='clickable icon' style={{ color: 'rgba(47, 79, 112, 0.95)' }} onClick={(e) => {
+                              e.stopPropagation();
+                              rememberActiveOrder(order);
+                              printOrder(order.id);
+                            }} />
+                            <div className="vr" />
+                            <BiEditAlt size='1.7em' className='clickable icon' style={{ color: 'rgba(1, 87, 248, 0.85)' }} onClick={(e) => {
+                              e.stopPropagation();
+                              rememberActiveOrder(order);
+                              if (orderIndex >= 0) showHideOrder(orderIndex);
+                              setEditingOrder(() => order.orderjson);
+                              navigate("/editorder");
+                            }} />
+                            <div className="vr" />
+                            <MdDelete size='1.7em' className='clickable icon' style={{ color: 'rgb(194, 65, 65)' }} onClick={(e) => {
+                              e.stopPropagation();
+                              if (orderIndex >= 0) showHideOrder(orderIndex)
+                              setOrderForDelete({ id: order.id, orderNumber });
+                              handleShowModal();
+                            }} />
 
-                      <td className="allOrders-cell-suppliers" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
-                        {spisok(order.orderjson.suppliers)}
-                      </td>
-                      <td className="allOrders-cell-tons" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
-                        {NumberFormat(suppliersTons)}
-                      </td>
-                      <td className="allOrders-cell-products" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
-                        {supplierProducts}
-                      </td>
-                      <td className="allOrders-td-menu" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
-                        <Stack direction="horizontal" gap={2} className="allOrders-menu-stack">
-                          <FaPrint title='Печать заявки' size='1.3em' className='clickable icon' style={{ color: 'rgba(47, 79, 112, 0.95)' }} onClick={(e) => {
-                            e.stopPropagation();
-                            printOrder(order.id);
-                          }} />
-                          <div className="vr" />
-                          <BiEditAlt size='1.7em' className='clickable icon' style={{ color: 'rgba(1, 87, 248, 0.85)' }} onClick={(e) => {
-                            e.stopPropagation();
-                            if (orderIndex >= 0) showHideOrder(orderIndex);
-                            setEditingOrder(() => order.orderjson);
-                            navigate("/editorder");
-                          }} />
-                          <div className="vr" />
-                          <MdDelete size='1.7em' className='clickable icon' style={{ color: 'rgb(194, 65, 65)' }} onClick={(e) => {
-                            e.stopPropagation();
-                            if (orderIndex >= 0) showHideOrder(orderIndex)
-                            setOrderForDelete({ id: order.id, orderNumber });
-                            handleShowModal();
-                          }} />
 
-
-                        </Stack>
-                      </td>
+                          </Stack>
+                        </td>
+                      }
 
                 </tr>
                 <tr className="allOrders-expand-row">
-                  <td colSpan={isPhone ? 10 : 13} className="p-0 border-top-0">
+                  <td colSpan={visibleColumnCount} className="p-0 border-top-0">
                 <Collapse in={order.open}>
 
                   <div className='mb-3'>

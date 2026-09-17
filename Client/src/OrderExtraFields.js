@@ -74,6 +74,10 @@ function OrderExtraFields({ order, setOrder, variant = 'desktop', section = 'all
               <div className='orderExtraFields-mobileLabel'>Место загрузки</div>
               <Form.Control {...inputProps('loadingPlace')} />
             </div>
+            <div className='orderExtraFields-mobileField'>
+              <div className='orderExtraFields-mobileLabel'>Место слива</div>
+              <Form.Control {...inputProps('drainPlace')} />
+            </div>
             <div className='orderExtraFields-storageGrid'>
               <div className='orderExtraFields-mobileField'>
                 <div className='orderExtraFields-mobileLabel'>Хранение (Тонна)</div>
@@ -111,9 +115,14 @@ function OrderExtraFields({ order, setOrder, variant = 'desktop', section = 'all
       )}
       {showStorageFields && (
         <>
-          <FloatingLabel label='Место загрузки' className='orderExtraFields-wide'>
-            <Form.Control {...inputProps('loadingPlace')} />
-          </FloatingLabel>
+          <div className='orderExtraFields-placeGrid'>
+            <FloatingLabel label='Место загрузки' className='orderExtraFields-wide'>
+              <Form.Control {...inputProps('loadingPlace')} />
+            </FloatingLabel>
+            <FloatingLabel label='Место слива' className='orderExtraFields-wide'>
+              <Form.Control {...inputProps('drainPlace')} />
+            </FloatingLabel>
+          </div>
           <div className='orderExtraFields-storageGrid'>
             <FloatingLabel label='Хранение (Тонна)'>
               <Form.Control {...inputProps('storageTon')} />

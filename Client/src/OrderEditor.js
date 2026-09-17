@@ -27,6 +27,8 @@ const HISTORY_FIELD_LABELS = {
   ttnStatus: 'Статус ТТН',
   clientPaid: 'Оплачено клиент',
   salaryIncluded: 'Учтено в ЗП',
+  invoiceSent: 'Счет отправлен',
+  reconciliationAct: 'Акт сверки',
   manager: 'Менеджер',
   date: 'Дата заявки',
   ip: 'Перевозчик',
@@ -41,6 +43,7 @@ const HISTORY_FIELD_LABELS = {
   shortage: 'Недостача',
   transWarehouse: 'Транспорт Склад',
   loadingPlace: 'Место загрузки',
+  drainPlace: 'Место слива',
   storageTon: 'Хранение (тонна)',
   storagePrice: 'Хранение цена',
   storageTotal: 'Хранение итого',
@@ -48,7 +51,7 @@ const HISTORY_FIELD_LABELS = {
   supplierPaymentDeferred: 'Отсрочка оплаты поставщику',
   loadingDate: 'Дата загрузки',
   loadingFromStorage: 'Загрузка с хранения',
-  shipmentDate: 'Дата отгрузки',
+  shipmentDate: 'Дата реализации',
   comments: 'Комментарии',
   name: 'наименование',
   typeOfProduct: 'вид продукта',
@@ -82,11 +85,11 @@ function isBlankHistoryValue(value) {
 }
 
 function normalizeHistoryStatus(value) {
-  const text = isBlankHistoryValue(value) ? 'Новая' : String(value).trim();
-  if (text === 'Создана') return 'Новая';
+  const text = isBlankHistoryValue(value) ? 'Создана' : String(value).trim();
+  if (text === 'Новая') return 'Создана';
   if (text === 'Приход внесен') return 'Заприходована';
   if (text === 'Заприходирована') return 'Заприходована';
-  if (text === 'Машина загружена') return 'Машина загружена';
+  if (text === 'Машина загружена') return 'Заполнена';
   if (text === 'Выполнена реализация') return 'Реализована';
   return text;
 }
@@ -113,6 +116,8 @@ function normalizeHistoryComparable(field, value) {
   if (field === 'ttnStatus' || field === 'Статус ТТН') return normalizeHistoryTtnStatus(value);
   if (field === 'clientPaid' || field === 'Оплачено клиент') return normalizeHistoryClientPaid(value);
   if (field === 'salaryIncluded' || field === 'Учтено в ЗП') return normalizeHistoryYesNo(value);
+  if (field === 'invoiceSent' || field === 'Счет отправлен') return normalizeHistoryYesNo(value);
+  if (field === 'reconciliationAct' || field === 'Акт сверки') return normalizeHistoryYesNo(value);
 
   if (field === 'orderNumber' || field === 'order_number' || field === '№ заявки') {
     const number = Number(String(value || '').replace(/\s/g, '').trim());
@@ -213,7 +218,7 @@ function getOrderStatusClass(status) {
   const normalizedStatus = normalizeOrderStatus(status);
   if (normalizedStatus === 'Отложенная') return 'editOrder-status-postponed';
   if (normalizedStatus === 'Заприходована') return 'editOrder-status-income';
-  if (normalizedStatus === 'Машина загружена') return 'editOrder-status-loaded';
+  if (normalizedStatus === 'Заполнена') return 'editOrder-status-loaded';
   if (normalizedStatus === 'Реализована') return 'editOrder-status-done';
   return 'editOrder-status-created';
 }
@@ -331,6 +336,8 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
     ttnStatus: normalizeOrderTtnStatus(activeOrder?.ttnStatus),
     clientPaid: activeOrder?.clientPaid || 'Нет',
     salaryIncluded: activeOrder?.salaryIncluded || 'Нет',
+    invoiceSent: activeOrder?.invoiceSent || 'Нет',
+    reconciliationAct: activeOrder?.reconciliationAct || 'Нет',
     otk: getOrderOtkForSave(activeOrder),
     haveEmptyBuyerH: hasEmptyBuyerH(activeOrder),
   });
@@ -505,6 +512,41 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
     </FloatingLabel>
   );
 
+  const renderInvoiceSentField = () => (
+    <FloatingLabel label="Счет отправлен" className="p-0 orderEditor-invoiceSent">
+      <Form.Select
+        value={activeOrder.invoiceSent || 'Нет'}
+        onChange={(evt) => updateOrderField('invoiceSent', evt.target.value)}
+      >
+        <option value="Нет">Нет</option>
+        <option value="Да">Да</option>
+      </Form.Select>
+    </FloatingLabel>
+  );
+
+  const renderReconciliationActField = () => (
+    <FloatingLabel label="Акт сверки" className="p-0 orderEditor-reconciliationAct">
+      <Form.Select
+        value={activeOrder.reconciliationAct || 'Нет'}
+        onChange={(evt) => updateOrderField('reconciliationAct', evt.target.value)}
+      >
+        <option value="Нет">Нет</option>
+        <option value="Да">Да</option>
+      </Form.Select>
+    </FloatingLabel>
+  );
+
+  const renderCreatedDateField = () => (
+    <FloatingLabel label="Дата создания" className={`p-0 orderEditor-createdDate ${isEditMode ? 'editOrderDesktop-date' : 'newOrderDesktop-date'}`}>
+      <Form.Control
+        as="input"
+        type='date'
+        value={activeOrder.date || ''}
+        disabled
+      />
+    </FloatingLabel>
+  );
+
   const renderDesktop = () => (
     <>
       <div className={`${isEditMode ? 'mb-2 editOrderDesktop-topBar' : 'orderTable-topActions newOrderDesktop-topBar'} noselect`}>
@@ -529,19 +571,14 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
           {renderOrderNumberField()}
           {renderStatusField()}
           {renderTtnStatusField()}
-          <FloatingLabel label="Дата создания" className={`p-0 ${isEditMode ? 'editOrderDesktop-date' : 'newOrderDesktop-date'}`}>
-            <Form.Control
-              as="input"
-              type='date'
-              value={activeOrder.date || ''}
-              onChange={(evt) => updateOrderField('date', evt.target.value)}
-            />
-          </FloatingLabel>
           {renderClientPaidField()}
           {renderSalaryIncludedField()}
+          {renderInvoiceSentField()}
+          {renderReconciliationActField()}
         </div>
 
         <div className={isEditMode ? 'editOrderDesktop-topBarRight' : 'newOrderDesktop-topBarRight'}>
+          {renderCreatedDateField()}
           <Button
             tabIndex={-1}
             variant="outline-secondary"
@@ -578,7 +615,6 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
             onClick={printOrder}
           >
             <FaPrint />
-            <span>Печать</span>
           </Button>
         </div>
       </div>

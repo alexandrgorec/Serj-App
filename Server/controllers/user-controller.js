@@ -46,6 +46,7 @@ class UserController {
         const user = {
             name: req.body.user,
             rights: req.body.rights,
+            id: req.body.userId,
             userId: req.body.userId,
             selectListsData: {},
             managerOptions: [],

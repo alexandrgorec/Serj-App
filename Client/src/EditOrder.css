@@ -18,12 +18,13 @@
     align-items: center;
     justify-content: flex-start;
     min-width: 0;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
+    row-gap: 7px;
 }
 
 .editOrderDesktop-status {
-    width: 182px;
-    flex: 0 0 182px;
+    width: 154px;
+    flex: 0 0 154px;
 }
 
 .editOrderDesktop-ttnStatus {
@@ -34,7 +35,10 @@
 .editOrderDesktop-status > .form-select {
     color: inherit;
     border-color: currentColor;
-    font-size: 0.92rem;
+    font-size: 1rem;
+    font-weight: 700;
+    padding-left: 8px;
+    padding-right: 24px;
 }
 
 .editOrderDesktop-ttnStatus > .form-select {
@@ -84,7 +88,8 @@
     align-items: center;
     justify-content: flex-end;
     min-width: 0;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
+    row-gap: 6px;
 }
 
 .editOrderDesktop-orderId {
@@ -104,15 +109,15 @@
 }
 
 .editOrderDesktop-orderNumber {
-    flex: 0 0 108px;
-    width: 108px;
+    flex: 0 0 86px;
+    width: 86px;
 }
 
 .editOrderDesktop-orderNumber > .form-control {
     background: rgba(47, 122, 220, 0.16);
     border: 1px solid rgba(47, 122, 220, 0.24);
     color: rgba(32, 80, 145, 0.96);
-    font-size: 1.22rem;
+    font-size: 1.08rem;
     font-weight: 700;
 }
 

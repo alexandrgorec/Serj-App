@@ -58,8 +58,20 @@
     min-width: 82px;
 }
 
+.editOrderMobile-invoiceSentField {
+    flex: 0 0 92px;
+    min-width: 92px;
+}
+
+.editOrderMobile-reconciliationActField {
+    flex: 0 0 82px;
+    min-width: 82px;
+}
+
 .editOrderMobile-clientPaidField .form-select,
-.editOrderMobile-salaryIncludedField .form-select {
+.editOrderMobile-salaryIncludedField .form-select,
+.editOrderMobile-invoiceSentField .form-select,
+.editOrderMobile-reconciliationActField .form-select {
     height: 31px;
     font-size: 11px;
     font-weight: 600;

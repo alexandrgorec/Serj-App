@@ -21,7 +21,7 @@ function getOrderStatusClass(status) {
   const normalizedStatus = normalizeOrderStatus(status);
   if (normalizedStatus === 'Отложенная') return 'editOrder-status-postponed';
   if (normalizedStatus === 'Заприходована') return 'editOrder-status-income';
-  if (normalizedStatus === 'Машина загружена') return 'editOrder-status-loaded';
+  if (normalizedStatus === 'Заполнена') return 'editOrder-status-loaded';
   if (normalizedStatus === 'Реализована') return 'editOrder-status-done';
   return 'editOrder-status-created';
 }
@@ -320,6 +320,32 @@ function EditOrderMobile({
               >
                 <option value="Нет">ЗП: нет</option>
                 <option value="Да">ЗП: да</option>
+              </Form.Select>
+            </div>
+            <div className='editOrderMobile-invoiceSentField'>
+              <Form.Select
+                size='sm'
+                value={order.invoiceSent || 'Нет'}
+                onChange={(evt) => {
+                  order.invoiceSent = evt.target.value;
+                  refresh();
+                }}
+              >
+                <option value="Нет">Счет: нет</option>
+                <option value="Да">Счет: да</option>
+              </Form.Select>
+            </div>
+            <div className='editOrderMobile-reconciliationActField'>
+              <Form.Select
+                size='sm'
+                value={order.reconciliationAct || 'Нет'}
+                onChange={(evt) => {
+                  order.reconciliationAct = evt.target.value;
+                  refresh();
+                }}
+              >
+                <option value="Нет">Акт: нет</option>
+                <option value="Да">Акт: да</option>
               </Form.Select>
             </div>
           </Stack>

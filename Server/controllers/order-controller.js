@@ -158,7 +158,7 @@ function makeSuppliersTable(order, showFinBlock) {
             { key: "tons", label: "Т", weight: 0.08, align: "right", noWrap: true },
             { key: "price", label: "Цена", weight: 0.085, align: "right", noWrap: true },
             { key: "sf", label: "С/Ф", weight: 0.075, align: "left" },
-            { key: "date", label: "Дата СФ", weight: 0.095, align: "center", noWrap: true },
+            { key: "date", label: "Дата СФ", weight: 0.095, align: "center", noWrap: true, headerFontScale: 0.78 },
             { key: "summa", label: "Σ", weight: 0.16, align: "right", noWrap: true, bodyFontScale: 0.92 },
             { key: "akt", label: "Акт", weight: 0.08, align: "left" },
         ]
@@ -205,7 +205,7 @@ function makeBuyersTable(order, showFinBlock) {
             { key: "tons", label: "Т", weight: 0.085, align: "right", noWrap: true },
             { key: "price", label: "Цена", weight: 0.09, align: "right", noWrap: true, bodyFontScale: 0.92 },
             { key: "sf", label: "С/Ф", weight: 0.075, align: "left" },
-            { key: "date", label: "Дата СФ", weight: 0.095, align: "center", noWrap: true },
+            { key: "date", label: "Дата СФ", weight: 0.095, align: "center", noWrap: true, headerFontScale: 0.78 },
             { key: "summa", label: "Σ", weight: 0.13, align: "right", noWrap: true, bodyFontScale: 0.92 },
             { key: "akt", label: "Акт", weight: 0.06, align: "left" },
         ]
@@ -558,10 +558,12 @@ const ORDER_DIFF_IGNORED_KEYS = new Set(["id", "haveEmptyBuyerH"]);
 const ORDER_DIFF_MAX_CHANGES_IN_LOG = 200;
 const ORDER_DIFF_MAX_VALUE_LEN = 180;
 const ORDER_DIFF_DEFAULT_VALUES = {
-    orderStatus: "Новая",
+    orderStatus: "Создана",
     ttnStatus: "Х",
     clientPaid: "Нет",
     salaryIncluded: "Нет",
+    invoiceSent: "Нет",
+    reconciliationAct: "Нет",
 };
 const ORDER_DIFF_FIELD_LABELS = {
     orderNumber: "№ заявки",
@@ -570,6 +572,8 @@ const ORDER_DIFF_FIELD_LABELS = {
     ttnStatus: "Статус ТТН",
     clientPaid: "Оплачено клиент",
     salaryIncluded: "Учтено в ЗП",
+    invoiceSent: "Счет отправлен",
+    reconciliationAct: "Акт сверки",
     manager: "Менеджер",
     date: "Дата заявки",
     ip: "Перевозчик",
@@ -584,6 +588,7 @@ const ORDER_DIFF_FIELD_LABELS = {
     shortage: "Недостача",
     transWarehouse: "Транспорт Склад",
     loadingPlace: "Место загрузки",
+    drainPlace: "Место слива",
     storageTon: "Хранение (тонна)",
     storagePrice: "Хранение цена",
     storageTotal: "Хранение итого",
@@ -591,7 +596,7 @@ const ORDER_DIFF_FIELD_LABELS = {
     supplierPaymentDeferred: "Отсрочка оплаты поставщику",
     loadingDate: "Дата загрузки",
     loadingFromStorage: "Загрузка с хранения",
-    shipmentDate: "Дата отгрузки",
+    shipmentDate: "Дата реализации",
     comments: "Комментарии",
     name: "наименование",
     typeOfProduct: "вид продукта",
@@ -610,10 +615,10 @@ function isBlankAuditValue(value) {
 
 function normalizeAuditStatus(value) {
     const text = isBlankAuditValue(value) ? ORDER_DIFF_DEFAULT_VALUES.orderStatus : String(value).trim();
-    if (text === "Создана") return "Новая";
+    if (text === "Новая") return "Создана";
     if (text === "Приход внесен") return "Заприходована";
     if (text === "Заприходирована") return "Заприходована";
-    if (text === "Машина загружена") return "Машина загружена";
+    if (text === "Машина загружена") return "Заполнена";
     if (text === "Выполнена реализация") return "Реализована";
     return text;
 }
@@ -640,6 +645,8 @@ function normalizeAuditComparable(path, value) {
     if (path === "ttnStatus") return normalizeAuditTtnStatus(value);
     if (path === "clientPaid") return normalizeAuditClientPaid(value);
     if (path === "salaryIncluded") return normalizeAuditYesNo(path, value);
+    if (path === "invoiceSent") return normalizeAuditYesNo(path, value);
+    if (path === "reconciliationAct") return normalizeAuditYesNo(path, value);
 
     if (path === "orderNumber" || path === "order_number") {
         const parsed = parseOrderNumber(value);

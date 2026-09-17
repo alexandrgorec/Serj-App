@@ -12,7 +12,8 @@
     align-items: center;
     justify-content: flex-start;
     min-width: 0;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
+    row-gap: 7px;
 }
 
 .newOrderDesktop-topBarRight {
@@ -21,7 +22,8 @@
     align-items: center;
     justify-content: flex-end;
     min-width: 0;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
+    row-gap: 6px;
 }
 
 .newOrderDesktop-manager {
@@ -31,8 +33,8 @@
 }
 
 .newOrderDesktop-orderNumber {
-    flex: 0 0 118px;
-    width: 118px;
+    flex: 0 0 90px;
+    width: 90px;
 }
 
 .newOrderDesktop-orderNumber > label,
@@ -45,6 +47,20 @@
     width: 136px;
 }
 
+.orderEditor-createdDate > .form-control:disabled {
+    opacity: 1;
+    cursor: not-allowed;
+    background: rgba(226, 232, 240, 0.86);
+    border-color: rgba(132, 145, 166, 0.34);
+    color: rgba(68, 78, 94, 0.82);
+}
+
+.orderEditor-createdDate > label,
+.orderEditor-createdDate > label::after {
+    background: transparent !important;
+    color: rgba(68, 78, 94, 0.72);
+}
+
 .orderEditor-clientPaid {
     flex: 0 0 122px;
     width: 122px;
@@ -55,15 +71,31 @@
     width: 112px;
 }
 
+.orderEditor-invoiceSent {
+    flex: 0 0 126px;
+    width: 126px;
+}
+
+.orderEditor-reconciliationAct {
+    flex: 0 0 112px;
+    width: 112px;
+}
+
 .orderEditor-clientPaid > .form-select,
-.orderEditor-salaryIncluded > .form-select {
+.orderEditor-salaryIncluded > .form-select,
+.orderEditor-invoiceSent > .form-select,
+.orderEditor-reconciliationAct > .form-select {
     font-size: 0.92rem;
 }
 
 .orderEditor-clientPaid > label,
 .orderEditor-clientPaid > label::after,
 .orderEditor-salaryIncluded > label,
-.orderEditor-salaryIncluded > label::after {
+.orderEditor-salaryIncluded > label::after,
+.orderEditor-invoiceSent > label,
+.orderEditor-invoiceSent > label::after,
+.orderEditor-reconciliationAct > label,
+.orderEditor-reconciliationAct > label::after {
     background: transparent !important;
 }
 
@@ -101,8 +133,9 @@
 }
 
 .orderEditor-printBtn {
-    min-width: 86px;
-    gap: 6px;
+    width: var(--new-order-topbar-item-height, var(--edit-topbar-item-height, 44px));
+    min-width: var(--new-order-topbar-item-height, var(--edit-topbar-item-height, 44px));
+    gap: 0;
     color: rgba(47, 79, 112, 0.95);
     border-color: rgba(47, 79, 112, 0.35);
     background: rgba(255, 255, 255, 0.72);

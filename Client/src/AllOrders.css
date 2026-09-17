@@ -52,24 +52,28 @@
 .allOrders-main-table {
     table-layout: fixed;
     width: 100%;
-    min-width: 860px;
+    min-width: 1120px;
 }
 
 /* Одна общая таблица: ширины колонок задаём через colgroup */
-.allOrders-main-table col.allOrders-col-created-date { width: 7%; }
-.allOrders-main-table col.allOrders-col-status { width: 5%; }
+.allOrders-main-table col.allOrders-col-realization-date { width: 7%; }
+.allOrders-main-table col.allOrders-col-num { width: 6%; }
+.allOrders-main-table col.allOrders-col-status { width: 4%; }
 .allOrders-main-table col.allOrders-col-ttn-status { width: 4%; }
-.allOrders-main-table col.allOrders-col-num { width: 5%; }
-.allOrders-main-table col.allOrders-col-loading-date { width: 7%; }
-.allOrders-main-table col.allOrders-col-manager { width: 8%; }
-.allOrders-main-table col.allOrders-col-buyers { width: 16%; }
-.allOrders-main-table col.allOrders-col-client-paid { width: 8%; }
-.allOrders-main-table col.allOrders-col-hsum { width: 7%; }
-.allOrders-main-table col.allOrders-col-suppliers { width: 11%; }
-.allOrders-main-table col.allOrders-col-tons { width: 6%; }
-.allOrders-main-table col.allOrders-col-products { width: 8%; }
+.allOrders-main-table col.allOrders-col-suppliers { width: 7%; }
+.allOrders-main-table col.allOrders-col-loading-date { width: 6%; }
+.allOrders-main-table col.allOrders-col-products { width: 6%; }
+.allOrders-main-table col.allOrders-col-tons { width: 5%; }
+.allOrders-main-table col.allOrders-col-buyers { width: 8%; }
+.allOrders-main-table col.allOrders-col-client-paid { width: 7%; }
+.allOrders-main-table col.allOrders-col-hsum { width: 5%; }
+.allOrders-main-table col.allOrders-col-invoice-sent { width: 6%; }
+.allOrders-main-table col.allOrders-col-reconciliation-act { width: 6%; }
+.allOrders-main-table col.allOrders-col-salary-included { width: 6%; }
+.allOrders-main-table col.allOrders-col-manager { width: 7%; }
+.allOrders-main-table col.allOrders-col-created-date { width: 7%; }
 .allOrders-main-table col.allOrders-col-menu {
-    width: 7%;
+    width: 6%;
     min-width: 5.4rem;
 }
 
@@ -78,10 +82,85 @@
     vertical-align: middle;
 }
 
+.allOrders-columnHeaderContent {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 5px;
+    width: 100%;
+}
+
+.allOrders-columnHeaderControls {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.allOrders-columnEyeBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 1px solid rgba(65, 82, 110, 0.18);
+    border-radius: 6px;
+    color: rgba(44, 91, 145, 0.92);
+    background: rgba(255, 255, 255, 0.68);
+    line-height: 1;
+}
+
+.allOrders-columnEyeBtn:hover,
+.allOrders-columnEyeBtn:focus {
+    color: rgba(30, 70, 128, 1);
+    border-color: rgba(65, 82, 110, 0.34);
+    background: rgba(234, 241, 252, 0.95);
+}
+
+.allOrders-columnEyeBtnHidden {
+    color: rgba(123, 82, 82, 0.78);
+    border-color: rgba(164, 91, 91, 0.22);
+    background: rgba(189, 89, 89, 0.1);
+}
+
+.allOrders-columnEyeBtnHidden:hover,
+.allOrders-columnEyeBtnHidden:focus {
+    color: rgba(123, 82, 82, 0.9);
+    border-color: rgba(164, 91, 91, 0.34);
+    background: rgba(189, 89, 89, 0.14);
+}
+
+.allOrders-columnResizeHandle {
+    display: inline-block;
+    width: 8px;
+    height: 24px;
+    border-left: 2px solid rgba(70, 82, 102, 0.34);
+    border-right: 2px solid rgba(70, 82, 102, 0.16);
+    border-radius: 3px;
+    cursor: col-resize;
+}
+
+.allOrders-columnResizeHandle:hover {
+    border-left-color: rgba(44, 91, 145, 0.72);
+    border-right-color: rgba(44, 91, 145, 0.34);
+}
+
+.allOrders-column-resizing,
+.allOrders-column-resizing * {
+    cursor: col-resize !important;
+    user-select: none !important;
+}
+
 .allOrders-cell-buyers,
 .allOrders-cell-suppliers,
 .allOrders-cell-manager,
 .allOrders-cell-client-paid,
+.allOrders-cell-invoice-sent,
+.allOrders-cell-reconciliation-act,
+.allOrders-cell-salary-included,
 .allOrders-cell-products,
 .allOrders-cell-hsum {
     white-space: normal;
@@ -91,14 +170,24 @@
 .allOrders-head-manager,
 .allOrders-cell-manager,
 .allOrders-head-client-paid,
-.allOrders-cell-client-paid {
+.allOrders-cell-client-paid,
+.allOrders-head-invoice-sent,
+.allOrders-cell-invoice-sent,
+.allOrders-head-reconciliation-act,
+.allOrders-cell-reconciliation-act,
+.allOrders-head-salary-included,
+.allOrders-cell-salary-included {
     text-align: center;
 }
 
 .allOrders-cell-created-date,
+.allOrders-cell-realization-date,
 .allOrders-cell-loading-date,
 .allOrders-cell-num,
 .allOrders-cell-tons,
+.allOrders-cell-invoice-sent,
+.allOrders-cell-reconciliation-act,
+.allOrders-cell-salary-included,
 .allOrders-cell-ttn-status {
     white-space: nowrap;
 }
@@ -111,6 +200,7 @@
 .allOrders-head-status,
 .allOrders-cell-status,
 .allOrders-cell-created-date,
+.allOrders-cell-realization-date,
 .allOrders-cell-loading-date,
 .allOrders-head-ttn-status,
 .allOrders-cell-ttn-status {
@@ -119,8 +209,11 @@
 }
 
 .allOrders-head-created-date,
+.allOrders-head-realization-date,
 .allOrders-head-loading-date,
-.allOrders-head-client-paid {
+.allOrders-head-client-paid,
+.allOrders-head-invoice-sent,
+.allOrders-head-reconciliation-act {
     text-align: center;
     white-space: normal;
     line-height: 1.12;
@@ -138,6 +231,33 @@
     border-radius: 50%;
     vertical-align: middle;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45), 0 1px 2px rgba(0, 0, 0, 0.16);
+}
+
+.allOrders-cell-status {
+    position: relative;
+}
+
+.allOrders-cell-status::after {
+    content: attr(data-status);
+    position: absolute;
+    left: calc(50% + 14px);
+    top: 50%;
+    z-index: 1400;
+    transform: translateY(-50%);
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgba(28, 35, 48, 0.94);
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.allOrders-cell-status:hover::after {
+    opacity: 1;
 }
 
 .allOrders-status-created {
@@ -227,8 +347,8 @@
 }
 
 .allOrders-statusFilter {
-    flex: 0 0 180px;
-    min-width: 180px;
+    flex: 0 0 154px;
+    min-width: 154px;
 }
 
 .allOrders-ttnStatusFilter {
@@ -276,9 +396,17 @@
     -webkit-user-select: none;
 }
 
-.allOrders-resetFiltersBtn {
+.allOrders-toolbarActions {
     grid-column: 3;
     align-self: start;
+    display: flex;
+    gap: 6px;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    position: relative;
+}
+
+.allOrders-resetFiltersBtn {
     flex: 0 0 auto;
     margin-left: 0;
     white-space: nowrap;
@@ -287,8 +415,68 @@
     background: rgba(255, 255, 255, 0.72);
 }
 
+.allOrders-settingsBtn {
+    width: 38px;
+    min-width: 38px;
+    color: rgba(70, 82, 102, 0.98);
+    border-color: rgba(70, 82, 102, 0.35);
+    background: rgba(255, 255, 255, 0.72);
+}
+
+.allOrders-settingsBtnActive {
+    color: rgba(29, 82, 58, 1);
+    border-color: rgba(46, 125, 84, 0.52);
+    background: rgba(218, 244, 229, 0.92);
+}
+
+.allOrders-settingsMenu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 1500;
+    display: flex;
+    flex-direction: column;
+    min-width: 190px;
+    padding: 6px;
+    border: 1px solid rgba(70, 82, 102, 0.22);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 10px 26px rgba(28, 35, 48, 0.16);
+}
+
+.allOrders-settingsMenuItem {
+    border: 0;
+    border-radius: 7px;
+    padding: 8px 10px;
+    color: rgba(43, 52, 66, 0.96);
+    background: transparent;
+    font-size: 14px;
+    line-height: 1.2;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.allOrders-settingsMenuItem:hover,
+.allOrders-settingsMenuItem:focus {
+    background: rgba(232, 238, 248, 0.92);
+}
+
+.allOrders-settingsMenuItemActive {
+    color: rgba(29, 82, 58, 1);
+    background: rgba(218, 244, 229, 0.86);
+    font-weight: 600;
+}
+
+.allOrders-settingsMenuItemSave {
+    margin-top: 4px;
+    border-top: 1px solid rgba(70, 82, 102, 0.14);
+    color: rgba(44, 91, 145, 0.98);
+}
+
 .allOrders-resetFiltersBtn:hover,
-.allOrders-resetFiltersBtn:focus {
+.allOrders-resetFiltersBtn:focus,
+.allOrders-settingsBtn:hover,
+.allOrders-settingsBtn:focus {
     color: rgba(43, 52, 66, 1);
     border-color: rgba(70, 82, 102, 0.52);
     background: rgba(232, 238, 248, 0.9);
@@ -476,6 +664,24 @@
     margin: 0;
 }
 
+.allOrders-row-lastActive > td {
+    background-color: rgba(210, 92, 86, 0.12) !important;
+    box-shadow: inset 0 2px 0 rgba(190, 74, 68, 0.58), inset 0 -2px 0 rgba(190, 74, 68, 0.58);
+}
+
+.allOrders-row-lastActive > td:first-child {
+    box-shadow: inset 4px 0 0 rgba(178, 62, 58, 0.82), inset 0 2px 0 rgba(190, 74, 68, 0.58), inset 0 -2px 0 rgba(190, 74, 68, 0.58);
+}
+
+.allOrders-card-lastActive {
+    border-color: rgba(190, 74, 68, 0.58);
+    box-shadow: 0 0 0 2px rgba(210, 92, 86, 0.22);
+}
+
+.allOrders-card-lastActive .allOrders-card-header {
+    background: rgba(210, 92, 86, 0.12);
+}
+
 .newOrder{
     background-color: rgb(7, 194, 38);
 }
@@ -611,6 +817,12 @@
         flex: 0 0 auto;
         padding-left: 10px;
         padding-right: 10px;
+    }
+
+    .allOrders-settingsBtn {
+        width: 34px;
+        min-width: 34px;
+        padding: 5px 0;
     }
 
     .allOrders-main-table {
