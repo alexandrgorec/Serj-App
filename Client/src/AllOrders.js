@@ -30,6 +30,7 @@ const DEFAULT_FILTER_SETTINGS = {
   ttnStatus: '',
   clientPaid: '',
   salaryIncluded: '',
+  reconciliationAct: '',
   manager: '',
   supplier: '',
   buyer: '',
@@ -55,6 +56,8 @@ const ALL_ORDERS_COLUMNS = [
   { id: 'reconciliationAct', colClass: 'allOrders-col-reconciliation-act', defaultWidth: 6 },
   { id: 'salaryIncluded', colClass: 'allOrders-col-salary-included', defaultWidth: 6 },
   { id: 'manager', colClass: 'allOrders-col-manager', defaultWidth: 7 },
+  { id: 'supplierPaymentDeferred', colClass: 'allOrders-col-supplier-payment-deferred', defaultWidth: 6 },
+  { id: 'clientPaymentDeferred', colClass: 'allOrders-col-client-payment-deferred', defaultWidth: 6 },
   { id: 'createdDate', colClass: 'allOrders-col-created-date', defaultWidth: 7 },
   { id: 'menu', colClass: 'allOrders-col-menu', defaultWidth: 6 },
 ];
@@ -108,6 +111,7 @@ function normalizeFilterSettings(value) {
     ttnStatus: String(value?.ttnStatus || ''),
     clientPaid: String(value?.clientPaid || ''),
     salaryIncluded: String(value?.salaryIncluded || ''),
+    reconciliationAct: String(value?.reconciliationAct || ''),
     manager: String(value?.manager || ''),
     supplier: String(value?.supplier || ''),
     buyer: String(value?.buyer || ''),
@@ -236,6 +240,10 @@ function getOrderReconciliationAct(orderjson) {
   return String(orderjson?.reconciliationAct || 'Нет').trim() || 'Нет';
 }
 
+function yesNo(value) {
+  return value ? 'Да' : 'Нет';
+}
+
 function getOrderStatusClass(status) {
   const normalizedStatus = normalizeOrderStatus(status);
   if (normalizedStatus === 'Отложенная') return 'allOrders-status-postponed';
@@ -356,6 +364,10 @@ function AllOrders() {
   const [salaryIncludedFilter, setSalaryIncludedFilter] = useState(() => {
     const savedState = readUserUiState(getUserUiStateKey(user));
     return normalizeFilterSettings(savedState?.filters).salaryIncluded;
+  });
+  const [reconciliationActFilter, setReconciliationActFilter] = useState(() => {
+    const savedState = readUserUiState(getUserUiStateKey(user));
+    return normalizeFilterSettings(savedState?.filters).reconciliationAct;
   });
   const [dateFilterType, setDateFilterType] = useState(() => {
     const savedState = readUserUiState(getUserUiStateKey(user));
@@ -622,6 +634,7 @@ function AllOrders() {
     setTtnStatusFilter('');
     setClientPaidFilter('');
     setSalaryIncludedFilter('');
+    setReconciliationActFilter('');
     setManagerFilter('');
     setSupplierFilter('');
     setBuyerFilter('');
@@ -660,6 +673,7 @@ function AllOrders() {
     setTtnStatusFilter(savedFilters.ttnStatus);
     setClientPaidFilter(savedFilters.clientPaid);
     setSalaryIncludedFilter(savedFilters.salaryIncluded);
+    setReconciliationActFilter(savedFilters.reconciliationAct);
     setManagerFilter(savedFilters.manager);
     setSupplierFilter(savedFilters.supplier);
     setBuyerFilter(savedFilters.buyer);
@@ -682,6 +696,7 @@ function AllOrders() {
       ttnStatus: ttnStatusFilter,
       clientPaid: clientPaidFilter,
       salaryIncluded: salaryIncludedFilter,
+      reconciliationAct: reconciliationActFilter,
       manager: managerFilter,
       supplier: supplierFilter,
       buyer: buyerFilter,
@@ -701,6 +716,7 @@ function AllOrders() {
     ttnStatusFilter,
     clientPaidFilter,
     salaryIncludedFilter,
+    reconciliationActFilter,
     managerFilter,
     supplierFilter,
     buyerFilter,
@@ -774,6 +790,10 @@ function AllOrders() {
       salaryIncludedFilter === '' ||
       getOrderSalaryIncluded(order.orderjson) === salaryIncludedFilter;
 
+    const matchReconciliationAct =
+      reconciliationActFilter === '' ||
+      getOrderReconciliationAct(order.orderjson) === reconciliationActFilter;
+
     const orderDate = getOrderDateForFilter(order, dateFilterType);
     const matchDateFrom =
       dateFromFilter === '' ||
@@ -790,6 +810,7 @@ function AllOrders() {
     if (!matchTtnStatus) return false;
     if (!matchClientPaid) return false;
     if (!matchSalaryIncluded) return false;
+    if (!matchReconciliationAct) return false;
     if (!matchDateFrom) return false;
     if (!matchDateTo) return false;
     if (filterEmptyBuyerH) {
@@ -1030,6 +1051,22 @@ function AllOrders() {
               value={salaryIncludedFilter}
               onChange={(evt) => {
                 setSalaryIncludedFilter(evt.target.value);
+                reload(!state);
+              }}
+              style={{ fontSize: window.innerWidth < 850 ? '12px' : '14px' }}
+            >
+              <option value="">Все</option>
+              <option value="Да">Да</option>
+              <option value="Нет">Нет</option>
+            </Form.Select>
+          </div>
+          <div className={`allOrders-reconciliationActFilter allOrders-filterWithLabel${activeFilterClass(isFilterValueActive(reconciliationActFilter))}`}>
+            <span className="allOrders-filterInlineLabel">Акт сверки</span>
+            <Form.Select
+              className="allOrders-filterLabeledControl"
+              value={reconciliationActFilter}
+              onChange={(evt) => {
+                setReconciliationActFilter(evt.target.value);
                 reload(!state);
               }}
               style={{ fontSize: window.innerWidth < 850 ? '12px' : '14px' }}
@@ -1425,6 +1462,8 @@ function AllOrders() {
               {isColumnRendered('reconciliationAct') && renderColumnHeader('reconciliationAct', 'Акт сверки', { className: 'allOrders-head-reconciliation-act' })}
               {isColumnRendered('salaryIncluded') && renderColumnHeader('salaryIncluded', 'ЗП', { className: 'allOrders-head-salary-included' })}
               {isColumnRendered('manager') && renderColumnHeader('manager', 'Менеджер', { className: 'allOrders-head-manager' })}
+              {isColumnRendered('supplierPaymentDeferred') && renderColumnHeader('supplierPaymentDeferred', <>Отсрочка<br />поставщику</>, { className: 'allOrders-head-supplier-payment-deferred' })}
+              {isColumnRendered('clientPaymentDeferred') && renderColumnHeader('clientPaymentDeferred', <>Отсрочка<br />покупателя</>, { className: 'allOrders-head-client-payment-deferred' })}
               {isColumnRendered('createdDate') && renderColumnHeader('createdDate', <>Дата<br />создания</>, { className: 'allOrders-head-created-date' })}
               {isColumnRendered('menu') && renderColumnHeader('menu', 'Меню', { className: 'allOrders-th-menu' })}
             </tr>
@@ -1535,6 +1574,16 @@ function AllOrders() {
                       }
                       {isColumnRendered('manager') &&
                         <td className="allOrders-cell-manager" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>{orderManager}</td>
+                      }
+                      {isColumnRendered('supplierPaymentDeferred') &&
+                        <td className="allOrders-cell-supplier-payment-deferred" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
+                          {yesNo(order.orderjson.supplierPaymentDeferred)}
+                        </td>
+                      }
+                      {isColumnRendered('clientPaymentDeferred') &&
+                        <td className="allOrders-cell-client-payment-deferred" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
+                          {yesNo(order.orderjson.clientPaymentDeferred)}
+                        </td>
                       }
                       {isColumnRendered('createdDate') &&
                         <td className="allOrders-cell-created-date" style={{ overflow: "hidden", backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }} >{formatDate(order.orderjson.date)}</td>

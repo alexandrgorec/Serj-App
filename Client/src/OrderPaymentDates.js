@@ -23,6 +23,22 @@ function OrderPaymentDates({ order, setOrder, variant = 'desktop' }) {
     }));
   };
 
+  const updateSupplierPaymentDeferred = (checked) => {
+    setOrder((prev) => ({
+      ...prev,
+      supplierPaymentDeferred: checked,
+      supplierPaymentDeferredDays: checked ? prev.supplierPaymentDeferredDays || '' : '',
+    }));
+  };
+
+  const updateClientPaymentDeferred = (checked) => {
+    setOrder((prev) => ({
+      ...prev,
+      clientPaymentDeferred: checked,
+      clientPaymentDeferredDays: checked ? prev.clientPaymentDeferredDays || '' : '',
+    }));
+  };
+
   useEffect(() => {
     if (order?.loadingFromStorage) {
       return;
@@ -57,7 +73,48 @@ function OrderPaymentDates({ order, setOrder, variant = 'desktop' }) {
             type='checkbox'
             label='Отсрочка'
             checked={!!order?.supplierPaymentDeferred}
-            onChange={(evt) => updateField('supplierPaymentDeferred', evt.target.checked)}
+            onChange={(evt) => updateSupplierPaymentDeferred(evt.target.checked)}
+          />
+          <Form.Control
+            className='orderPaymentDates-deferredDays'
+            type='number'
+            min='0'
+            step='1'
+            placeholder='Кол-во дней'
+            aria-label='Количество дней отсрочки'
+            disabled={!order?.supplierPaymentDeferred}
+            value={order?.supplierPaymentDeferredDays || ''}
+            onChange={(evt) => updateField('supplierPaymentDeferredDays', evt.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className='orderPaymentDates-field'>
+        <div className='orderPaymentDates-label'>Дата оплаты от клиента</div>
+        <div className='orderPaymentDates-inputRow'>
+          <Form.Control
+            type='date'
+            value={order?.clientPaymentDate || ''}
+            onChange={(evt) => updateField('clientPaymentDate', evt.target.value)}
+          />
+          <Form.Check
+            id={`clientPaymentDeferred-${variant}`}
+            className='orderPaymentDates-check'
+            type='checkbox'
+            label='Отсрочка'
+            checked={!!order?.clientPaymentDeferred}
+            onChange={(evt) => updateClientPaymentDeferred(evt.target.checked)}
+          />
+          <Form.Control
+            className='orderPaymentDates-deferredDays'
+            type='number'
+            min='0'
+            step='1'
+            placeholder='Кол-во дней'
+            aria-label='Количество дней отсрочки оплаты от клиента'
+            disabled={!order?.clientPaymentDeferred}
+            value={order?.clientPaymentDeferredDays || ''}
+            onChange={(evt) => updateField('clientPaymentDeferredDays', evt.target.value)}
           />
         </div>
       </div>

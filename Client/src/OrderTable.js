@@ -7,6 +7,7 @@ import Stack from 'react-bootstrap/Stack';
 import { BiEditAlt } from "react-icons/bi";
 import { useState, useContext, useRef, useEffect } from 'react';
 import { MdDelete } from "react-icons/md";
+import { FaArrowDown } from "react-icons/fa6";
 import FinBlockEdit from './FinBlockEdit';
 import Modal from 'react-bootstrap/Modal';
 import { userContext } from './App';
@@ -102,6 +103,25 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
       })
       return ({ ...orderHandle })
     })
+  };
+
+  const copyFirstSupplierValuesToFirstBuyer = () => {
+    const supplier = order?.suppliers?.[0];
+    if (!supplier || !(order?.buyers || [])[0]) return;
+
+    setOrder((prevOrder) => {
+      const nextOrder = { ...prevOrder };
+      nextOrder.buyers = [...(nextOrder.buyers || [])];
+      nextOrder.buyers[0] = {
+        ...(nextOrder.buyers[0] || {}),
+        typeOfProduct: supplier.typeOfProduct || '',
+        liters: supplier.liters || '',
+        tons: supplier.tons || '',
+      };
+      return nextOrder;
+    });
+    triggerBuyerSummaCalc(0);
+    reload((prev) => !prev);
   };
 
   const useExternalAddLayout = showExternalAddButtons || hideInlineAddButtons;
@@ -268,7 +288,23 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
                   </>
               }
               {hideManagerInTable
-                ? <th colSpan={2}></th>
+                ? <>
+                    <th className="orderTable-copySupplierToBuyerCell">
+                      <Button
+                        tabIndex={-1}
+                        variant="outline-secondary"
+                        size={size}
+                        className="orderTable-copySupplierToBuyerBtn"
+                        title="Скопировать вид продукта, литры и тонны из первого поставщика"
+                        aria-label="Скопировать вид продукта, литры и тонны из первого поставщика"
+                        onClick={copyFirstSupplierValuesToFirstBuyer}
+                        disabled={!order?.suppliers?.[0] || !order?.buyers?.[0]}
+                      >
+                        <FaArrowDown />
+                      </Button>
+                    </th>
+                    <th></th>
+                  </>
                 : <>
                     <th style={{ borderRight: 'none', textAlign: 'right' }}  >Менеджер:  </th>
                     <TDInput object={order} field={'manager'} type={'text'} fontSize='12px'/>

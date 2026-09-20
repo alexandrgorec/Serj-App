@@ -4,7 +4,7 @@
 
 .orderPaymentDates-desktop {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 10px;
     margin: 8px 6px 10px;
 }
@@ -46,6 +46,17 @@
     min-width: 0;
 }
 
+.orderPaymentDates-deferredDays.form-control {
+    flex: 0 0 120px;
+    min-width: 120px;
+}
+
+.orderPaymentDates-deferredDays.form-control:disabled {
+    color: rgba(76, 86, 104, 0.55);
+    background-color: rgba(229, 234, 241, 0.62);
+    border-color: rgba(130, 145, 165, 0.22);
+}
+
 .orderPaymentDates-check {
     flex: 0 0 auto;
     margin-top: 0;
@@ -71,6 +82,12 @@
     font-size: 12px;
 }
 
+@media (max-width: 1500px) {
+    .orderPaymentDates-desktop {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
 @media (max-width: 850px) {
     .orderPaymentDates-desktop {
         grid-template-columns: 1fr;
@@ -79,7 +96,13 @@
 
 @media (max-width: 380px) {
     .orderPaymentDates-inputRow {
+        flex-wrap: wrap;
         gap: 7px;
+    }
+
+    .orderPaymentDates-deferredDays.form-control {
+        flex: 1 1 100%;
+        min-width: 0;
     }
 
     .orderPaymentDates-check {

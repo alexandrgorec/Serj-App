@@ -142,7 +142,7 @@ function makeMetaTable(order) {
         { cells: ["Цена за тонну хранение", numberValue(order?.storagePrice), "Склад", textValue(order?.transWarehouse)] },
         { cells: ["Итого за хранение", numberValue(order?.storageTotal), "ОТК", textValue(order?.otk)] },
         { cells: ["Курьер", textValue(order?.courier), "Налог 42%", String(calculateOtkTax(order))] },
-        { cells: ["Дата оплаты поставщику", formatDateRu(order?.supplierPaymentDate), "", ""] },
+        { cells: ["Дата оплаты поставщику", formatDateRu(order?.supplierPaymentDate), "Дата оплаты от клиента", formatDateRu(order?.clientPaymentDate)] },
     ];
     return { title: "Реквизиты", columns, rows };
 }
@@ -594,6 +594,10 @@ const ORDER_DIFF_FIELD_LABELS = {
     storageTotal: "Хранение итого",
     supplierPaymentDate: "Дата оплаты поставщику",
     supplierPaymentDeferred: "Отсрочка оплаты поставщику",
+    supplierPaymentDeferredDays: "Кол-во дней отсрочки",
+    clientPaymentDate: "Дата оплаты от клиента",
+    clientPaymentDeferred: "Отсрочка оплаты от клиента",
+    clientPaymentDeferredDays: "Кол-во дней отсрочки оплаты от клиента",
     loadingDate: "Дата загрузки",
     loadingFromStorage: "Загрузка с хранения",
     shipmentDate: "Дата реализации",

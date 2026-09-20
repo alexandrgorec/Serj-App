@@ -71,6 +71,8 @@
 .allOrders-main-table col.allOrders-col-reconciliation-act { width: 6%; }
 .allOrders-main-table col.allOrders-col-salary-included { width: 6%; }
 .allOrders-main-table col.allOrders-col-manager { width: 7%; }
+.allOrders-main-table col.allOrders-col-supplier-payment-deferred { width: 6%; }
+.allOrders-main-table col.allOrders-col-client-payment-deferred { width: 6%; }
 .allOrders-main-table col.allOrders-col-created-date { width: 7%; }
 .allOrders-main-table col.allOrders-col-menu {
     width: 6%;
@@ -161,6 +163,8 @@
 .allOrders-cell-invoice-sent,
 .allOrders-cell-reconciliation-act,
 .allOrders-cell-salary-included,
+.allOrders-cell-supplier-payment-deferred,
+.allOrders-cell-client-payment-deferred,
 .allOrders-cell-products,
 .allOrders-cell-hsum {
     white-space: normal;
@@ -176,7 +180,11 @@
 .allOrders-head-reconciliation-act,
 .allOrders-cell-reconciliation-act,
 .allOrders-head-salary-included,
-.allOrders-cell-salary-included {
+.allOrders-cell-salary-included,
+.allOrders-head-supplier-payment-deferred,
+.allOrders-cell-supplier-payment-deferred,
+.allOrders-head-client-payment-deferred,
+.allOrders-cell-client-payment-deferred {
     text-align: center;
 }
 
@@ -188,6 +196,8 @@
 .allOrders-cell-invoice-sent,
 .allOrders-cell-reconciliation-act,
 .allOrders-cell-salary-included,
+.allOrders-cell-supplier-payment-deferred,
+.allOrders-cell-client-payment-deferred,
 .allOrders-cell-ttn-status {
     white-space: nowrap;
 }
@@ -213,7 +223,9 @@
 .allOrders-head-loading-date,
 .allOrders-head-client-paid,
 .allOrders-head-invoice-sent,
-.allOrders-head-reconciliation-act {
+.allOrders-head-reconciliation-act,
+.allOrders-head-supplier-payment-deferred,
+.allOrders-head-client-payment-deferred {
     text-align: center;
     white-space: normal;
     line-height: 1.12;
@@ -499,6 +511,11 @@
 .allOrders-salaryIncludedFilter {
     flex: 0 0 82px;
     min-width: 82px;
+}
+
+.allOrders-reconciliationActFilter {
+    flex: 0 0 112px;
+    min-width: 112px;
 }
 
 .allOrders-dateRangeFilter {
