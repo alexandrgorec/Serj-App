@@ -1,7 +1,6 @@
 import React from 'react';
 import './FooterApp.css';
-import { MdOutlineLibraryBooks } from "react-icons/md";
-import { LuWarehouse } from "react-icons/lu";
+import { MdOutlineEmail, MdOutlineLibraryBooks } from "react-icons/md";
 import { GiHamburgerMenu } from "react-icons/gi";
 import { NavLink } from 'react-router-dom';
 
@@ -10,9 +9,9 @@ function FooterApp() {
 
   return (
     <div className='footer'>
-      <NavLink tabIndex={-1}  to="/warehouse" className='footerButton'  >
-        <LuWarehouse className="footerIcon" />
-        <span className="footerLabel">Склад</span>
+      <NavLink tabIndex={-1}  to="/mailing" className='footerButton'  >
+        <MdOutlineEmail className="footerIcon" />
+        <span className="footerLabel">Рассылка</span>
       </NavLink>
       <NavLink tabIndex={-1}  to="/allorders" className='footerButton'  >
         <MdOutlineLibraryBooks className="footerIcon" />

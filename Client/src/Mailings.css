@@ -1,0 +1,229 @@
+.mailings {
+    width: 100%;
+    min-height: 100%;
+    background: aliceblue;
+}
+
+.mailings-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 1100;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0 8px;
+    background: aliceblue;
+    border-bottom: 1px solid rgba(130, 150, 180, 0.2);
+}
+
+.mailings-newBtn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    font-weight: 600;
+    background: linear-gradient(180deg, #42a567 0%, #2f8d53 100%);
+    border-color: #2d844f;
+    box-shadow: 0 1px 2px rgba(25, 95, 55, 0.18);
+}
+
+.mailings-newBtn:hover,
+.mailings-newBtn:focus {
+    background: linear-gradient(180deg, #4ab673 0%, #318f55 100%);
+    border-color: #287848;
+}
+
+.mailings-tableWrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.mailings-table {
+    min-width: 760px;
+    table-layout: fixed;
+    margin: 0;
+}
+
+.mailings-table th,
+.mailings-table td {
+    vertical-align: middle;
+}
+
+.mailings-table th {
+    text-align: center;
+}
+
+.mailings-col-id {
+    width: 12%;
+}
+
+.mailings-col-date {
+    width: 24%;
+}
+
+.mailings-col-employee {
+    width: 40%;
+}
+
+.mailings-col-menu {
+    width: 24%;
+}
+
+.mailings-cell-id,
+.mailings-cell-date,
+.mailings-cell-menu {
+    text-align: center;
+    white-space: nowrap;
+}
+
+.mailings-row {
+    cursor: pointer;
+}
+
+.mailings-menuStack {
+    justify-content: center;
+}
+
+.mailings-actionIcon {
+    transition-duration: 0.15s;
+}
+
+.mailings-actionIcon:hover {
+    cursor: pointer;
+    transform: scale(1.15);
+}
+
+.mailings-actionIconDisabled,
+.mailings-actionIconDisabled:hover {
+    cursor: not-allowed;
+    opacity: 0.38;
+    transform: none;
+}
+
+.mailings-empty {
+    padding: 22px 12px;
+    color: rgba(47, 58, 79, 0.68);
+    text-align: center;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(130, 150, 180, 0.18);
+    border-radius: 10px;
+}
+
+.mailings-mobileCards {
+    display: none;
+}
+
+@media (max-width: 850px) {
+    .mailings-toolbar {
+        padding-left: 6px;
+        padding-right: 6px;
+    }
+
+    .mailings-table {
+        min-width: 620px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 600px) {
+    .mailings {
+        padding: 0 6px 8px;
+    }
+
+    .mailings-toolbar {
+        padding: 6px 0 8px;
+    }
+
+    .mailings-newBtn {
+        width: 100%;
+        min-height: 42px;
+    }
+
+    .mailings-tableWrap {
+        display: none;
+    }
+
+    .mailings-mobileCards {
+        display: grid;
+        gap: 8px;
+    }
+
+    .mailings-card {
+        overflow: hidden;
+        border: 1px solid rgba(80, 110, 160, 0.24);
+        border-radius: 10px;
+        background: #f8fbff;
+        box-shadow: 0 1px 3px rgba(35, 55, 85, 0.08);
+    }
+
+    .mailings-cardHeader {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        background: rgba(213, 224, 244, 0.48);
+        border-bottom: 1px solid rgba(80, 110, 160, 0.16);
+    }
+
+    .mailings-cardTitle {
+        min-width: 0;
+        font-size: 15px;
+        font-weight: 700;
+        color: rgba(35, 45, 65, 0.96);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .mailings-card .mailings-menuStack {
+        gap: 12px !important;
+    }
+
+    .mailings-card .mailings-actionIcon {
+        flex: 0 0 auto;
+    }
+
+    .mailings-card .mailings-editActionIcon {
+        display: none;
+    }
+
+    .mailings-cardBody {
+        display: grid;
+        width: 100%;
+        gap: 6px;
+        padding: 9px 10px 10px;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        text-align: left;
+    }
+
+    .mailings-cardBody:active {
+        background: rgba(80, 110, 160, 0.08);
+    }
+
+    .mailings-cardRow {
+        display: grid;
+        grid-template-columns: 104px minmax(0, 1fr);
+        gap: 8px;
+        align-items: baseline;
+        min-width: 0;
+    }
+
+    .mailings-cardLabel {
+        font-size: 12px;
+        color: rgba(60, 70, 90, 0.74);
+    }
+
+    .mailings-cardValue {
+        min-width: 0;
+        font-size: 14px;
+        font-weight: 600;
+        color: rgba(35, 45, 65, 0.96);
+        word-break: break-word;
+    }
+
+    .mailings-empty {
+        margin-top: 8px;
+    }
+}

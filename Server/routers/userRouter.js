@@ -1,6 +1,7 @@
 const Router = require("express").Router;
 const userController = require ("../controllers/user-controller");
 const orderController = require ("../controllers/order-controller");
+const mailingController = require ("../controllers/mailing-controller");
 const userRouter = Router();
 
 
@@ -12,6 +13,11 @@ userRouter.post("/getallorders", orderController.getallorders);
 userRouter.post("/deleteorder", orderController.deleteorder);
 userRouter.post("/editorder", orderController.editorder);
 userRouter.post("/orderhistory", orderController.orderhistory);
+userRouter.post("/savemailing", mailingController.savemailing);
+userRouter.post("/getallmailings", mailingController.getallmailings);
+userRouter.post("/deletemailing", mailingController.deletemailing);
+userRouter.get("/printmailing/self/:id", mailingController.printmailingself);
+userRouter.get("/printmailing/client/:id", mailingController.printmailingclient);
 userRouter.get("/printorder/:id", orderController.printorder);
 userRouter.get("*", (req, res) => { res.redirect("/"); })
 

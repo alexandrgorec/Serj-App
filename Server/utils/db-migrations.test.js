@@ -45,3 +45,31 @@ describe("ensureOrderNumberColumn", () => {
         expect(pool.query).toHaveBeenLastCalledWith("ROLLBACK");
     });
 });
+
+describe("ensureMailingsTable", () => {
+    beforeEach(() => {
+        jest.resetModules();
+    });
+
+    test("creates mailings table idempotently", async () => {
+        const { pool } = require("../db");
+        pool.query.mockResolvedValue({});
+        const { ensureMailingsTable } = require("./db-migrations");
+
+        await expect(ensureMailingsTable()).resolves.toBeUndefined();
+
+        expect(pool.query).toHaveBeenCalledWith(expect.stringContaining("CREATE TABLE IF NOT EXISTS mailings"));
+        expect(pool.query).toHaveBeenCalledWith(expect.stringContaining("created_at TIMESTAMPTZ NOT NULL DEFAULT now()"));
+        expect(pool.query).toHaveBeenCalledWith(expect.stringContaining("employee_json JSON NOT NULL"));
+        expect(pool.query).toHaveBeenCalledWith(expect.stringContaining("categories_json JSON NOT NULL DEFAULT '[]'::json"));
+    });
+
+    test("resets cached promise when mailings migration fails", async () => {
+        const { pool } = require("../db");
+        const migrationError = new Error("mailings migration failed");
+        pool.query.mockRejectedValueOnce(migrationError);
+        const { ensureMailingsTable } = require("./db-migrations");
+
+        await expect(ensureMailingsTable()).rejects.toThrow("mailings migration failed");
+    });
+});

@@ -14,3 +14,10 @@ CREATE TABLE users(
     userinfo json,
     rights json
 );
+
+CREATE TABLE IF NOT EXISTS mailings(
+    id BIGSERIAL PRIMARY KEY,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    employee_json JSON NOT NULL,
+    categories_json JSON NOT NULL DEFAULT '[]'::json
+);

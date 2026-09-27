@@ -1,0 +1,563 @@
+.mailingEditor {
+    min-height: 100%;
+    padding: 6px 8px;
+    background: aliceblue;
+}
+
+.mailingEditor-topBar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 10px;
+    margin-bottom: 10px;
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(120, 135, 160, 0.25);
+    border-radius: 8px;
+}
+
+.mailingEditor-topBarLeft {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    min-width: 0;
+}
+
+.mailingEditor-title {
+    margin: 0;
+    color: rgba(47, 58, 79, 0.92);
+    font-size: 1.15rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.mailingEditor-createdAtField {
+    width: 220px;
+}
+
+.mailingEditor-employeeField {
+    width: 220px;
+}
+
+.mailingEditor-contactField {
+    width: 280px;
+}
+
+.mailingEditor-topBarActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mailingEditor-pdfSelfControl {
+    display: inline-flex;
+    align-items: stretch;
+    overflow: hidden;
+    border: 1px solid #6c757d;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.78);
+}
+
+.mailingEditor-pdfSelfControl > .btn {
+    border: 0;
+    border-right: 1px solid rgba(108, 117, 125, 0.42);
+    border-radius: 0;
+}
+
+.mailingEditor-pdfSelfCheck {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 38px;
+    padding: 0 10px;
+    margin: 0;
+    color: rgba(47, 58, 79, 0.78);
+    font-size: 0.86rem;
+    white-space: nowrap;
+}
+
+.mailingEditor-pdfSelfCheck.form-check {
+    padding-left: 10px;
+}
+
+.mailingEditor-pdfSelfCheck .form-check-input {
+    flex: 0 0 auto;
+    float: none;
+    margin-left: 0;
+    margin-top: 0;
+}
+
+.mailingEditor-pdfSelfCheck .form-check-input,
+.mailingEditor-pdfSelfCheck .form-check-label {
+    cursor: pointer;
+    user-select: none;
+}
+
+.mailingEditor-pdfSelfControlDisabled {
+    opacity: 0.65;
+}
+
+.mailingEditor-categories {
+    margin-top: 6px;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(120, 135, 160, 0.25);
+    border-radius: 10px;
+}
+
+.mailingEditor-categoriesHeader {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.mailingEditor-sectionTitle {
+    margin: 0;
+    color: rgba(47, 58, 79, 0.9);
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.mailingEditor-addCategoryBtn {
+    flex: 0 0 auto;
+    padding: 6px 14px;
+    white-space: nowrap;
+    font-weight: 600;
+    background: linear-gradient(180deg, #42a567 0%, #2f8d53 100%);
+    border-color: #2d844f;
+    box-shadow: 0 1px 2px rgba(25, 95, 55, 0.18);
+}
+
+.mailingEditor-emptyCategories {
+    padding: 14px 10px;
+    color: rgba(47, 58, 79, 0.62);
+    text-align: center;
+    border: 1px dashed rgba(120, 135, 160, 0.32);
+    border-radius: 8px;
+    background: rgba(247, 251, 255, 0.72);
+}
+
+.mailingEditor-categoryCard {
+    position: relative;
+    padding: 6px 8px;
+    margin-bottom: 8px;
+    border: 1px solid rgba(55, 132, 84, 0.34);
+    border-left: 4px solid rgba(47, 143, 85, 0.52);
+    border-radius: 8px;
+    background: rgba(250, 255, 252, 0.72);
+    box-shadow: 0 1px 3px rgba(47, 143, 85, 0.08);
+}
+
+.mailingEditor-categoryCard:last-child {
+    margin-bottom: 0;
+}
+
+.mailingEditor-categoryRow {
+    display: grid;
+    grid-template-columns: minmax(150px, 180px) minmax(420px, 680px) minmax(180px, 240px) 112px 158px;
+    gap: 0;
+    align-items: end;
+    justify-content: start;
+}
+
+.mailingEditor-categoryRow .form-label {
+    margin-bottom: 2px;
+    color: rgba(47, 58, 79, 0.8);
+    font-size: 0.76rem;
+    font-weight: 600;
+}
+
+.mailingEditor .form-control {
+    min-height: 32px;
+    padding: 4px 10px;
+    font-size: 0.92rem;
+    line-height: 1.2;
+}
+
+.mailingEditor .form-floating {
+    min-width: 0;
+    height: 42px;
+}
+
+.mailingEditor .form-floating > .form-control {
+    height: 100%;
+    min-height: 100%;
+    padding-top: 1.35rem;
+    padding-bottom: 0.12rem;
+    font-weight: 500;
+}
+
+.mailingEditor .form-floating > label {
+    height: auto;
+    padding: 0.48rem 0.75rem 0;
+    color: rgba(47, 58, 79, 0.62);
+    font-size: 0.88rem;
+    line-height: 1;
+    transform-origin: 0 0;
+}
+
+.mailingEditor-nameInputWrap {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    min-height: 42px;
+    overflow: hidden;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.76);
+}
+
+.mailingEditor-nameFloatingField,
+.mailingEditor-basisMarkupFloatingField {
+    flex: 1 1 auto;
+}
+
+.mailingEditor-nameFloatingField > .form-control {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.mailingEditor-nameInputWrap .form-control {
+    min-width: 0;
+}
+
+.mailingEditor-visibleCheck {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    flex: 0 0 auto;
+    min-width: 124px;
+    min-height: 42px;
+    padding: 0 9px;
+    margin: 0;
+    color: rgba(47, 58, 79, 0.78);
+    border: 0;
+    border-left: 1px solid rgba(120, 135, 160, 0.16);
+    border-radius: 0;
+    background: transparent;
+    font-size: 0.82rem;
+    white-space: nowrap;
+}
+
+.mailingEditor-visibleCheck.form-check {
+    padding-left: 10px;
+}
+
+.mailingEditor-visibleCheck .form-check-input,
+.mailingEditor-visibleCheck .form-check-label {
+    cursor: pointer;
+    user-select: none;
+}
+
+.mailingEditor-visibleCheck .form-check-input {
+    flex: 0 0 auto;
+    float: none;
+    margin-left: 0;
+    margin-top: 0;
+}
+
+.mailingEditor-visibleCheck .form-check-label {
+    line-height: 1;
+}
+
+.mailingEditor-deleteCategoryBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 150px;
+    height: 42px;
+    margin-left: 8px;
+    padding: 0 12px;
+    color: rgb(194, 65, 65);
+    border: 1px solid rgba(194, 65, 65, 0.18);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.76);
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1;
+    transition-duration: 0.15s;
+    white-space: nowrap;
+}
+
+.mailingEditor-deleteCategoryBtn:hover,
+.mailingEditor-deleteCategoryBtn:focus {
+    color: rgb(176, 45, 45);
+    border-color: rgba(194, 65, 65, 0.38);
+    background: rgba(255, 242, 242, 0.92);
+    transform: scale(1.04);
+}
+
+.mailingEditor-addBasisBtn {
+    width: 104px;
+    height: 42px;
+    margin-left: 8px;
+    padding: 0 12px;
+    font-weight: 600;
+}
+
+.mailingEditor-basisRow {
+    display: grid;
+    grid-template-columns:
+        minmax(150px, 1fr)
+        minmax(140px, 0.9fr)
+        minmax(140px, 0.9fr)
+        minmax(110px, 0.65fr)
+        minmax(230px, 1.15fr)
+        minmax(140px, 0.8fr)
+        34px;
+    column-gap: 0;
+    row-gap: 0;
+    align-items: end;
+    padding: 0;
+    margin-top: 0;
+    margin-left: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+}
+
+.mailingEditor-categoryRow + .mailingEditor-basisRow {
+    margin-top: 6px;
+}
+
+.mailingEditor-basisRow .form-label {
+    margin-bottom: 2px;
+    color: rgba(47, 58, 79, 0.72);
+    font-size: 0.74rem;
+    font-weight: 600;
+}
+
+.mailingEditor-basisMarkupWrap {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    min-height: 42px;
+    overflow: hidden;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.76);
+}
+
+.mailingEditor-basisMarkupWrap .form-control {
+    min-width: 0;
+}
+
+.mailingEditor-basisMarkupFloatingField > .form-control {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.mailingEditor-basisMarkupFloatingField > .form-control:disabled {
+    background: rgba(233, 236, 239, 0.65);
+}
+
+.mailingEditor-individualCheck {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    flex: 0 0 auto;
+    min-width: 150px;
+    min-height: 42px;
+    padding: 0 9px;
+    margin: 0;
+    color: rgba(47, 58, 79, 0.78);
+    border: 0;
+    border-left: 1px solid rgba(120, 135, 160, 0.16);
+    border-radius: 0;
+    background: transparent;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.mailingEditor-individualCheck.form-check {
+    padding-left: 10px;
+}
+
+.mailingEditor-individualCheck .form-check-input,
+.mailingEditor-individualCheck .form-check-label {
+    cursor: pointer;
+    user-select: none;
+}
+
+.mailingEditor-individualCheck .form-check-input {
+    flex: 0 0 auto;
+    float: none;
+    margin-left: 0;
+    margin-top: 0;
+}
+
+.mailingEditor-individualCheck .form-check-label {
+    line-height: 1;
+}
+
+.mailingEditor-deleteBasisBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    color: rgb(194, 65, 65);
+    border: 1px solid rgba(194, 65, 65, 0.16);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.72);
+    font-size: 1.12rem;
+    line-height: 1;
+    transition-duration: 0.15s;
+}
+
+.mailingEditor-deleteBasisBtn:hover,
+.mailingEditor-deleteBasisBtn:focus {
+    color: rgb(176, 45, 45);
+    border-color: rgba(194, 65, 65, 0.36);
+    background: rgba(255, 242, 242, 0.9);
+    transform: scale(1.04);
+}
+
+.mailingEditor-deleteBasisText {
+    display: none;
+}
+
+@media (max-width: 480px) {
+    .mailingEditor {
+        padding: 4px;
+    }
+
+    .mailingEditor-topBar {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 8px;
+        padding: 8px;
+    }
+
+    .mailingEditor-topBarLeft {
+        gap: 8px;
+    }
+
+    .mailingEditor-title {
+        width: 100%;
+        font-size: 1.05rem;
+    }
+
+    .mailingEditor-createdAtField,
+    .mailingEditor-employeeField,
+    .mailingEditor-contactField {
+        width: 100%;
+    }
+
+    .mailingEditor-topBarActions {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+        width: 100%;
+    }
+
+    .mailingEditor-topBarActions > .btn {
+        min-height: 38px;
+        padding: 5px 7px;
+        font-size: 0.9rem;
+        line-height: 1.1;
+        white-space: normal;
+    }
+
+    .mailingEditor-pdfSelfControl {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        min-height: 38px;
+        border-color: rgba(108, 117, 125, 0.55);
+        background: rgba(255, 255, 255, 0.9);
+    }
+
+    .mailingEditor-pdfSelfControl > .btn {
+        min-height: 38px;
+        padding: 5px 8px;
+        font-size: 0.9rem;
+        line-height: 1.1;
+        white-space: nowrap;
+    }
+
+    .mailingEditor-pdfSelfCheck {
+        justify-content: center;
+        min-width: 0;
+        min-height: 38px;
+        padding: 0 8px;
+        font-size: 0.84rem;
+        white-space: nowrap;
+    }
+
+    .mailingEditor-pdfSelfCheck.form-check {
+        padding-left: 8px;
+    }
+
+    .mailingEditor-pdfSelfCheck .form-check-label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .mailingEditor-categoriesHeader {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .mailingEditor-categoryRow {
+        grid-template-columns: 1fr;
+    }
+
+    .mailingEditor-basisRow {
+        grid-template-columns: 1fr;
+        margin-left: 0;
+    }
+
+    .mailingEditor-basisMarkupWrap {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .mailingEditor-deleteCategoryBtn {
+        order: 4;
+        justify-self: stretch;
+        width: 100%;
+        margin-left: 0;
+    }
+
+    .mailingEditor-addBasisBtn {
+        order: 5;
+        justify-self: stretch;
+        width: 100%;
+        margin-left: 0;
+    }
+
+    .mailingEditor-deleteBasisBtn {
+        justify-self: stretch;
+        width: 100%;
+        font-size: 0.9rem;
+        font-weight: 600;
+        gap: 6px;
+    }
+
+    .mailingEditor-deleteBasisBtn svg {
+        display: none;
+    }
+
+    .mailingEditor-deleteBasisText {
+        display: inline;
+    }
+
+    .mailingEditor-visibleCheck {
+        min-width: 118px;
+        min-height: 42px;
+        padding: 0 8px;
+        border-left: 1px solid rgba(120, 135, 160, 0.16);
+        font-size: 0.82rem;
+    }
+}

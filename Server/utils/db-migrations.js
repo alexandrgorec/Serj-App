@@ -1,6 +1,7 @@
 const { pool } = require("../db");
 
 let ensureOrderNumberColumnPromise = null;
+let ensureMailingsTablePromise = null;
 
 async function ensureOrderNumberColumn() {
     if (!ensureOrderNumberColumnPromise) {
@@ -55,6 +56,26 @@ async function ensureOrderNumberColumn() {
     return ensureOrderNumberColumnPromise;
 }
 
+async function ensureMailingsTable() {
+    if (!ensureMailingsTablePromise) {
+        ensureMailingsTablePromise = (async () => {
+            await pool.query(`
+                CREATE TABLE IF NOT EXISTS mailings (
+                    id BIGSERIAL PRIMARY KEY,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    employee_json JSON NOT NULL,
+                    categories_json JSON NOT NULL DEFAULT '[]'::json
+                )
+            `);
+        })().catch((error) => {
+            ensureMailingsTablePromise = null;
+            throw error;
+        });
+    }
+    return ensureMailingsTablePromise;
+}
+
 module.exports = {
     ensureOrderNumberColumn,
+    ensureMailingsTable,
 };

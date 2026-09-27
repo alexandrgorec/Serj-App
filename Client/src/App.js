@@ -5,6 +5,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import OrderEditor from "./OrderEditor";
 import FooterApp from './FooterApp';
 import AllOrders from './AllOrders';
+import Mailings from './Mailings';
+import MailingEditor from './MailingEditor';
 import Login from './Login';
 import axios from 'axios';
 import Menu from './Menu';
@@ -134,7 +136,9 @@ function App() {
                   {user.rights.adminAccess && <Route path='/menu/auditlog' element={<AuditLog />}></Route>}
                   <Route path='/menu/profile' element={'profile'}></Route>
                 </Route>
-                <Route path='/warehouse' element={'Компонент не создан'}></Route>
+                <Route path='/mailing' element={<Mailings />}></Route>
+                <Route path='/mailing/new' element={<MailingEditor mode="new" />}></Route>
+                <Route path='/mailing/edit/:id' element={<MailingEditor mode="edit" />}></Route>
                 <Route path='/*' element={<Navigate to="/allorders" replace />}></Route>
               </Routes>
             </section>
