@@ -47,7 +47,7 @@ class AdminController {
 
     }
     async getListUsers(req, res) {
-        pool.query("select id, rights,  login, userinfo from users", (err, result) => {
+        pool.query("select id, rights, login, userinfo from users order by id", (err, result) => {
             if (err) {
                 console.error('Error connecting to the database', err.stack);
                 res.send('ошибка доступа к базе данных');
@@ -81,6 +81,62 @@ class AdminController {
                 res.sendStatus(202);
             }
         });
+    }
+
+    async updateUserRight(req, res) {
+        try {
+            const id = Number(req.body?.targetUserId);
+            const rightName = String(req.body?.rightName || "");
+            const value = !!req.body?.value;
+            const allowedRights = new Set(["adminAccess", "finBlockAccess"]);
+
+            if (!Number.isInteger(id) || id <= 0 || !allowedRights.has(rightName)) {
+                return res.status(400).send("Некорректные данные для изменения прав пользователя");
+            }
+
+            const currentUserResult = await pool.query(
+                "SELECT id, login, rights, userinfo FROM users WHERE id = $1",
+                [id]
+            );
+            const targetUser = currentUserResult.rows?.[0];
+
+            if (!targetUser) {
+                return res.status(404).send("Пользователь не найден");
+            }
+
+            const previousRights = targetUser.rights || {};
+            const nextRights = {
+                ...previousRights,
+                [rightName]: value,
+            };
+
+            const updateResult = await pool.query(
+                "UPDATE users SET rights = $1 WHERE id = $2 RETURNING id, login, rights, userinfo",
+                [nextRights, id]
+            );
+            const updatedUser = updateResult.rows?.[0];
+
+            await writeAuditLog({
+                actorUserId: req.body.userId,
+                actorName: req.body.user,
+                action: "UPDATE_USER_RIGHT",
+                entityType: "user",
+                entityId: id,
+                route: "/admin/updateuserright",
+                payload: {
+                    login: targetUser.login,
+                    name: targetUser.userinfo?.name || null,
+                    rightName,
+                    previousValue: !!previousRights[rightName],
+                    nextValue: value,
+                },
+            });
+
+            res.status(202).json({ user: updatedUser });
+        } catch (error) {
+            console.error("Error update user right", error);
+            res.status(500).send("ошибка доступа к базе данных");
+        }
     }
 
     async listAuditLog(req, res) {

@@ -9,6 +9,7 @@ adminRouter.use(userController.checkAdmin)
 adminRouter.post("/adduser", adminController.addUser);
 adminRouter.post("/getListUsers", adminController.getListUsers);
 adminRouter.post("/deleteuser", adminController.deleteuser);
+adminRouter.post("/updateuserright", adminController.updateUserRight);
 adminRouter.post("/auditlog/list", adminController.listAuditLog);
 adminRouter.post("/auditlog/clear", adminController.clearAuditLog);
 

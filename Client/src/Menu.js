@@ -2,8 +2,6 @@ import './Menu.css'
 
 import { TiUserAdd } from "react-icons/ti";
 import { FaUserEdit } from "react-icons/fa";
-import { TiUserDelete } from "react-icons/ti";
-import { FaUser } from "react-icons/fa";
 import { FaClipboardList } from "react-icons/fa";
 
 import { useContext } from 'react';
@@ -25,8 +23,8 @@ function Menu() {
 
             {user.rights.adminAccess &&
                 <Link className='menuComponent nodecoration' to="/menu/deleteuser">
-                    <TiUserDelete size="3em" /><br />
-                    Удалить <br /> пользователя
+                    <FaUserEdit size="3em" /><br />
+                    Редактировать <br /> пользователя
                 </Link>
             }
 
