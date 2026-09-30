@@ -22,6 +22,13 @@ import { createEmptyOrder } from './orderDefaults';
 
 export const userContext = createContext();
 
+function createEmptyEditingOrder() {
+  return {
+    suppliers: [],
+    buyers: [],
+  };
+}
+
 function App() {
   const apiBaseUrl = getApiBaseUrl();
   const [showMessage, setShowMessage] = useState(false);
@@ -34,17 +41,30 @@ function App() {
   }
   const [token, setToken] = useState(window.localStorage.token);
 
-  const [editingOrder, setEditingOrder] = useState({
-    suppliers: [],
-    buyers: [],
-  });
+  const [editingOrder, setEditingOrder] = useState(createEmptyEditingOrder());
 
   const [user, setUser] = useState({
     name: '',
     rights: {},
   })
+  const [newOrder, setNewOrder] = useState(createEmptyOrder());
+
+  const resetVolatileState = () => {
+    setEditingOrder(createEmptyEditingOrder());
+    setNewOrder(createEmptyOrder());
+    setUser({
+      name: '',
+      rights: {},
+    });
+    setShowMessage(false);
+    setMessage('');
+    delete sessionStorage.createdOrderId;
+    delete sessionStorage.bgColor;
+  };
+
   const logOut = () => {
     delete window.localStorage.token;
+    resetVolatileState();
     setToken(null);
   }
 
@@ -72,10 +92,6 @@ function App() {
     }
     return Promise.reject(error);
   })
-
-  const [newOrder, setNewOrder] = useState(createEmptyOrder());
-
-
 
   useEffect(() => {
     if (token)

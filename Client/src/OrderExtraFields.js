@@ -27,7 +27,7 @@ function calculateStorageTotal(order) {
   return formatCalculatedValue(ton * price);
 }
 
-function OrderExtraFields({ order, setOrder, variant = 'desktop', section = 'all' }) {
+function OrderExtraFields({ order, setOrder, variant = 'desktop', section = 'all', readOnly = false }) {
   const updateField = (field, value) => {
     setOrder((prev) => {
       const next = { ...prev, [field]: value };
@@ -38,11 +38,12 @@ function OrderExtraFields({ order, setOrder, variant = 'desktop', section = 'all
     });
   };
 
-  const inputProps = (field, readOnly = false) => ({
+  const inputProps = (field, calculatedReadOnly = false) => ({
     as: 'input',
     type: 'text',
     value: order?.[field] || '',
-    readOnly,
+    readOnly: readOnly || calculatedReadOnly,
+    disabled: readOnly,
     onChange: (evt) => updateField(field, evt.target.value),
   });
 

@@ -2,7 +2,7 @@
     --edit-topbar-item-height: 44px;
     position: sticky;
     top: 0;
-    z-index: 1200;
+    z-index: 1020;
     background: aliceblue;
     border-bottom: 1px solid rgba(130, 150, 180, 0.25);
     padding: 6px 0;
@@ -32,6 +32,11 @@
     flex: 0 0 66px;
 }
 
+.editOrderDesktop-specificationStatus {
+    width: 132px;
+    flex: 0 0 132px;
+}
+
 .editOrderDesktop-status > .form-select {
     color: inherit;
     border-color: currentColor;
@@ -41,14 +46,17 @@
     padding-right: 24px;
 }
 
-.editOrderDesktop-ttnStatus > .form-select {
+.editOrderDesktop-ttnStatus > .form-select,
+.editOrderDesktop-specificationStatus > .form-select {
     color: rgba(47, 58, 79, 0.95);
 }
 
 .editOrderDesktop-status > label,
 .editOrderDesktop-status > label::after,
 .editOrderDesktop-ttnStatus > label,
-.editOrderDesktop-ttnStatus > label::after {
+.editOrderDesktop-ttnStatus > label::after,
+.editOrderDesktop-specificationStatus > label,
+.editOrderDesktop-specificationStatus > label::after {
     background: transparent !important;
 }
 
@@ -77,7 +85,23 @@
     color: rgba(28, 107, 59, 0.98);
 }
 
-.editOrderDesktop-status > .form-select:disabled {
+.editOrder-specification-required > .form-select {
+    background-color: rgba(217, 45, 32, 0.16);
+    color: rgba(145, 32, 24, 0.98);
+}
+
+.editOrder-specification-sent > .form-select {
+    background-color: rgba(245, 158, 11, 0.2);
+    color: rgba(145, 83, 10, 0.98);
+}
+
+.editOrder-specification-signed > .form-select {
+    background-color: rgba(39, 167, 90, 0.18);
+    color: rgba(28, 107, 59, 0.98);
+}
+
+.editOrderDesktop-status > .form-select:disabled,
+.editOrderDesktop-specificationStatus > .form-select:disabled {
     opacity: 1;
     cursor: not-allowed;
 }

@@ -2,7 +2,7 @@ import './OrderDeliveryFields.css';
 import FloatingLabel from 'react-bootstrap/FloatingLabel';
 import Form from 'react-bootstrap/Form';
 
-function OrderDeliveryFields({ order, setOrder, variant = 'desktop' }) {
+function OrderDeliveryFields({ order, setOrder, variant = 'desktop', readOnly = false }) {
   const updateField = (field, value) => {
     setOrder((prev) => ({ ...prev, [field]: value }));
   };
@@ -14,6 +14,7 @@ function OrderDeliveryFields({ order, setOrder, variant = 'desktop' }) {
           as="input"
           type='text'
           value={order?.ip || ''}
+          disabled={readOnly}
           onChange={(evt) => updateField('ip', evt.target.value)}
         />
       </FloatingLabel>
@@ -22,6 +23,7 @@ function OrderDeliveryFields({ order, setOrder, variant = 'desktop' }) {
           as="input"
           type='text'
           value={order?.driver || ''}
+          disabled={readOnly}
           onChange={(evt) => updateField('driver', evt.target.value)}
         />
       </FloatingLabel>
@@ -30,6 +32,7 @@ function OrderDeliveryFields({ order, setOrder, variant = 'desktop' }) {
           as="input"
           type='number'
           value={order?.cost || ''}
+          disabled={readOnly}
           onChange={(evt) => updateField('cost', evt.target.value)}
         />
       </FloatingLabel>

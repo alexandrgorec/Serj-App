@@ -16,6 +16,7 @@ import OrderDeliveryFields from './OrderDeliveryFields';
 import { getManagerOptions } from './managerOptions';
 import { ORDER_STATUS_OPTIONS, normalizeOrderStatus } from './orderStatus';
 import { ORDER_TTN_STATUS_OPTIONS, normalizeOrderTtnStatus } from './orderTtnStatus';
+import { ORDER_SPECIFICATION_STATUS_OPTIONS, normalizeOrderSpecificationStatus } from './orderSpecificationStatus';
 
 function getOrderStatusClass(status) {
   const normalizedStatus = normalizeOrderStatus(status);
@@ -24,6 +25,13 @@ function getOrderStatusClass(status) {
   if (normalizedStatus === 'Заполнена') return 'editOrder-status-loaded';
   if (normalizedStatus === 'Реализована') return 'editOrder-status-done';
   return 'editOrder-status-created';
+}
+
+function getSpecificationStatusClass(status) {
+  const normalizedStatus = normalizeOrderSpecificationStatus(status);
+  if (normalizedStatus === 'Подписана') return 'editOrder-specification-signed';
+  if (normalizedStatus === 'Отправлена') return 'editOrder-specification-sent';
+  return 'editOrder-specification-required';
 }
 
 function EditOrderMobile({
@@ -37,14 +45,17 @@ function EditOrderMobile({
   onHistory,
   historyDisabled = false,
   printDisabled = false,
+  readOnly = false,
   saveLabel = 'Записать',
 }) {
   const { user } = useContext(userContext);
   const bgColorH = 'rgba(127, 244, 166, 0.22)';
   const isEditMode = mode === 'edit';
-  const canEditOrderStatus = !!user?.rights?.finBlockAccess;
+  const canAccessFinBlock = !!(user?.rights?.finBlockAccess || user?.rights?.adminAccess);
+  const canEditOrderStatus = !!(user?.rights?.finBlockAccess || user?.rights?.adminAccess);
   const orderStatus = normalizeOrderStatus(order.orderStatus);
   const ttnStatus = normalizeOrderTtnStatus(order.ttnStatus);
+  const specificationStatus = normalizeOrderSpecificationStatus(order.specificationStatus);
   const managerOptions = user?.managerOptions || [];
 
   const [deleteElement, setDeleteElement] = useState(null);
@@ -65,6 +76,7 @@ function EditOrderMobile({
   };
 
   const refresh = () => {
+    if (readOnly) return;
     setOrder({ ...order });
   };
 
@@ -100,6 +112,7 @@ function EditOrderMobile({
   };
 
   const calculateSumma = (target, preferredMode = null) => {
+    if (readOnly) return;
     const mode = preferredMode || target.summaMode || 'liters';
     target.summaMode = mode;
     const amount = parseNumeric(mode === 'tons' ? target.tons : target.liters);
@@ -118,6 +131,7 @@ function EditOrderMobile({
   };
 
   const addSupplier = () => {
+    if (readOnly) return;
     setOrder((prev) => ({
       ...prev,
       suppliers: [
@@ -128,6 +142,7 @@ function EditOrderMobile({
   };
 
   const addBuyer = () => {
+    if (readOnly) return;
     setOrder((prev) => ({
       ...prev,
       buyers: [
@@ -138,6 +153,7 @@ function EditOrderMobile({
   };
 
   const addBuyerH = (buyerIndex) => {
+    if (readOnly) return;
     const next = { ...order };
     next.buyers = [...(next.buyers || [])];
     const buyer = { ...next.buyers[buyerIndex] };
@@ -152,6 +168,7 @@ function EditOrderMobile({
 
   const handleDeleteConfirmed = () => {
     if (!deleteElement) return;
+    if (readOnly) return;
 
     if (deleteElement.element !== 'buyerH') {
       setOrder((prev) => {
@@ -227,11 +244,14 @@ function EditOrderMobile({
       inputMode='decimal'
       value={target?.[field] || ''}
       placeholder={placeholder}
+      disabled={readOnly}
       onChange={(evt) => {
+        if (readOnly) return;
         target[field] = evt.target.value;
         refresh();
       }}
       onBlur={() => {
+        if (readOnly) return;
         target[field] = formatPreserveFraction(target[field]);
         refresh();
       }}
@@ -250,6 +270,7 @@ function EditOrderMobile({
                 min='1'
                 placeholder='Авто'
                 value={order.orderNumber || (isEditMode ? order.id || '' : '')}
+                disabled={readOnly}
                 onChange={(evt) => {
                   order.orderNumber = evt.target.value;
                   refresh();
@@ -275,6 +296,7 @@ function EditOrderMobile({
               <Form.Select
                 size='sm'
                 value={ttnStatus}
+                disabled={readOnly}
                 onChange={(evt) => {
                   order.ttnStatus = evt.target.value;
                   refresh();
@@ -285,11 +307,27 @@ function EditOrderMobile({
                 ))}
               </Form.Select>
             </div>
+            <div className={`editOrderMobile-specificationStatusField ${getSpecificationStatusClass(specificationStatus)}`}>
+              <Form.Select
+                size='sm'
+                value={specificationStatus}
+                disabled={readOnly}
+                onChange={(evt) => {
+                  order.specificationStatus = evt.target.value;
+                  refresh();
+                }}
+              >
+                {ORDER_SPECIFICATION_STATUS_OPTIONS.map((status) => (
+                  <option key={status} value={status}>{status}</option>
+                ))}
+              </Form.Select>
+            </div>
             <div className='editOrderMobile-dateWrap'>
               <Form.Control
                 as='input'
                 type='date'
                 value={order.date || ''}
+                disabled={readOnly}
                 onChange={(evt) => {
                   order.date = evt.target.value;
                   refresh();
@@ -300,6 +338,7 @@ function EditOrderMobile({
               <Form.Select
                 size='sm'
                 value={order.clientPaid || 'Нет'}
+                disabled={readOnly}
                 onChange={(evt) => {
                   order.clientPaid = evt.target.value;
                   refresh();
@@ -313,6 +352,7 @@ function EditOrderMobile({
               <Form.Select
                 size='sm'
                 value={order.salaryIncluded || 'Нет'}
+                disabled={readOnly}
                 onChange={(evt) => {
                   order.salaryIncluded = evt.target.value;
                   refresh();
@@ -326,6 +366,7 @@ function EditOrderMobile({
               <Form.Select
                 size='sm'
                 value={order.invoiceSent || 'Нет'}
+                disabled={readOnly}
                 onChange={(evt) => {
                   order.invoiceSent = evt.target.value;
                   refresh();
@@ -339,6 +380,7 @@ function EditOrderMobile({
               <Form.Select
                 size='sm'
                 value={order.reconciliationAct || 'Нет'}
+                disabled={readOnly}
                 onChange={(evt) => {
                   order.reconciliationAct = evt.target.value;
                   refresh();
@@ -351,8 +393,8 @@ function EditOrderMobile({
           </Stack>
 
           <Stack direction='horizontal' gap={2} className='editOrderMobile-actionsRow'>
-            <Button size='sm' variant='success' onClick={addBuyer}>+ Покупатель</Button>
-            <Button size='sm' variant='primary' onClick={addSupplier}>+ Поставщик</Button>
+            <Button size='sm' variant='success' onClick={addBuyer} disabled={readOnly}>+ Покупатель</Button>
+            <Button size='sm' variant='primary' onClick={addSupplier} disabled={readOnly}>+ Поставщик</Button>
             {onClear &&
               <Button
                 size='sm'
@@ -360,6 +402,7 @@ function EditOrderMobile({
                 className='editOrderMobile-clearBtn'
                 title='Очистить'
                 aria-label='Очистить'
+                disabled={readOnly}
                 onClick={onClear}
             >
                 <FaArrowsRotate />
@@ -377,7 +420,7 @@ function EditOrderMobile({
               <FaClockRotateLeft />
             </Button>
             {onBack && <Button size='sm' variant='primary' onClick={onBack}>Назад</Button>}
-            <Button size='sm' variant='success' onClick={onSave}>{saveLabel}</Button>
+            <Button size='sm' variant='success' onClick={onSave} disabled={readOnly}>{saveLabel}</Button>
             <Button
               size='sm'
               variant='outline-secondary'
@@ -405,8 +448,9 @@ function EditOrderMobile({
                   <MdDelete
                     size='1.4em'
                     className='icon'
-                    style={{ color: 'rgb(194, 65, 65)' }}
+                    style={{ color: 'rgb(194, 65, 65)', opacity: readOnly ? 0.35 : 1, cursor: readOnly ? 'not-allowed' : 'pointer' }}
                     onClick={() => {
+                      if (readOnly) return;
                       setDeleteElement({ element: 'suppliers', index, item: supplier });
                       handleShowModal();
                     }}
@@ -416,11 +460,11 @@ function EditOrderMobile({
 
               <div className='editOrderMobile-field'>
                 <div className='editOrderMobile-label'>Поставщик</div>
-                <ComboBox object={supplier} nameDataList={'SUPPLIERS'} field={'name'} />
+                <ComboBox object={supplier} nameDataList={'SUPPLIERS'} field={'name'} disabled={readOnly} />
               </div>
               <div className='editOrderMobile-field'>
                 <div className='editOrderMobile-label'>Вид продукта</div>
-                <ComboBox object={supplier} nameDataList={'TYPE_OF_PRODUCT'} field={'typeOfProduct'} />
+                <ComboBox object={supplier} nameDataList={'TYPE_OF_PRODUCT'} field={'typeOfProduct'} disabled={readOnly} />
               </div>
 
               <div className='editOrderMobile-grid3'>
@@ -438,7 +482,7 @@ function EditOrderMobile({
                 </div>
               </div>
 
-              {user.rights.finBlockAccess &&
+              {canAccessFinBlock &&
                 <>
                   <div className='editOrderMobile-grid3'>
                     <div className='editOrderMobile-field'>
@@ -446,6 +490,7 @@ function EditOrderMobile({
                       <Form.Control
                         type='text'
                         value={supplier.sf || ''}
+                        disabled={readOnly}
                         onChange={(evt) => {
                           supplier.sf = evt.target.value;
                           refresh();
@@ -457,6 +502,7 @@ function EditOrderMobile({
                       <Form.Control
                         type='date'
                         value={supplier.date || ''}
+                        disabled={readOnly}
                         onChange={(evt) => {
                           supplier.date = evt.target.value;
                           refresh();
@@ -468,6 +514,7 @@ function EditOrderMobile({
                       <Form.Control
                         type='text'
                         value={supplier.akt || ''}
+                        disabled={readOnly}
                         onChange={(evt) => {
                           supplier.akt = evt.target.value;
                           refresh();
@@ -482,6 +529,7 @@ function EditOrderMobile({
                         type='text'
                         inputMode='decimal'
                         value={supplier.summa || ''}
+                        disabled={readOnly}
                         onChange={(evt) => {
                           supplier.summa = evt.target.value;
                           refresh();
@@ -493,6 +541,7 @@ function EditOrderMobile({
                       />
                       <Button
                         variant={supplier.summaMode === 'tons' ? 'warning' : 'info'}
+                        disabled={readOnly}
                         onClick={() => {
                           const mode = supplier.summaMode === 'tons' ? 'liters' : 'tons';
                           calculateSumma(supplier, mode);
@@ -524,6 +573,7 @@ function EditOrderMobile({
                     size='sm'
                     variant='warning'
                     className='editOrderMobile-hBtn'
+                    disabled={readOnly}
                     style={{ backgroundColor: hasBuyerH ? bgColorH : '' }}
                     onClick={() => addBuyerH(index)}
                   >
@@ -532,8 +582,9 @@ function EditOrderMobile({
                   <MdDelete
                     size='1.4em'
                     className='icon'
-                    style={{ color: 'rgb(194, 65, 65)' }}
+                    style={{ color: 'rgb(194, 65, 65)', opacity: readOnly ? 0.35 : 1, cursor: readOnly ? 'not-allowed' : 'pointer' }}
                     onClick={() => {
+                      if (readOnly) return;
                       setDeleteElement({ element: 'buyers', index, item: buyer });
                       handleShowModal();
                     }}
@@ -543,11 +594,11 @@ function EditOrderMobile({
 
               <div className='editOrderMobile-field'>
                 <div className='editOrderMobile-label'>Покупатель</div>
-                <ComboBox object={buyer} nameDataList={'BUYERS'} field={'name'} />
+                <ComboBox object={buyer} nameDataList={'BUYERS'} field={'name'} disabled={readOnly} />
               </div>
               <div className='editOrderMobile-field'>
                 <div className='editOrderMobile-label'>Вид продукта</div>
-                <ComboBox object={buyer} nameDataList={'TYPE_OF_PRODUCT'} field={'typeOfProduct'} />
+                <ComboBox object={buyer} nameDataList={'TYPE_OF_PRODUCT'} field={'typeOfProduct'} disabled={readOnly} />
               </div>
 
               <div className='editOrderMobile-grid3'>
@@ -565,7 +616,7 @@ function EditOrderMobile({
                 </div>
               </div>
 
-              {user.rights.finBlockAccess &&
+              {canAccessFinBlock &&
                 <>
                   <div className='editOrderMobile-grid3'>
                     <div className='editOrderMobile-field'>
@@ -573,6 +624,7 @@ function EditOrderMobile({
                       <Form.Control
                         type='text'
                         value={buyer.sf || ''}
+                        disabled={readOnly}
                         onChange={(evt) => {
                           buyer.sf = evt.target.value;
                           refresh();
@@ -584,6 +636,7 @@ function EditOrderMobile({
                       <Form.Control
                         type='date'
                         value={buyer.date || ''}
+                        disabled={readOnly}
                         onChange={(evt) => {
                           buyer.date = evt.target.value;
                           refresh();
@@ -595,6 +648,7 @@ function EditOrderMobile({
                       <Form.Control
                         type='text'
                         value={buyer.akt || ''}
+                        disabled={readOnly}
                         onChange={(evt) => {
                           buyer.akt = evt.target.value;
                           refresh();
@@ -609,6 +663,7 @@ function EditOrderMobile({
                         type='text'
                         inputMode='decimal'
                         value={buyer.summa || ''}
+                        disabled={readOnly}
                         onChange={(evt) => {
                           buyer.summa = evt.target.value;
                           refresh();
@@ -620,6 +675,7 @@ function EditOrderMobile({
                       />
                       <Button
                         variant={buyer.summaMode === 'tons' ? 'warning' : 'info'}
+                        disabled={readOnly}
                         onClick={() => {
                           const mode = buyer.summaMode === 'tons' ? 'liters' : 'tons';
                           calculateSumma(buyer, mode);
@@ -640,8 +696,9 @@ function EditOrderMobile({
                       <MdDelete
                         size='1.35em'
                         className='icon'
-                        style={{ color: 'rgb(194, 65, 65)' }}
+                        style={{ color: 'rgb(194, 65, 65)', opacity: readOnly ? 0.35 : 1, cursor: readOnly ? 'not-allowed' : 'pointer' }}
                         onClick={() => {
+                          if (readOnly) return;
                           setDeleteElement({ element: 'buyerH', index, indexBuyerH, item: buyerH });
                           handleShowModal();
                         }}
@@ -651,11 +708,11 @@ function EditOrderMobile({
 
                   <div className='editOrderMobile-field'>
                     <div className='editOrderMobile-label'>Подпокупатель</div>
-                    <ComboBox object={buyerH} nameDataList={'BUYERS'} field={'name'} isBuyerH={'buyerH'} />
+                    <ComboBox object={buyerH} nameDataList={'BUYERS'} field={'name'} isBuyerH={'buyerH'} disabled={readOnly} />
                   </div>
                   <div className='editOrderMobile-field'>
                     <div className='editOrderMobile-label'>Вид продукта</div>
-                    <ComboBox object={buyerH} nameDataList={'TYPE_OF_PRODUCT'} field={'typeOfProduct'} />
+                    <ComboBox object={buyerH} nameDataList={'TYPE_OF_PRODUCT'} field={'typeOfProduct'} disabled={readOnly} />
                   </div>
 
                   <div className='editOrderMobile-grid3'>
@@ -673,7 +730,7 @@ function EditOrderMobile({
                     </div>
                   </div>
 
-                  {user.rights.finBlockAccess &&
+                  {canAccessFinBlock &&
                     <>
                       <div className='editOrderMobile-grid3'>
                         <div className='editOrderMobile-field'>
@@ -681,6 +738,7 @@ function EditOrderMobile({
                           <Form.Control
                             type='text'
                             value={buyerH.sf || ''}
+                            disabled={readOnly}
                             onChange={(evt) => {
                               buyerH.sf = evt.target.value;
                               refresh();
@@ -692,6 +750,7 @@ function EditOrderMobile({
                           <Form.Control
                             type='date'
                             value={buyerH.date || ''}
+                            disabled={readOnly}
                             onChange={(evt) => {
                               buyerH.date = evt.target.value;
                               refresh();
@@ -703,6 +762,7 @@ function EditOrderMobile({
                           <Form.Control
                             type='text'
                             value={buyerH.akt || ''}
+                            disabled={readOnly}
                             onChange={(evt) => {
                               buyerH.akt = evt.target.value;
                               refresh();
@@ -717,6 +777,7 @@ function EditOrderMobile({
                             type='text'
                             inputMode='decimal'
                             value={buyerH.summa || ''}
+                            disabled={readOnly}
                             onChange={(evt) => {
                               buyerH.summa = evt.target.value;
                               refresh();
@@ -728,6 +789,7 @@ function EditOrderMobile({
                           />
                           <Button
                             variant={buyerH.summaMode === 'tons' ? 'warning' : 'info'}
+                            disabled={readOnly}
                             onClick={() => {
                               const mode = buyerH.summaMode === 'tons' ? 'liters' : 'tons';
                               calculateSumma(buyerH, mode);
@@ -746,14 +808,15 @@ function EditOrderMobile({
           })}
         </div>
 
-        <OrderPaymentDates order={order} setOrder={setOrder} variant='mobile' />
-        <OrderDeliveryFields order={order} setOrder={setOrder} variant='mobile' />
+        <OrderPaymentDates order={order} setOrder={setOrder} variant='mobile' readOnly={readOnly} />
+        <OrderDeliveryFields order={order} setOrder={setOrder} variant='mobile' readOnly={readOnly} />
 
         <div className='editOrderMobile-mainFields'>
           <div className='editOrderMobile-field'>
             <div className='editOrderMobile-label'>Менеджер</div>
             <Form.Select
               value={order.manager || ''}
+              disabled={readOnly}
               onChange={(evt) => {
                 order.manager = evt.target.value;
                 refresh();
@@ -771,6 +834,7 @@ function EditOrderMobile({
               as='textarea'
               rows={4}
               value={order.comments || ''}
+              disabled={readOnly}
               onChange={(evt) => {
                 order.comments = evt.target.value;
                 refresh();
@@ -778,10 +842,10 @@ function EditOrderMobile({
             />
           </div>
           <div className='editOrderMobile-field'>
-            <OrderExtraFields order={order} setOrder={setOrder} variant='mobile' />
+            <OrderExtraFields order={order} setOrder={setOrder} variant='mobile' readOnly={readOnly} />
           </div>
           <div className='editOrderMobile-field'>
-            <OtkFields order={order} setOrder={setOrder} variant='mobile' />
+            <OtkFields order={order} setOrder={setOrder} variant='mobile' readOnly={readOnly} />
           </div>
           <div className='editOrderMobile-field'>
             <div className='editOrderMobile-label'>Налог 42%</div>

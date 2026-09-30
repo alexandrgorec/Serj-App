@@ -50,7 +50,7 @@ export function getOrderOtkTax(order) {
   return normalizedOtk === null ? 0 : Math.round(normalizedOtk * 0.42);
 }
 
-function OtkFields({ order, setOrder, variant = 'desktop' }) {
+function OtkFields({ order, setOrder, variant = 'desktop', readOnly = false }) {
   const manualValue = getOtkManualValue(order);
   const formulaValues = getFormulaValues(order);
   const manualActive = hasValue(manualValue);
@@ -75,7 +75,7 @@ function OtkFields({ order, setOrder, variant = 'desktop' }) {
     as: 'input',
     type: 'text',
     value: field === 'otkManual' ? manualValue : formulaValues[field],
-    disabled,
+    disabled: readOnly || disabled,
     onChange: (evt) => updateOtkField(field, evt.target.value),
   });
 

@@ -1,5 +1,6 @@
 import { ORDER_STATUS_OPTIONS } from './orderStatus';
 import { ORDER_TTN_STATUS_OPTIONS } from './orderTtnStatus';
+import { ORDER_SPECIFICATION_STATUS_OPTIONS } from './orderSpecificationStatus';
 
 export const emptyOrderRow = () => ({
   date: '',
@@ -21,6 +22,7 @@ export const createEmptyOrder = (overrides = {}) => ({
   orderNumber: '',
   orderStatus: ORDER_STATUS_OPTIONS[0],
   ttnStatus: ORDER_TTN_STATUS_OPTIONS[0].value,
+  specificationStatus: ORDER_SPECIFICATION_STATUS_OPTIONS[0],
   clientPaid: 'Нет',
   salaryIncluded: 'Нет',
   invoiceSent: 'Нет',

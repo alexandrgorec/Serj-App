@@ -5,7 +5,7 @@ import InputGroup from 'react-bootstrap/InputGroup';
 
 
 
-function TDSumma({ object, field = '', fontSize = '16px', display = '', calcTrigger = 0 }) {
+function TDSumma({ object, field = '', fontSize = '16px', display = '', calcTrigger = 0, disabled = false }) {
     let tabIndex = sessionStorage.tabIndex++;
     const ref = useRef(null);
     const [mode, setMode] = useState(object.summaMode || 'liters');
@@ -143,6 +143,7 @@ function TDSumma({ object, field = '', fontSize = '16px', display = '', calcTrig
                     autoComplete="off"
                     ref={ref}
                     inputMode="decimal"
+                    disabled={disabled}
                     onKeyDown={(evt) => {
                         if (!(evt.key.match(/\d/)
                             || evt.key === 'Backspace'
@@ -168,6 +169,7 @@ function TDSumma({ object, field = '', fontSize = '16px', display = '', calcTrig
                     tabIndex={-1}
                     variant={mode === 'liters' ? 'info' : 'warning'}
                     size="sm"
+                    disabled={disabled}
                     onClick={toggleMode}
                     title={mode === 'liters' ? 'Литры × Цена' : 'Тонны × Цена'}
                 >

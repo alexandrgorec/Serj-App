@@ -17,9 +17,10 @@ import TDSumma from './TDSumma';
 
 
 
-function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlineAddButtons = false, hideManagerInTable = false }) {
+function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlineAddButtons = false, hideManagerInTable = false, readOnly = false }) {
   sessionStorage.tabIndex = 0;
   const { user, size, display } = useContext(userContext);
+  const canAccessFinBlock = !!(user?.rights?.finBlockAccess || user?.rights?.adminAccess);
   const [, reload] = useState(false);
   const bgColorH = 'rgba(127, 244, 166, 0.49)';
 
@@ -80,6 +81,7 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
   };
 
   const addSupplier = () => {
+    if (readOnly) return;
     setOrder(orderHandle => {
       orderHandle.suppliers.push({
         liters: '',
@@ -93,6 +95,7 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
   };
 
   const addBuyer = () => {
+    if (readOnly) return;
     setOrder(orderHandle => {
       orderHandle.buyers.push({
         liters: '',
@@ -106,6 +109,7 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
   };
 
   const copyFirstSupplierValuesToFirstBuyer = () => {
+    if (readOnly) return;
     const supplier = order?.suppliers?.[0];
     if (!supplier || !(order?.buyers || [])[0]) return;
 
@@ -128,6 +132,7 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
 
   const handleDeleteConfirmed = () => {
     if (!deleteElement) return;
+    if (readOnly) return;
 
     if (deleteElement.element !== 'buyerH') {
       setOrder((prevOrder) => {
@@ -202,8 +207,8 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
       <div className='noselect'>
         {showExternalAddButtons &&
           <Stack direction='horizontal' gap={2} className='orderTable-topActions'>
-            <Button variant="primary" size={size} onClick={addSupplier}>Добавить поставщика</Button>
-            <Button variant="success" size={size} onClick={addBuyer}>Добавить покупателя</Button>
+            <Button variant="primary" size={size} onClick={addSupplier} disabled={readOnly}>Добавить поставщика</Button>
+            <Button variant="success" size={size} onClick={addBuyer} disabled={readOnly}>Добавить покупателя</Button>
           </Stack>
         }
         <Table className='orderTable-main' striped bordered hover responsive="sm">
@@ -213,7 +218,7 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
                 ? <th colSpan={2} className='orderTable-head-supplier'>Поставщик</th>
                 : <>
                     <th width='1%'>
-                      <Button tabIndex={-1} variant="primary" size={size} className='col-12' onClick={addSupplier}>+</Button>
+                      <Button tabIndex={-1} variant="primary" size={size} className='col-12' onClick={addSupplier} disabled={readOnly}>+</Button>
                     </th>
                     <th width='16%'>Поставщик </th>
                   </>
@@ -222,7 +227,7 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
               <th width='6%'>Литры</th>
               <th width='6%'>Тонны</th>
               <th width='6%'>Цена</th>
-              {user.rights.finBlockAccess &&
+              {canAccessFinBlock &&
                 <>
                   <th width='6%' style={{ display: display }}>С/Ф</th>
                   <th width='1%' style={{ display: display }} className='th-date'>Дата СФ</th>
@@ -238,7 +243,8 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
                 <tr key={getRowKey(supplier, 'supplier', index)} className='suppliers-tr'>
                   <td className='orderTable-col-actions p-0 pt-1 pr-1'>
                     <Stack direction='horizontal'>
-                      <MdDelete size='1.7em' className='icon ms-auto' style={{ color: 'rgb(194, 65, 65)' }} onClick={() => {
+                      <MdDelete size='1.7em' className='icon ms-auto' style={{ color: 'rgb(194, 65, 65)', opacity: readOnly ? 0.35 : 1, cursor: readOnly ? 'not-allowed' : 'pointer' }} onClick={() => {
+                        if (readOnly) return;
                         setDeleteElement({
                           element: 'suppliers',
                           index,
@@ -250,20 +256,20 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
                     </Stack>
                   </td>
                   <td className='m-0 p-0 orderTable-col-supplier' >
-                    <ComboBox object={supplier} nameDataList={'SUPPLIERS'} field={'name'}/>
+                    <ComboBox object={supplier} nameDataList={'SUPPLIERS'} field={'name'} disabled={readOnly}/>
                   </td>
                   <td className='m-0 p-0'                   >
-                    <ComboBox object={supplier} nameDataList={'TYPE_OF_PRODUCT'} field={'typeOfProduct'} />
+                    <ComboBox object={supplier} nameDataList={'TYPE_OF_PRODUCT'} field={'typeOfProduct'} disabled={readOnly} />
                   </td>
-                  <TDInput object={supplier} field={'liters'} type={'number'} onChangeExtra={() => triggerSummaCalc(index)} />
-                  <TDInput object={supplier} field={'tons'} type={'number'} onChangeExtra={() => triggerSummaCalc(index)} />
-                  <TDInput object={supplier} field={'price'} type={'number'} onChangeExtra={() => triggerSummaCalc(index)} />
-                  {user.rights.finBlockAccess &&
+                  <TDInput object={supplier} field={'liters'} type={'number'} disabled={readOnly} onChangeExtra={() => triggerSummaCalc(index)} />
+                  <TDInput object={supplier} field={'tons'} type={'number'} disabled={readOnly} onChangeExtra={() => triggerSummaCalc(index)} />
+                  <TDInput object={supplier} field={'price'} type={'number'} disabled={readOnly} onChangeExtra={() => triggerSummaCalc(index)} />
+                  {canAccessFinBlock &&
                     <>
-                      <TDInput object={supplier} field={'sf'} type={'text'} display={display} />
-                      <TDInput object={supplier} field={'date'} type={'date'} display={display} tdClassName="td-date" inputClassName="date-input" fontSize="12px" />
-                      <TDSumma object={supplier} field={'summa'} display={display} calcTrigger={summaKeys[index] || 0} />
-                      <TDInput object={supplier} field={'akt'} type={'text'} display={display}/>
+                      <TDInput object={supplier} field={'sf'} type={'text'} display={display} disabled={readOnly} />
+                      <TDInput object={supplier} field={'date'} type={'date'} display={display} disabled={readOnly} tdClassName="td-date" inputClassName="date-input" fontSize="12px" />
+                      <TDSumma object={supplier} field={'summa'} display={display} calcTrigger={summaKeys[index] || 0} disabled={readOnly} />
+                      <TDInput object={supplier} field={'akt'} type={'text'} display={display} disabled={readOnly}/>
                     </>
                   }
 
@@ -280,7 +286,7 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
                   </th>
                 : <>
                     <th>
-                      <Button tabIndex={-1} variant="primary" className='col-12' size={size} onClick={addBuyer}>+</Button>
+                      <Button tabIndex={-1} variant="primary" className='col-12' size={size} onClick={addBuyer} disabled={readOnly}>+</Button>
                     </th>
                     <th colSpan={3}>
                       <Stack gap={2} direction='horizontal'>Покупатель</Stack>
@@ -298,7 +304,7 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
                         title="Скопировать вид продукта, литры и тонны из первого поставщика"
                         aria-label="Скопировать вид продукта, литры и тонны из первого поставщика"
                         onClick={copyFirstSupplierValuesToFirstBuyer}
-                        disabled={!order?.suppliers?.[0] || !order?.buyers?.[0]}
+                        disabled={readOnly || !order?.suppliers?.[0] || !order?.buyers?.[0]}
                       >
                         <FaArrowDown />
                       </Button>
@@ -307,10 +313,10 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
                   </>
                 : <>
                     <th style={{ borderRight: 'none', textAlign: 'right' }}  >Менеджер:  </th>
-                    <TDInput object={order} field={'manager'} type={'text'} fontSize='12px'/>
+                    <TDInput object={order} field={'manager'} type={'text'} fontSize='12px' disabled={readOnly}/>
                   </>
               }
-              {user.rights.finBlockAccess &&
+              {canAccessFinBlock &&
                 <>
                   <th style={{ display: display }} colSpan={3}></th>
                   <th style={{ display: display }}></th>
@@ -327,7 +333,8 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
                   <tr key={getRowKey(buyer, 'buyer', index)} className='buyers-tr' style={{ borderTop: '2px solid pink' }}>
                     <td className='orderTable-col-actions p-0 pt-1 pr-1'>
                       <Stack gap={1} direction='horizontal' >
-                        <Button className='m-1 mt-0 mb-0 p-2 pt-0 pb-0 ' tabIndex={-1} variant="warning" style={{ backgroundColor: hasBuyerH ? bgColorH : '' }} onClick={() => {
+                        <Button className='m-1 mt-0 mb-0 p-2 pt-0 pb-0 ' tabIndex={-1} variant="warning" disabled={readOnly} style={{ backgroundColor: hasBuyerH ? bgColorH : '' }} onClick={() => {
+                          if (readOnly) return;
                           const orderSave = order;
                           orderSave.buyers[index].buyersH = orderSave.buyers[index].buyersH || [];
                           const copyBuyer = { ...orderSave.buyers[index] };
@@ -337,7 +344,8 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
                           setOrder({ ...orderSave });
 
                         }}>{hasBuyerH ? 'Н' : 'Б'}</Button>
-                        <MdDelete size='1.7em' className='icon' style={{ color: 'rgb(194, 65, 65)' }} onClick={() => {
+                        <MdDelete size='1.7em' className='icon' style={{ color: 'rgb(194, 65, 65)', opacity: readOnly ? 0.35 : 1, cursor: readOnly ? 'not-allowed' : 'pointer' }} onClick={() => {
+                          if (readOnly) return;
                           setDeleteElement({
                             element: 'buyers',
                             index,
@@ -350,20 +358,20 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
                       </Stack>
                     </td>
                     <td className='m-0 p-0'  >
-                      <ComboBox object={buyer} nameDataList={'BUYERS'} field={'name'} />
+                      <ComboBox object={buyer} nameDataList={'BUYERS'} field={'name'} disabled={readOnly} />
                     </td>
                     <td className='m-0 p-0' >
-                      <ComboBox object={buyer} nameDataList={'TYPE_OF_PRODUCT'} field={'typeOfProduct'} />
+                      <ComboBox object={buyer} nameDataList={'TYPE_OF_PRODUCT'} field={'typeOfProduct'} disabled={readOnly} />
                     </td>
-                    <TDInput object={buyer} field={'liters'} type={'number'} onChangeExtra={() => triggerBuyerSummaCalc(index)} />
-                    <TDInput object={buyer} field={'tons'} type={'number'} onChangeExtra={() => triggerBuyerSummaCalc(index)} />
-                    <TDInput object={buyer} field={'price'} type={'number'} onChangeExtra={() => triggerBuyerSummaCalc(index)} />
-                    {user.rights.finBlockAccess &&
+                    <TDInput object={buyer} field={'liters'} type={'number'} disabled={readOnly} onChangeExtra={() => triggerBuyerSummaCalc(index)} />
+                    <TDInput object={buyer} field={'tons'} type={'number'} disabled={readOnly} onChangeExtra={() => triggerBuyerSummaCalc(index)} />
+                    <TDInput object={buyer} field={'price'} type={'number'} disabled={readOnly} onChangeExtra={() => triggerBuyerSummaCalc(index)} />
+                    {canAccessFinBlock &&
                       <>
-                        <TDInput object={buyer} field={'sf'} type={'text'} display={display} />
-                        <TDInput object={buyer} field={'date'} type={'date'} display={display} tdClassName="td-date" inputClassName="date-input" fontSize="12px" />
-                        <TDSumma object={buyer} field={'summa'} display={display} calcTrigger={buyerSummaKeys[index] || 0} />
-                        <TDInput object={buyer} field={'akt'} type={'number'} display={display} />
+                        <TDInput object={buyer} field={'sf'} type={'text'} display={display} disabled={readOnly} />
+                        <TDInput object={buyer} field={'date'} type={'date'} display={display} disabled={readOnly} tdClassName="td-date" inputClassName="date-input" fontSize="12px" />
+                        <TDSumma object={buyer} field={'summa'} display={display} calcTrigger={buyerSummaKeys[index] || 0} disabled={readOnly} />
+                        <TDInput object={buyer} field={'akt'} type={'number'} display={display} disabled={readOnly} />
                       </>
                     }
                   </tr>
@@ -373,7 +381,8 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
                         <tr key={getRowKey(buyerH, `buyerH-${index}`, `${index}-${indexBuyerH}`)} className={`buyersH-tr-${index}`}>
                           <td style={{ backgroundColor: bgColorH }} className='orderTable-col-actions p-0 pt-1'>
                             <Stack gap={1} direction='horizontal'>
-                              <MdDelete size='1.7em' className='icon ms-auto' style={{ color: 'rgb(194, 65, 65)' }} onClick={() => {
+                              <MdDelete size='1.7em' className='icon ms-auto' style={{ color: 'rgb(194, 65, 65)', opacity: readOnly ? 0.35 : 1, cursor: readOnly ? 'not-allowed' : 'pointer' }} onClick={() => {
+                                if (readOnly) return;
                                 setDeleteElement({
                                   element: 'buyerH',
                                   index,
@@ -386,20 +395,20 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
                             </Stack>
                           </td>
                           <td className='m-0 p-0'  >
-                            <ComboBox object={buyerH} nameDataList={'BUYERS'} field={'name'} isBuyerH={'buyerH'} />
+                            <ComboBox object={buyerH} nameDataList={'BUYERS'} field={'name'} isBuyerH={'buyerH'} disabled={readOnly} />
                           </td>
                           <td className='m-0 p-0' >
-                            <ComboBox object={buyerH} nameDataList={'TYPE_OF_PRODUCT'} field={'typeOfProduct'} />
+                            <ComboBox object={buyerH} nameDataList={'TYPE_OF_PRODUCT'} field={'typeOfProduct'} disabled={readOnly} />
                           </td>
-                          <TDInput object={buyerH} field={'liters'} type={'number'} onChangeExtra={() => triggerBuyerHSummaCalc(index, indexBuyerH)} />
-                          <TDInput object={buyerH} field={'tons'} type={'number'} onChangeExtra={() => triggerBuyerHSummaCalc(index, indexBuyerH)} />
-                          <TDInput object={buyerH} field={'price'} type={'number'} onChangeExtra={() => triggerBuyerHSummaCalc(index, indexBuyerH)} />
-                          {user.rights.finBlockAccess &&
+                          <TDInput object={buyerH} field={'liters'} type={'number'} disabled={readOnly} onChangeExtra={() => triggerBuyerHSummaCalc(index, indexBuyerH)} />
+                          <TDInput object={buyerH} field={'tons'} type={'number'} disabled={readOnly} onChangeExtra={() => triggerBuyerHSummaCalc(index, indexBuyerH)} />
+                          <TDInput object={buyerH} field={'price'} type={'number'} disabled={readOnly} onChangeExtra={() => triggerBuyerHSummaCalc(index, indexBuyerH)} />
+                          {canAccessFinBlock &&
                             <>
-                              <TDInput object={buyerH} field={'sf'} type={'text'} display={display} />
-                              <TDInput object={buyerH} field={'date'} type={'date'} display={display} tdClassName="td-date" inputClassName="date-input" fontSize="12px" />
-                              <TDSumma object={buyerH} field={'summa'} display={display} calcTrigger={buyerHSummaKeys[`${index}-${indexBuyerH}`] || 0} />
-                              <TDInput object={buyerH} field={'akt'} type={'number'} display={display} />
+                              <TDInput object={buyerH} field={'sf'} type={'text'} display={display} disabled={readOnly} />
+                              <TDInput object={buyerH} field={'date'} type={'date'} display={display} disabled={readOnly} tdClassName="td-date" inputClassName="date-input" fontSize="12px" />
+                              <TDSumma object={buyerH} field={'summa'} display={display} calcTrigger={buyerHSummaKeys[`${index}-${indexBuyerH}`] || 0} disabled={readOnly} />
+                              <TDInput object={buyerH} field={'akt'} type={'number'} display={display} disabled={readOnly} />
                             </>
                           }
 

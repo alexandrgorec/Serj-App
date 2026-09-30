@@ -570,6 +570,7 @@ const ORDER_DIFF_FIELD_LABELS = {
     order_number: "№ заявки",
     orderStatus: "Статус заявки",
     ttnStatus: "Статус ТТН",
+    specificationStatus: "Спецификация",
     clientPaid: "Оплачено клиент",
     salaryIncluded: "Учтено в ЗП",
     invoiceSent: "Счет отправлен",
@@ -864,6 +865,13 @@ class OrderController {
                 ...(previousOrderRes.rows[0].orderjson || {}),
                 orderNumber: previousOrderNumber,
             };
+            const isLockedOrder = normalizeAuditStatus(previousOrder.orderStatus) === "Заприходована";
+            const canEditLockedOrder = !!(req.body?.rights?.finBlockAccess || req.body?.rights?.adminAccess);
+            if (isLockedOrder && !canEditLockedOrder) {
+                res.status(403).json({ message: "Заявка заприходована. Изменения доступны только бухгалтеру или администратору." });
+                return;
+            }
+
             const nextOrder = {
                 ...order,
                 orderNumber,

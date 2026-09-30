@@ -11,7 +11,7 @@ const associations = {
 }
 
 
-function ComboBox({ isBuyerH = '', iconSize = '2em', fontSize = '16px', id, object, nameDataList, field = '', display = '' }) {
+function ComboBox({ isBuyerH = '', iconSize = '2em', fontSize = '16px', id, object, nameDataList, field = '', display = '', disabled = false }) {
     const { user, setUser, aAxios } = useContext(userContext);
     const typeaheadRef = useRef(null);
     let tabIndex = sessionStorage.tabIndex++;
@@ -41,6 +41,7 @@ function ComboBox({ isBuyerH = '', iconSize = '2em', fontSize = '16px', id, obje
                     }}
                 >
                     <Typeahead className="combobox-typeahead" id={id} ref={typeaheadRef}
+                        disabled={disabled}
                         positionFixed
                         flip={true}
                         inputProps={{
@@ -110,8 +111,9 @@ function ComboBox({ isBuyerH = '', iconSize = '2em', fontSize = '16px', id, obje
                 <button
                     type="button"
                     className="combobox-btn combobox-btn-clear"
+                    disabled={disabled}
                     style={{
-                        cursor: 'pointer',
+                        cursor: disabled ? 'not-allowed' : 'pointer',
                         flex: '0 0 auto',
                         width: `${btnSize}px`,
                         minWidth: `${btnSize}px`,
@@ -121,6 +123,7 @@ function ComboBox({ isBuyerH = '', iconSize = '2em', fontSize = '16px', id, obje
                         justifyContent: 'center',
                     }}
                     onClick={() => {
+                        if (disabled) return;
                         object[field] = '';
                         if (typeaheadRef.current) {
                             typeaheadRef.current.clear();

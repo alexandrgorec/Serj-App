@@ -18,6 +18,7 @@ import { getManagerOptions } from './managerOptions';
 import { createEmptyOrder, emptyOrderRow } from './orderDefaults';
 import { ORDER_STATUS_OPTIONS, normalizeOrderStatus } from './orderStatus';
 import { ORDER_TTN_STATUS_OPTIONS, normalizeOrderTtnStatus } from './orderTtnStatus';
+import { ORDER_SPECIFICATION_STATUS_OPTIONS, normalizeOrderSpecificationStatus } from './orderSpecificationStatus';
 import { FaArrowsRotate, FaPrint } from 'react-icons/fa6';
 
 const HISTORY_FIELD_LABELS = {
@@ -25,6 +26,7 @@ const HISTORY_FIELD_LABELS = {
   order_number: '№ заявки',
   orderStatus: 'Статус заявки',
   ttnStatus: 'Статус ТТН',
+  specificationStatus: 'Спецификация',
   clientPaid: 'Оплачено клиент',
   salaryIncluded: 'Учтено в ЗП',
   invoiceSent: 'Счет отправлен',
@@ -223,6 +225,13 @@ function getOrderStatusClass(status) {
   return 'editOrder-status-created';
 }
 
+function getSpecificationStatusClass(status) {
+  const normalizedStatus = normalizeOrderSpecificationStatus(status);
+  if (normalizedStatus === 'Подписана') return 'editOrder-specification-signed';
+  if (normalizedStatus === 'Отправлена') return 'editOrder-specification-sent';
+  return 'editOrder-specification-required';
+}
+
 function hasEmptyBuyerH(order) {
   return (order.buyers || [])
     .some((buyer) => (buyer.buyersH || [])
@@ -250,9 +259,13 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
 
   const activeOrder = isEditMode ? editingOrder : order;
   const setActiveOrder = isEditMode ? setEditingOrder : setOrder;
-  const canEditOrderStatus = !!user?.rights?.finBlockAccess;
   const orderStatus = normalizeOrderStatus(activeOrder?.orderStatus);
+  const hasPrivilegedOrderEditAccess = !!(user?.rights?.finBlockAccess || user?.rights?.adminAccess);
+  const isOrderLockedForCurrentUser = isEditMode && orderStatus === 'Заприходована' && !hasPrivilegedOrderEditAccess;
+  const canEditOrder = !isOrderLockedForCurrentUser;
+  const canEditOrderStatus = hasPrivilegedOrderEditAccess;
   const ttnStatus = normalizeOrderTtnStatus(activeOrder?.ttnStatus);
+  const specificationStatus = normalizeOrderSpecificationStatus(activeOrder?.specificationStatus);
   const managerOptions = user?.managerOptions || [];
   const goBack = () => navigate(-1);
 
@@ -283,10 +296,12 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
   if (isEditMode && activeOrder?.id === undefined) return null;
 
   const updateOrderField = (field, value) => {
+    if (!canEditOrder) return;
     setActiveOrder((prev) => ({ ...prev, [field]: value }));
   };
 
   const addSupplier = () => {
+    if (!canEditOrder) return;
     setActiveOrder((prev) => ({
       ...prev,
       suppliers: [
@@ -297,6 +312,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
   };
 
   const addBuyer = () => {
+    if (!canEditOrder) return;
     setActiveOrder((prev) => ({
       ...prev,
       buyers: [
@@ -312,6 +328,10 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
   };
 
   const resetOrder = () => {
+    if (!canEditOrder) {
+      setToast('Заявка заприходована. Изменения доступны только бухгалтеру или администратору.', 'warning');
+      return;
+    }
     if (isNewMode) {
       resetNewOrder();
       return;
@@ -334,6 +354,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
     ...activeOrder,
     orderStatus: isNewMode ? ORDER_STATUS_OPTIONS[0] : normalizeOrderStatus(activeOrder?.orderStatus),
     ttnStatus: normalizeOrderTtnStatus(activeOrder?.ttnStatus),
+    specificationStatus: normalizeOrderSpecificationStatus(activeOrder?.specificationStatus),
     clientPaid: activeOrder?.clientPaid || 'Нет',
     salaryIncluded: activeOrder?.salaryIncluded || 'Нет',
     invoiceSent: activeOrder?.invoiceSent || 'Нет',
@@ -343,6 +364,11 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
   });
 
   const saveOrder = async () => {
+    if (!canEditOrder) {
+      setToast('Заявка заприходована. Изменения доступны только бухгалтеру или администратору.', 'warning');
+      return;
+    }
+
     let alertMessage = '';
     if ((activeOrder.buyers || []).length === 0)
       alertMessage = 'Заполните раздел Покупатели';
@@ -406,6 +432,11 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
       if (error?.response?.status === 400) {
         setAlertVariant('danger');
         setMessage(error.response.data?.message || 'Некорректный номер заявки');
+        return;
+      }
+      if (error?.response?.status === 403) {
+        setAlertVariant('danger');
+        setMessage(error.response.data?.message || 'Заявка заприходована. Изменения доступны только бухгалтеру или администратору.');
       }
     }
   };
@@ -456,6 +487,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
         min='1'
         placeholder='Авто'
         value={activeOrder.orderNumber || (isEditMode ? activeOrder.id || '' : '')}
+        disabled={!canEditOrder}
         onChange={(evt) => updateOrderField('orderNumber', evt.target.value)}
       />
     </FloatingLabel>
@@ -479,6 +511,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
     <FloatingLabel label="ТТН" className="p-0 editOrderDesktop-ttnStatus">
       <Form.Select
         value={ttnStatus}
+        disabled={!canEditOrder}
         onChange={(evt) => updateOrderField('ttnStatus', evt.target.value)}
       >
         {ORDER_TTN_STATUS_OPTIONS.map((status) => (
@@ -488,10 +521,25 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
     </FloatingLabel>
   );
 
+  const renderSpecificationStatusField = () => (
+    <FloatingLabel label="Спецификация" className={`p-0 editOrderDesktop-specificationStatus ${getSpecificationStatusClass(specificationStatus)}`}>
+      <Form.Select
+        value={specificationStatus}
+        disabled={!canEditOrder}
+        onChange={(evt) => updateOrderField('specificationStatus', evt.target.value)}
+      >
+        {ORDER_SPECIFICATION_STATUS_OPTIONS.map((status) => (
+          <option key={status} value={status}>{status}</option>
+        ))}
+      </Form.Select>
+    </FloatingLabel>
+  );
+
   const renderClientPaidField = () => (
     <FloatingLabel label="Оплачено клиент" className="p-0 orderEditor-clientPaid">
       <Form.Select
         value={activeOrder.clientPaid || 'Нет'}
+        disabled={!canEditOrder}
         onChange={(evt) => updateOrderField('clientPaid', evt.target.value)}
       >
         <option value="Нет">Нет</option>
@@ -504,6 +552,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
     <FloatingLabel label="Учтено в ЗП" className="p-0 orderEditor-salaryIncluded">
       <Form.Select
         value={activeOrder.salaryIncluded || 'Нет'}
+        disabled={!canEditOrder}
         onChange={(evt) => updateOrderField('salaryIncluded', evt.target.value)}
       >
         <option value="Нет">Нет</option>
@@ -516,6 +565,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
     <FloatingLabel label="Счет отправлен" className="p-0 orderEditor-invoiceSent">
       <Form.Select
         value={activeOrder.invoiceSent || 'Нет'}
+        disabled={!canEditOrder}
         onChange={(evt) => updateOrderField('invoiceSent', evt.target.value)}
       >
         <option value="Нет">Нет</option>
@@ -528,6 +578,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
     <FloatingLabel label="Акт сверки" className="p-0 orderEditor-reconciliationAct">
       <Form.Select
         value={activeOrder.reconciliationAct || 'Нет'}
+        disabled={!canEditOrder}
         onChange={(evt) => updateOrderField('reconciliationAct', evt.target.value)}
       >
         <option value="Нет">Нет</option>
@@ -551,15 +602,16 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
     <>
       <div className={`${isEditMode ? 'mb-2 editOrderDesktop-topBar' : 'orderTable-topActions newOrderDesktop-topBar'} noselect`}>
         <div className={isEditMode ? 'editOrderDesktop-topBarLeft' : 'newOrderDesktop-topBarLeft'}>
-          <Button tabIndex={-1} variant="success" className='p-2' onClick={addBuyer}>
+          <Button tabIndex={-1} variant="success" className='p-2' onClick={addBuyer} disabled={!canEditOrder}>
             + Покупатель
           </Button>
-          <Button tabIndex={-1} variant="primary" className='p-2' onClick={addSupplier}>
+          <Button tabIndex={-1} variant="primary" className='p-2' onClick={addSupplier} disabled={!canEditOrder}>
             + Поставщик
           </Button>
           <FloatingLabel label="Менеджер" className={`p-0 ${isEditMode ? 'editOrderDesktop-manager' : 'newOrderDesktop-manager'}`}>
             <Form.Select
               value={activeOrder.manager || ''}
+              disabled={!canEditOrder}
               onChange={(evt) => updateOrderField('manager', evt.target.value)}
             >
               <option value="">Менеджер</option>
@@ -571,6 +623,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
           {renderOrderNumberField()}
           {renderStatusField()}
           {renderTtnStatusField()}
+          {renderSpecificationStatusField()}
           {renderClientPaidField()}
           {renderSalaryIncludedField()}
           {renderInvoiceSentField()}
@@ -585,6 +638,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
             className='p-2 orderEditor-clearBtn'
             title="Очистить"
             aria-label="Очистить"
+            disabled={!canEditOrder}
             onClick={resetOrder}
           >
             <FaArrowsRotate />
@@ -602,7 +656,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
           <Button tabIndex={-1} variant="primary" className='pt-2 pb-2' onClick={goBack}>
             Назад
           </Button>
-          <Button tabIndex={-1} variant="success" className='p-2' onClick={saveOrder}>
+          <Button tabIndex={-1} variant="success" className='p-2' onClick={saveOrder} disabled={!canEditOrder}>
             Записать
           </Button>
           <Button
@@ -624,28 +678,30 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
         setOrder={setActiveOrder}
         hideInlineAddButtons={true}
         hideManagerInTable={true}
+        readOnly={!canEditOrder}
       />
 
-      <OrderPaymentDates order={activeOrder} setOrder={setActiveOrder} />
-      <OrderDeliveryFields order={activeOrder} setOrder={setActiveOrder} />
+      <OrderPaymentDates order={activeOrder} setOrder={setActiveOrder} readOnly={!canEditOrder} />
+      <OrderDeliveryFields order={activeOrder} setOrder={setActiveOrder} readOnly={!canEditOrder} />
 
       <div className='newOrderDesktop-serviceArea'>
         <div className='newOrderDesktop-serviceFields'>
           <div className='newOrderDesktop-leftServiceColumn'>
-            <OrderExtraFields order={activeOrder} setOrder={setActiveOrder} section='main' />
+            <OrderExtraFields order={activeOrder} setOrder={setActiveOrder} section='main' readOnly={!canEditOrder} />
             <FloatingLabel label="Комментарии" className="newOrderDesktop-compactComments">
               <Form.Control
                 as='input'
                 type='text'
                 value={activeOrder.comments || ''}
+                disabled={!canEditOrder}
                 onChange={(evt) => updateOrderField('comments', evt.target.value)}
               />
             </FloatingLabel>
           </div>
 
           <div className='newOrderDesktop-requisites'>
-            <OrderExtraFields order={activeOrder} setOrder={setActiveOrder} section='storage' />
-            <OtkFields order={activeOrder} setOrder={setActiveOrder} />
+            <OrderExtraFields order={activeOrder} setOrder={setActiveOrder} section='storage' readOnly={!canEditOrder} />
+            <OtkFields order={activeOrder} setOrder={setActiveOrder} readOnly={!canEditOrder} />
             <FloatingLabel label="Налог 42%" className="mb-0">
               <Form.Control as="input" type='number' readOnly value={getOrderOtkTax(activeOrder)} />
             </FloatingLabel>
@@ -669,6 +725,8 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
             onHistory={openHistory}
             historyDisabled={isNewMode}
             printDisabled={isNewMode}
+            readOnly={!canEditOrder}
+            specificationStatus={specificationStatus}
             saveLabel="Записать"
           />
         : renderDesktop()

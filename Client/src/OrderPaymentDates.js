@@ -2,7 +2,7 @@ import './OrderPaymentDates.css';
 import { useEffect } from 'react';
 import Form from 'react-bootstrap/Form';
 
-function OrderPaymentDates({ order, setOrder, variant = 'desktop' }) {
+function OrderPaymentDates({ order, setOrder, variant = 'desktop', readOnly = false }) {
   const updateField = (field, value) => {
     setOrder((prev) => ({ ...prev, [field]: value }));
   };
@@ -65,6 +65,7 @@ function OrderPaymentDates({ order, setOrder, variant = 'desktop' }) {
           <Form.Control
             type='date'
             value={order?.supplierPaymentDate || ''}
+            disabled={readOnly}
             onChange={(evt) => updateField('supplierPaymentDate', evt.target.value)}
           />
           <Form.Check
@@ -73,6 +74,7 @@ function OrderPaymentDates({ order, setOrder, variant = 'desktop' }) {
             type='checkbox'
             label='Отсрочка'
             checked={!!order?.supplierPaymentDeferred}
+            disabled={readOnly}
             onChange={(evt) => updateSupplierPaymentDeferred(evt.target.checked)}
           />
           <Form.Control
@@ -82,7 +84,7 @@ function OrderPaymentDates({ order, setOrder, variant = 'desktop' }) {
             step='1'
             placeholder='Кол-во дней'
             aria-label='Количество дней отсрочки'
-            disabled={!order?.supplierPaymentDeferred}
+            disabled={readOnly || !order?.supplierPaymentDeferred}
             value={order?.supplierPaymentDeferredDays || ''}
             onChange={(evt) => updateField('supplierPaymentDeferredDays', evt.target.value)}
           />
@@ -95,6 +97,7 @@ function OrderPaymentDates({ order, setOrder, variant = 'desktop' }) {
           <Form.Control
             type='date'
             value={order?.clientPaymentDate || ''}
+            disabled={readOnly}
             onChange={(evt) => updateField('clientPaymentDate', evt.target.value)}
           />
           <Form.Check
@@ -103,6 +106,7 @@ function OrderPaymentDates({ order, setOrder, variant = 'desktop' }) {
             type='checkbox'
             label='Отсрочка'
             checked={!!order?.clientPaymentDeferred}
+            disabled={readOnly}
             onChange={(evt) => updateClientPaymentDeferred(evt.target.checked)}
           />
           <Form.Control
@@ -112,7 +116,7 @@ function OrderPaymentDates({ order, setOrder, variant = 'desktop' }) {
             step='1'
             placeholder='Кол-во дней'
             aria-label='Количество дней отсрочки оплаты от клиента'
-            disabled={!order?.clientPaymentDeferred}
+            disabled={readOnly || !order?.clientPaymentDeferred}
             value={order?.clientPaymentDeferredDays || ''}
             onChange={(evt) => updateField('clientPaymentDeferredDays', evt.target.value)}
           />
@@ -125,6 +129,7 @@ function OrderPaymentDates({ order, setOrder, variant = 'desktop' }) {
           <Form.Control
             type='date'
             value={order?.loadingDate || ''}
+            disabled={readOnly}
             onChange={(evt) => updateLoadingDate(evt.target.value)}
           />
           <Form.Check
@@ -133,6 +138,7 @@ function OrderPaymentDates({ order, setOrder, variant = 'desktop' }) {
             type='checkbox'
             label='с Хранения'
             checked={!!order?.loadingFromStorage}
+            disabled={readOnly}
             onChange={(evt) => updateLoadingFromStorage(evt.target.checked)}
           />
         </div>
@@ -143,7 +149,7 @@ function OrderPaymentDates({ order, setOrder, variant = 'desktop' }) {
         <Form.Control
           type='date'
           value={order?.shipmentDate || ''}
-          disabled={!order?.loadingFromStorage}
+          disabled={readOnly || !order?.loadingFromStorage}
           onChange={(evt) => updateField('shipmentDate', evt.target.value)}
         />
       </div>

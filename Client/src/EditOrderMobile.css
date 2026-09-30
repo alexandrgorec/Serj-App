@@ -6,7 +6,7 @@
 .editOrderMobile-stickyHeader {
     position: sticky;
     top: 0;
-    z-index: 1200;
+    z-index: 1020;
     background: aliceblue;
     padding: calc(6px + env(safe-area-inset-top, 0px)) 0 6px;
     border-bottom: 1px solid rgba(130, 150, 180, 0.25);
@@ -157,8 +157,14 @@
     min-width: 58px;
 }
 
+.editOrderMobile-specificationStatusField {
+    flex: 1 1 122px;
+    min-width: 118px;
+}
+
 .editOrderMobile-statusField .form-select,
-.editOrderMobile-ttnStatusField .form-select {
+.editOrderMobile-ttnStatusField .form-select,
+.editOrderMobile-specificationStatusField .form-select {
     height: 31px;
     font-size: 11px;
     font-weight: 600;
@@ -167,6 +173,10 @@
 }
 
 .editOrderMobile-statusField .form-select {
+    border-color: currentColor;
+}
+
+.editOrderMobile-specificationStatusField .form-select {
     border-color: currentColor;
 }
 
@@ -195,7 +205,23 @@
     color: rgba(28, 107, 59, 0.98);
 }
 
-.editOrderMobile-statusField .form-select:disabled {
+.editOrder-specification-required .form-select {
+    background-color: rgba(217, 45, 32, 0.16);
+    color: rgba(145, 32, 24, 0.98);
+}
+
+.editOrder-specification-sent .form-select {
+    background-color: rgba(245, 158, 11, 0.2);
+    color: rgba(145, 83, 10, 0.98);
+}
+
+.editOrder-specification-signed .form-select {
+    background-color: rgba(39, 167, 90, 0.18);
+    color: rgba(28, 107, 59, 0.98);
+}
+
+.editOrderMobile-statusField .form-select:disabled,
+.editOrderMobile-specificationStatusField .form-select:disabled {
     opacity: 1;
     cursor: not-allowed;
 }

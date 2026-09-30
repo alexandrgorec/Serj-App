@@ -16,6 +16,7 @@ import { FormLabel } from 'react-bootstrap';
 import { Typeahead } from "react-bootstrap-typeahead";
 import { ORDER_STATUS_OPTIONS, normalizeOrderStatus } from './orderStatus';
 import { ORDER_TTN_STATUS_OPTIONS, normalizeOrderTtnStatus } from './orderTtnStatus';
+import { normalizeOrderSpecificationStatus } from './orderSpecificationStatus';
 
 const DATE_FILTER_TYPE_OPTIONS = [
   { value: 'created', label: 'Создания' },
@@ -45,6 +46,7 @@ const ALL_ORDERS_COLUMNS = [
   { id: 'orderNumber', colClass: 'allOrders-col-num', defaultWidth: 6 },
   { id: 'status', colClass: 'allOrders-col-status', defaultWidth: 4 },
   { id: 'ttnStatus', colClass: 'allOrders-col-ttn-status', defaultWidth: 4 },
+  { id: 'specificationStatus', colClass: 'allOrders-col-specification-status', defaultWidth: 4 },
   { id: 'suppliers', colClass: 'allOrders-col-suppliers', defaultWidth: 7 },
   { id: 'loadingDate', colClass: 'allOrders-col-loading-date', defaultWidth: 6 },
   { id: 'products', colClass: 'allOrders-col-products', defaultWidth: 6 },
@@ -93,6 +95,17 @@ function normalizeColumnWidths(value) {
     acc[column.id] = Math.min(Math.max(width, COLUMN_MIN_WIDTH), COLUMN_MAX_WIDTH);
     return acc;
   }, {});
+}
+
+function normalizeColumnOrder(value) {
+  const knownColumnIds = ALL_ORDERS_COLUMNS.map((column) => column.id);
+  const orderedIds = Array.isArray(value)
+    ? value.filter((columnId) => knownColumnIds.includes(columnId))
+    : [];
+  knownColumnIds.forEach((columnId) => {
+    if (!orderedIds.includes(columnId)) orderedIds.push(columnId);
+  });
+  return orderedIds;
 }
 
 function normalizeFilterSettings(value) {
@@ -224,6 +237,10 @@ function getOrderTtnStatus(orderjson) {
   return normalizeOrderTtnStatus(orderjson?.ttnStatus);
 }
 
+function getOrderSpecificationStatus(orderjson) {
+  return normalizeOrderSpecificationStatus(orderjson?.specificationStatus);
+}
+
 function getOrderClientPaid(orderjson) {
   return String(orderjson?.clientPaid || 'Нет').trim() || 'Нет';
 }
@@ -251,6 +268,13 @@ function getOrderStatusClass(status) {
   if (normalizedStatus === 'Заполнена') return 'allOrders-status-loaded';
   if (normalizedStatus === 'Реализована') return 'allOrders-status-done';
   return 'allOrders-status-created';
+}
+
+function getOrderSpecificationStatusClass(status) {
+  const normalizedStatus = normalizeOrderSpecificationStatus(status);
+  if (normalizedStatus === 'Подписана') return 'allOrders-specification-signed';
+  if (normalizedStatus === 'Отправлена') return 'allOrders-specification-sent';
+  return 'allOrders-specification-required';
 }
 
 function getOrderManager(orderjson) {
@@ -329,6 +353,14 @@ function AllOrders() {
   const [draftColumnWidths, setDraftColumnWidths] = useState(() => {
     const savedState = readUserUiState(getUserUiStateKey(user));
     return normalizeColumnWidths(savedState?.columnWidths);
+  });
+  const [columnOrder, setColumnOrder] = useState(() => {
+    const savedState = readUserUiState(getUserUiStateKey(user));
+    return normalizeColumnOrder(savedState?.columnOrder);
+  });
+  const [draftColumnOrder, setDraftColumnOrder] = useState(() => {
+    const savedState = readUserUiState(getUserUiStateKey(user));
+    return normalizeColumnOrder(savedState?.columnOrder);
   });
   const [buyerFilter, setBuyerFilter] = useState(() => {
     const savedState = readUserUiState(getUserUiStateKey(user));
@@ -471,25 +503,30 @@ function AllOrders() {
     setLastActiveOrderId(activeOrderId);
   };
 
-  const saveColumnSettings = (nextVisibility, nextWidths) => {
+  const saveColumnSettings = (nextVisibility, nextWidths, nextOrder = columnOrder) => {
     const normalizedVisibility = normalizeColumnVisibility(nextVisibility);
     const normalizedWidths = normalizeColumnWidths(nextWidths);
+    const normalizedOrder = normalizeColumnOrder(nextOrder);
     const previousState = readUserUiState(userUiStateKey);
     window.localStorage.setItem(userUiStateKey, JSON.stringify({
       ...previousState,
       visibleColumns: normalizedVisibility,
       columnWidths: normalizedWidths,
+      columnOrder: normalizedOrder,
     }));
     setColumnVisibility(normalizedVisibility);
     setColumnWidths(normalizedWidths);
+    setColumnOrder(normalizedOrder);
   };
 
   const saveDraftColumnSettings = () => {
     const normalizedVisibility = normalizeColumnVisibility(draftColumnVisibility);
     const normalizedWidths = normalizeColumnWidths(draftColumnWidths);
-    saveColumnSettings(normalizedVisibility, normalizedWidths);
+    const normalizedOrder = normalizeColumnOrder(draftColumnOrder);
+    saveColumnSettings(normalizedVisibility, normalizedWidths, normalizedOrder);
     setDraftColumnVisibility(normalizedVisibility);
     setDraftColumnWidths(normalizedWidths);
+    setDraftColumnOrder(normalizedOrder);
   };
 
   const openColumnSettingsMode = (mode) => {
@@ -497,6 +534,7 @@ function AllOrders() {
     else {
       setDraftColumnVisibility(normalizeColumnVisibility(columnVisibility));
       setDraftColumnWidths(normalizeColumnWidths(columnWidths));
+      setDraftColumnOrder(normalizeColumnOrder(columnOrder));
     }
     setColumnSettingsMode(mode);
     setColumnSettingsMenuOpen(false);
@@ -515,6 +553,23 @@ function AllOrders() {
         ...normalizedVisibility,
         [columnId]: !normalizedVisibility[columnId],
       };
+    });
+  };
+
+  const moveDraftColumn = (columnId, direction) => {
+    setDraftColumnOrder((currentOrder) => {
+      const normalizedOrder = normalizeColumnOrder(currentOrder);
+      const visibleOrder = normalizedOrder.filter((id) => columnVisibility[id] !== false);
+      const currentVisibleIndex = visibleOrder.indexOf(columnId);
+      const nextVisibleColumnId = visibleOrder[currentVisibleIndex + direction];
+      if (currentVisibleIndex < 0 || !nextVisibleColumnId) return normalizedOrder;
+      const currentIndex = normalizedOrder.indexOf(columnId);
+      const nextIndex = normalizedOrder.indexOf(nextVisibleColumnId);
+      if (currentIndex < 0 || nextIndex < 0) return normalizedOrder;
+      const nextOrder = [...normalizedOrder];
+      const [movedColumn] = nextOrder.splice(currentIndex, 1);
+      nextOrder.splice(nextIndex, 0, movedColumn);
+      return nextOrder;
     });
   };
 
@@ -660,12 +715,15 @@ function AllOrders() {
     setLastActiveOrderId(String(savedState?.lastActiveOrder?.id || ''));
     const savedVisibility = normalizeColumnVisibility(savedState?.visibleColumns);
     const savedWidths = normalizeColumnWidths(savedState?.columnWidths);
+    const savedOrder = normalizeColumnOrder(savedState?.columnOrder);
     const savedFilters = normalizeFilterSettings(savedState?.filters);
     skipFilterPersistRef.current = true;
     setColumnVisibility(savedVisibility);
     setDraftColumnVisibility(savedVisibility);
     setColumnWidths(savedWidths);
     setDraftColumnWidths(savedWidths);
+    setColumnOrder(savedOrder);
+    setDraftColumnOrder(savedOrder);
     setColumnSettingsMode('');
     setColumnSettingsMenuOpen(false);
     setOrderNumberFilter(savedFilters.orderNumber);
@@ -823,11 +881,16 @@ function AllOrders() {
 
   const isColumnVisibilityMode = columnSettingsMode === 'visibility';
   const isColumnWidthMode = columnSettingsMode === 'width';
+  const isColumnOrderMode = columnSettingsMode === 'order';
   const activeColumnVisibility = columnSettingsMode ? draftColumnVisibility : columnVisibility;
   const activeColumnWidths = isColumnWidthMode ? draftColumnWidths : columnWidths;
+  const activeColumnOrder = isColumnOrderMode ? draftColumnOrder : columnOrder;
+  const orderedColumns = normalizeColumnOrder(activeColumnOrder)
+    .map((columnId) => ALL_ORDERS_COLUMNS.find((column) => column.id === columnId))
+    .filter(Boolean);
   const isColumnRendered = (columnId) => isColumnVisibilityMode || activeColumnVisibility[columnId] !== false;
   const getColumnWidth = (columnId) => normalizeColumnWidths(activeColumnWidths)[columnId];
-  const visibleColumnCount = Math.max(ALL_ORDERS_COLUMNS.filter((column) => isColumnRendered(column.id)).length, 1);
+  const visibleColumnCount = Math.max(orderedColumns.filter((column) => isColumnRendered(column.id)).length, 1);
 
   const renderColumnHeader = (columnId, content, props = {}) => {
     const isVisible = draftColumnVisibility[columnId] !== false;
@@ -863,9 +926,195 @@ function AllOrders() {
               />
             </span>
           }
+          {isColumnOrderMode &&
+            <span className="allOrders-columnHeaderControls">
+              <button
+                type="button"
+                className="allOrders-columnMoveBtn"
+                title="Передвинуть столбец влево"
+                aria-label="Передвинуть столбец влево"
+                onClick={(evt) => {
+                  evt.stopPropagation();
+                  moveDraftColumn(columnId, -1);
+                }}
+              >
+                ←
+              </button>
+              <button
+                type="button"
+                className="allOrders-columnMoveBtn"
+                title="Передвинуть столбец вправо"
+                aria-label="Передвинуть столбец вправо"
+                onClick={(evt) => {
+                  evt.stopPropagation();
+                  moveDraftColumn(columnId, 1);
+                }}
+              >
+                →
+              </button>
+            </span>
+          }
         </span>
       </th>
     );
+  };
+
+  const renderOrderColumnHeader = (columnId) => {
+    switch (columnId) {
+      case 'realizationDate':
+        return renderColumnHeader('realizationDate', <>Дата<br />реализации</>, { className: 'allOrders-head-realization-date' });
+      case 'orderNumber':
+        return renderColumnHeader('orderNumber', '№ Заявки', { className: 'allOrders-head-num', style: { textAlign: 'center' } });
+      case 'status':
+        return renderColumnHeader('status', 'Статус', { className: 'allOrders-head-status' });
+      case 'ttnStatus':
+        return renderColumnHeader('ttnStatus', 'ТТН', { className: 'allOrders-head-ttn-status', title: 'Статус ТТН' });
+      case 'specificationStatus':
+        return renderColumnHeader('specificationStatus', 'Спец.', { className: 'allOrders-head-specification-status', title: 'Статус спецификации' });
+      case 'suppliers':
+        return renderColumnHeader('suppliers', 'Поставщики', { className: 'allOrders-head-suppliers' });
+      case 'loadingDate':
+        return renderColumnHeader('loadingDate', <>Дата<br />загрузки</>, { className: 'allOrders-head-loading-date' });
+      case 'products':
+        return renderColumnHeader('products', 'Вид продукта', { className: 'allOrders-head-products' });
+      case 'tons':
+        return renderColumnHeader('tons', 'Тонны', { className: 'allOrders-head-tons' });
+      case 'buyers':
+        return renderColumnHeader('buyers', 'Покупатели', { className: 'allOrders-head-buyers' });
+      case 'clientPaid':
+        return renderColumnHeader('clientPaid', 'Оплачено клиентом', { className: 'allOrders-head-client-paid' });
+      case 'hsum':
+        return renderColumnHeader('hsum', 'Суммы H', { className: 'allOrders-head-hsum', title: 'Суммы подпокупателей (buyerH) без заполненного имени' });
+      case 'invoiceSent':
+        return renderColumnHeader('invoiceSent', 'Счет отправлен', { className: 'allOrders-head-invoice-sent' });
+      case 'reconciliationAct':
+        return renderColumnHeader('reconciliationAct', 'Акт сверки', { className: 'allOrders-head-reconciliation-act' });
+      case 'salaryIncluded':
+        return renderColumnHeader('salaryIncluded', 'ЗП', { className: 'allOrders-head-salary-included' });
+      case 'manager':
+        return renderColumnHeader('manager', 'Менеджер', { className: 'allOrders-head-manager' });
+      case 'supplierPaymentDeferred':
+        return renderColumnHeader('supplierPaymentDeferred', <>Отсрочка<br />поставщику</>, { className: 'allOrders-head-supplier-payment-deferred' });
+      case 'clientPaymentDeferred':
+        return renderColumnHeader('clientPaymentDeferred', <>Отсрочка<br />покупателя</>, { className: 'allOrders-head-client-payment-deferred' });
+      case 'createdDate':
+        return renderColumnHeader('createdDate', <>Дата<br />создания</>, { className: 'allOrders-head-created-date' });
+      case 'menu':
+        return renderColumnHeader('menu', 'Меню', { className: 'allOrders-th-menu' });
+      default:
+        return null;
+    }
+  };
+
+  const renderOrderColumnCell = (columnId, data) => {
+    const {
+      order,
+      orderIndex,
+      orderNumber,
+      orderStatus,
+      orderTtnStatus,
+      orderSpecificationStatus,
+      orderClientPaid,
+      orderSalaryIncluded,
+      orderInvoiceSent,
+      orderReconciliationAct,
+      orderStatusClass,
+      orderSpecificationStatusClass,
+      orderManager,
+      suppliersTons,
+      supplierProducts,
+      emptyHSummas,
+    } = data;
+    const highlightedBackground = order.orderjson.haveEmptyBuyerH ? bgColorH : '';
+
+    switch (columnId) {
+      case 'realizationDate':
+        return <td className="allOrders-cell-realization-date" style={{ overflow: 'hidden', backgroundColor: highlightedBackground }}>{formatDate(order.orderjson.shipmentDate)}</td>;
+      case 'orderNumber':
+        return <td className="allOrders-cell-num" style={{ overflow: 'hidden', textAlign: 'center', backgroundColor: highlightedBackground }}>{orderNumber}</td>;
+      case 'status':
+        return (
+          <td className="allOrders-cell-status" data-status={orderStatus} aria-label={orderStatus} style={{ backgroundColor: highlightedBackground }}>
+            <span className={`allOrders-status-dot ${orderStatusClass}`} />
+          </td>
+        );
+      case 'ttnStatus':
+        return (
+          <td className="allOrders-cell-ttn-status" style={{ backgroundColor: highlightedBackground }} title={`Статус ТТН: ${orderTtnStatus}`}>
+            {orderTtnStatus}
+          </td>
+        );
+      case 'specificationStatus':
+        return (
+          <td className="allOrders-cell-specification-status" data-status={orderSpecificationStatus} aria-label={orderSpecificationStatus} style={{ backgroundColor: highlightedBackground }}>
+            <span className={`allOrders-status-dot ${orderSpecificationStatusClass}`} />
+          </td>
+        );
+      case 'suppliers':
+        return <td className="allOrders-cell-suppliers" style={{ backgroundColor: highlightedBackground }}>{spisok(order.orderjson.suppliers)}</td>;
+      case 'loadingDate':
+        return <td className="allOrders-cell-loading-date" style={{ overflow: 'hidden', backgroundColor: highlightedBackground }}>{formatDate(order.orderjson.loadingDate)}</td>;
+      case 'products':
+        return <td className="allOrders-cell-products" style={{ backgroundColor: highlightedBackground }}>{supplierProducts}</td>;
+      case 'tons':
+        return <td className="allOrders-cell-tons" style={{ backgroundColor: highlightedBackground }}>{NumberFormat(suppliersTons)}</td>;
+      case 'buyers':
+        return (
+          <td className="allOrders-cell-buyers" style={{ backgroundColor: highlightedBackground }}>
+            <Stack direction="horizontal" gap={3} className="allOrders-buyers-stack">
+              {order.orderjson.haveEmptyBuyerH && <FaPeopleArrows style={{ color: 'rgba(16, 188, 45, 0.79)' }} />}
+              {spisok(order.orderjson.buyers)}
+            </Stack>
+          </td>
+        );
+      case 'clientPaid':
+        return <td className="allOrders-cell-client-paid" style={{ backgroundColor: highlightedBackground }}>{orderClientPaid}</td>;
+      case 'hsum':
+        return <td className="allOrders-cell-hsum" style={{ backgroundColor: highlightedBackground, overflow: 'hidden', fontSize: '0.9em' }} title={emptyHSummas}>{emptyHSummas}</td>;
+      case 'invoiceSent':
+        return <td className="allOrders-cell-invoice-sent" style={{ backgroundColor: highlightedBackground }}>{orderInvoiceSent}</td>;
+      case 'reconciliationAct':
+        return <td className="allOrders-cell-reconciliation-act" style={{ backgroundColor: highlightedBackground }}>{orderReconciliationAct}</td>;
+      case 'salaryIncluded':
+        return <td className="allOrders-cell-salary-included" style={{ backgroundColor: highlightedBackground }}>{orderSalaryIncluded}</td>;
+      case 'manager':
+        return <td className="allOrders-cell-manager" style={{ backgroundColor: highlightedBackground }}>{orderManager}</td>;
+      case 'supplierPaymentDeferred':
+        return <td className="allOrders-cell-supplier-payment-deferred" style={{ backgroundColor: highlightedBackground }}>{yesNo(order.orderjson.supplierPaymentDeferred)}</td>;
+      case 'clientPaymentDeferred':
+        return <td className="allOrders-cell-client-payment-deferred" style={{ backgroundColor: highlightedBackground }}>{yesNo(order.orderjson.clientPaymentDeferred)}</td>;
+      case 'createdDate':
+        return <td className="allOrders-cell-created-date" style={{ overflow: 'hidden', backgroundColor: highlightedBackground }}>{formatDate(order.orderjson.date)}</td>;
+      case 'menu':
+        return (
+          <td className="allOrders-td-menu" style={{ backgroundColor: highlightedBackground }}>
+            <Stack direction="horizontal" gap={2} className="allOrders-menu-stack">
+              <FaPrint title='Печать заявки' size='1.3em' className='clickable icon' style={{ color: 'rgba(47, 79, 112, 0.95)' }} onClick={(e) => {
+                e.stopPropagation();
+                rememberActiveOrder(order);
+                printOrder(order.id);
+              }} />
+              <div className="vr" />
+              <BiEditAlt size='1.7em' className='clickable icon' style={{ color: 'rgba(1, 87, 248, 0.85)' }} onClick={(e) => {
+                e.stopPropagation();
+                rememberActiveOrder(order);
+                if (orderIndex >= 0) showHideOrder(orderIndex);
+                setEditingOrder(() => order.orderjson);
+                navigate('/editorder');
+              }} />
+              <div className="vr" />
+              <MdDelete size='1.7em' className='clickable icon' style={{ color: 'rgb(194, 65, 65)' }} onClick={(e) => {
+                e.stopPropagation();
+                if (orderIndex >= 0) showHideOrder(orderIndex);
+                setOrderForDelete({ id: order.id, orderNumber });
+                handleShowModal();
+              }} />
+            </Stack>
+          </td>
+        );
+      default:
+        return null;
+    }
   };
 
   const statusFilterLabel = statusFilters.length === 0
@@ -1261,6 +1510,13 @@ function AllOrders() {
                 >
                   Ширина столбцов
                 </button>
+                <button
+                  type="button"
+                  className={`allOrders-settingsMenuItem ${isColumnOrderMode ? 'allOrders-settingsMenuItemActive' : ''}`}
+                  onClick={() => openColumnSettingsMode('order')}
+                >
+                  Порядок столбцов
+                </button>
                 {columnSettingsMode &&
                   <button
                     type="button"
@@ -1283,8 +1539,10 @@ function AllOrders() {
             const orderNumber = getOrderNumber(order);
             const orderStatus = getOrderStatus(order.orderjson);
             const orderTtnStatus = getOrderTtnStatus(order.orderjson);
+            const orderSpecificationStatus = getOrderSpecificationStatus(order.orderjson);
             const orderClientPaid = getOrderClientPaid(order.orderjson);
             const orderStatusClass = getOrderStatusClass(orderStatus);
+            const orderSpecificationStatusClass = getOrderSpecificationStatusClass(orderSpecificationStatus);
             const orderManager = getOrderManager(order.orderjson);
             const suppliersTons = suppliersTonsTotal(order.orderjson);
             const supplierProducts = supplierProductsDisplay(order.orderjson);
@@ -1300,6 +1558,11 @@ function AllOrders() {
                   <div className='allOrders-card-idGroup'>
                     <span className={`allOrders-status-dot ${orderStatusClass}`} aria-label={orderStatus} />
                     <span className='allOrders-card-ttnStatus' title={`Статус ТТН: ${orderTtnStatus}`}>ТТН: {orderTtnStatus}</span>
+                    <span
+                      className={`allOrders-status-dot ${orderSpecificationStatusClass}`}
+                      title={`Спецификация: ${orderSpecificationStatus}`}
+                      aria-label={`Спецификация: ${orderSpecificationStatus}`}
+                    />
                     <div className='allOrders-card-id'>Заявка №{orderNumber}</div>
                   </div>
                   <div className='allOrders-card-date'>{formatDate(order.orderjson.date)}</div>
@@ -1441,31 +1704,18 @@ function AllOrders() {
           style={{ width: '100%', margin: 0 }}
         >
           <colgroup>
-            {ALL_ORDERS_COLUMNS.map((column) => (
+            {orderedColumns.map((column) => (
               isColumnRendered(column.id) && <col key={column.id} className={column.colClass} style={{ width: `${getColumnWidth(column.id)}%` }} />
             ))}
           </colgroup>
           <thead>
             <tr>
-              {isColumnRendered('realizationDate') && renderColumnHeader('realizationDate', <>Дата<br />реализации</>, { className: 'allOrders-head-realization-date' })}
-              {isColumnRendered('orderNumber') && renderColumnHeader('orderNumber', '№ Заявки', { className: 'allOrders-head-num', style: { textAlign: 'center' } })}
-              {isColumnRendered('status') && renderColumnHeader('status', 'Статус', { className: 'allOrders-head-status' })}
-              {isColumnRendered('ttnStatus') && renderColumnHeader('ttnStatus', 'ТТН', { className: 'allOrders-head-ttn-status', title: 'Статус ТТН' })}
-              {isColumnRendered('suppliers') && renderColumnHeader('suppliers', 'Поставщики', { className: 'allOrders-head-suppliers' })}
-              {isColumnRendered('loadingDate') && renderColumnHeader('loadingDate', <>Дата<br />загрузки</>, { className: 'allOrders-head-loading-date' })}
-              {isColumnRendered('products') && renderColumnHeader('products', 'Вид продукта', { className: 'allOrders-head-products' })}
-              {isColumnRendered('tons') && renderColumnHeader('tons', 'Тонны', { className: 'allOrders-head-tons' })}
-              {isColumnRendered('buyers') && renderColumnHeader('buyers', 'Покупатели', { className: 'allOrders-head-buyers' })}
-              {isColumnRendered('clientPaid') && renderColumnHeader('clientPaid', 'Оплачено клиентом', { className: 'allOrders-head-client-paid' })}
-              {isColumnRendered('hsum') && renderColumnHeader('hsum', 'Суммы H', { className: 'allOrders-head-hsum', title: 'Суммы подпокупателей (buyerH) без заполненного имени' })}
-              {isColumnRendered('invoiceSent') && renderColumnHeader('invoiceSent', 'Счет отправлен', { className: 'allOrders-head-invoice-sent' })}
-              {isColumnRendered('reconciliationAct') && renderColumnHeader('reconciliationAct', 'Акт сверки', { className: 'allOrders-head-reconciliation-act' })}
-              {isColumnRendered('salaryIncluded') && renderColumnHeader('salaryIncluded', 'ЗП', { className: 'allOrders-head-salary-included' })}
-              {isColumnRendered('manager') && renderColumnHeader('manager', 'Менеджер', { className: 'allOrders-head-manager' })}
-              {isColumnRendered('supplierPaymentDeferred') && renderColumnHeader('supplierPaymentDeferred', <>Отсрочка<br />поставщику</>, { className: 'allOrders-head-supplier-payment-deferred' })}
-              {isColumnRendered('clientPaymentDeferred') && renderColumnHeader('clientPaymentDeferred', <>Отсрочка<br />покупателя</>, { className: 'allOrders-head-client-payment-deferred' })}
-              {isColumnRendered('createdDate') && renderColumnHeader('createdDate', <>Дата<br />создания</>, { className: 'allOrders-head-created-date' })}
-              {isColumnRendered('menu') && renderColumnHeader('menu', 'Меню', { className: 'allOrders-th-menu' })}
+              {orderedColumns.map((column) => (
+                isColumnRendered(column.id) &&
+                  <Fragment key={column.id}>
+                    {renderOrderColumnHeader(column.id)}
+                  </Fragment>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -1475,11 +1725,13 @@ function AllOrders() {
             const orderNumber = getOrderNumber(order);
             const orderStatus = getOrderStatus(order.orderjson);
             const orderTtnStatus = getOrderTtnStatus(order.orderjson);
+            const orderSpecificationStatus = getOrderSpecificationStatus(order.orderjson);
             const orderClientPaid = getOrderClientPaid(order.orderjson);
             const orderSalaryIncluded = getOrderSalaryIncluded(order.orderjson);
             const orderInvoiceSent = getOrderInvoiceSent(order.orderjson);
             const orderReconciliationAct = getOrderReconciliationAct(order.orderjson);
             const orderStatusClass = getOrderStatusClass(orderStatus);
+            const orderSpecificationStatusClass = getOrderSpecificationStatusClass(orderSpecificationStatus);
             const orderManager = getOrderManager(order.orderjson);
             const suppliersTons = suppliersTonsTotal(order.orderjson);
             const supplierProducts = supplierProductsDisplay(order.orderjson);
@@ -1501,122 +1753,29 @@ function AllOrders() {
                     navigate("/editorder");
                   }}
                 >
-                      {isColumnRendered('realizationDate') &&
-                        <td className="allOrders-cell-realization-date" style={{ overflow: "hidden", backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }} >{formatDate(order.orderjson.shipmentDate)}</td>
-                      }
-                      {isColumnRendered('orderNumber') &&
-                        <td className="allOrders-cell-num" style={{ overflow: "hidden", textAlign: 'center', backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>{orderNumber}</td>
-                      }
-                      {isColumnRendered('status') &&
-                        <td className="allOrders-cell-status" data-status={orderStatus} aria-label={orderStatus} style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
-                          <span className={`allOrders-status-dot ${orderStatusClass}`} />
-                        </td>
-                      }
-                      {isColumnRendered('ttnStatus') &&
-                        <td className="allOrders-cell-ttn-status" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }} title={`Статус ТТН: ${orderTtnStatus}`}>
-                          {orderTtnStatus}
-                        </td>
-                      }
-                      {isColumnRendered('suppliers') &&
-                        <td className="allOrders-cell-suppliers" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
-                          {spisok(order.orderjson.suppliers)}
-                        </td>
-                      }
-                      {isColumnRendered('loadingDate') &&
-                        <td className="allOrders-cell-loading-date" style={{ overflow: "hidden", backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }} >{formatDate(order.orderjson.loadingDate)}</td>
-                      }
-                      {isColumnRendered('products') &&
-                        <td className="allOrders-cell-products" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
-                          {supplierProducts}
-                        </td>
-                      }
-                      {isColumnRendered('tons') &&
-                        <td className="allOrders-cell-tons" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
-                          {NumberFormat(suppliersTons)}
-                        </td>
-                      }
-                      {isColumnRendered('buyers') &&
-                        <td className="allOrders-cell-buyers" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>{
-                          <Stack direction="horizontal" gap={3} className="allOrders-buyers-stack" >
-                            {
-                              order.orderjson.haveEmptyBuyerH && < FaPeopleArrows style={{ color: 'rgba(16, 188, 45, 0.79)' }} />
-                            }
-                            {
-                              spisok(order.orderjson.buyers)
-                            }
-                          </Stack>
-                        }</td>
-                      }
-                      {isColumnRendered('clientPaid') &&
-                        <td className="allOrders-cell-client-paid" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
-                          {orderClientPaid}
-                        </td>
-                      }
-                      {isColumnRendered('hsum') &&
-                        <td className="allOrders-cell-hsum" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '', overflow: 'hidden', fontSize: '0.9em' }} title={emptyHSummas}>
-                          {emptyHSummas}
-                        </td>
-                      }
-                      {isColumnRendered('invoiceSent') &&
-                        <td className="allOrders-cell-invoice-sent" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
-                          {orderInvoiceSent}
-                        </td>
-                      }
-                      {isColumnRendered('reconciliationAct') &&
-                        <td className="allOrders-cell-reconciliation-act" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
-                          {orderReconciliationAct}
-                        </td>
-                      }
-                      {isColumnRendered('salaryIncluded') &&
-                        <td className="allOrders-cell-salary-included" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
-                          {orderSalaryIncluded}
-                        </td>
-                      }
-                      {isColumnRendered('manager') &&
-                        <td className="allOrders-cell-manager" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>{orderManager}</td>
-                      }
-                      {isColumnRendered('supplierPaymentDeferred') &&
-                        <td className="allOrders-cell-supplier-payment-deferred" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
-                          {yesNo(order.orderjson.supplierPaymentDeferred)}
-                        </td>
-                      }
-                      {isColumnRendered('clientPaymentDeferred') &&
-                        <td className="allOrders-cell-client-payment-deferred" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
-                          {yesNo(order.orderjson.clientPaymentDeferred)}
-                        </td>
-                      }
-                      {isColumnRendered('createdDate') &&
-                        <td className="allOrders-cell-created-date" style={{ overflow: "hidden", backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }} >{formatDate(order.orderjson.date)}</td>
-                      }
-                      {isColumnRendered('menu') &&
-                        <td className="allOrders-td-menu" style={{ backgroundColor: order.orderjson.haveEmptyBuyerH ? bgColorH : '' }}>
-                          <Stack direction="horizontal" gap={2} className="allOrders-menu-stack">
-                            <FaPrint title='Печать заявки' size='1.3em' className='clickable icon' style={{ color: 'rgba(47, 79, 112, 0.95)' }} onClick={(e) => {
-                              e.stopPropagation();
-                              rememberActiveOrder(order);
-                              printOrder(order.id);
-                            }} />
-                            <div className="vr" />
-                            <BiEditAlt size='1.7em' className='clickable icon' style={{ color: 'rgba(1, 87, 248, 0.85)' }} onClick={(e) => {
-                              e.stopPropagation();
-                              rememberActiveOrder(order);
-                              if (orderIndex >= 0) showHideOrder(orderIndex);
-                              setEditingOrder(() => order.orderjson);
-                              navigate("/editorder");
-                            }} />
-                            <div className="vr" />
-                            <MdDelete size='1.7em' className='clickable icon' style={{ color: 'rgb(194, 65, 65)' }} onClick={(e) => {
-                              e.stopPropagation();
-                              if (orderIndex >= 0) showHideOrder(orderIndex)
-                              setOrderForDelete({ id: order.id, orderNumber });
-                              handleShowModal();
-                            }} />
-
-
-                          </Stack>
-                        </td>
-                      }
-
+                  {orderedColumns.map((column) => (
+                    isColumnRendered(column.id) &&
+                      <Fragment key={column.id}>
+                        {renderOrderColumnCell(column.id, {
+                          order,
+                          orderIndex,
+                          orderNumber,
+                          orderStatus,
+                          orderTtnStatus,
+                          orderSpecificationStatus,
+                          orderClientPaid,
+                          orderSalaryIncluded,
+                          orderInvoiceSent,
+                          orderReconciliationAct,
+                          orderStatusClass,
+                          orderSpecificationStatusClass,
+                          orderManager,
+                          suppliersTons,
+                          supplierProducts,
+                          emptyHSummas,
+                        })}
+                      </Fragment>
+                  ))}
                 </tr>
                 <tr className="allOrders-expand-row">
                   <td colSpan={visibleColumnCount} className="p-0 border-top-0">

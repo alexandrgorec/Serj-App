@@ -60,6 +60,7 @@
 .allOrders-main-table col.allOrders-col-num { width: 6%; }
 .allOrders-main-table col.allOrders-col-status { width: 4%; }
 .allOrders-main-table col.allOrders-col-ttn-status { width: 4%; }
+.allOrders-main-table col.allOrders-col-specification-status { width: 4%; }
 .allOrders-main-table col.allOrders-col-suppliers { width: 7%; }
 .allOrders-main-table col.allOrders-col-loading-date { width: 6%; }
 .allOrders-main-table col.allOrders-col-products { width: 6%; }
@@ -135,6 +136,30 @@
     background: rgba(189, 89, 89, 0.14);
 }
 
+.allOrders-columnMoveBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 24px;
+    height: 22px;
+    padding: 0;
+    border: 1px solid rgba(65, 82, 110, 0.18);
+    border-radius: 6px;
+    color: rgba(44, 91, 145, 0.92);
+    background: rgba(255, 255, 255, 0.68);
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.allOrders-columnMoveBtn:hover,
+.allOrders-columnMoveBtn:focus {
+    color: rgba(30, 70, 128, 1);
+    border-color: rgba(65, 82, 110, 0.34);
+    background: rgba(234, 241, 252, 0.95);
+}
+
 .allOrders-columnResizeHandle {
     display: inline-block;
     width: 8px;
@@ -202,6 +227,10 @@
     white-space: nowrap;
 }
 
+.allOrders-cell-specification-status {
+    white-space: nowrap;
+}
+
 .allOrders-head-tons,
 .allOrders-cell-tons {
     text-align: center;
@@ -213,7 +242,9 @@
 .allOrders-cell-realization-date,
 .allOrders-cell-loading-date,
 .allOrders-head-ttn-status,
-.allOrders-cell-ttn-status {
+.allOrders-cell-ttn-status,
+.allOrders-head-specification-status,
+.allOrders-cell-specification-status {
     text-align: center;
     white-space: nowrap;
 }
@@ -245,11 +276,13 @@
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45), 0 1px 2px rgba(0, 0, 0, 0.16);
 }
 
-.allOrders-cell-status {
+.allOrders-cell-status,
+.allOrders-cell-specification-status {
     position: relative;
 }
 
-.allOrders-cell-status::after {
+.allOrders-cell-status::after,
+.allOrders-cell-specification-status::after {
     content: attr(data-status);
     position: absolute;
     left: calc(50% + 14px);
@@ -268,7 +301,8 @@
     pointer-events: none;
 }
 
-.allOrders-cell-status:hover::after {
+.allOrders-cell-status:hover::after,
+.allOrders-cell-specification-status:hover::after {
     opacity: 1;
 }
 
@@ -289,6 +323,18 @@
 }
 
 .allOrders-status-done {
+    background: #3ea342;
+}
+
+.allOrders-specification-required {
+    background: #d92d20;
+}
+
+.allOrders-specification-sent {
+    background: #f2b230;
+}
+
+.allOrders-specification-signed {
     background: #3ea342;
 }
 
