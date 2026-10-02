@@ -31,7 +31,8 @@ function getSpecificationStatusClass(status) {
   const normalizedStatus = normalizeOrderSpecificationStatus(status);
   if (normalizedStatus === 'Подписана') return 'editOrder-specification-signed';
   if (normalizedStatus === 'Отправлена') return 'editOrder-specification-sent';
-  return 'editOrder-specification-required';
+  if (normalizedStatus === 'Требуется') return 'editOrder-specification-required';
+  return 'editOrder-specification-not-required';
 }
 
 function EditOrderMobile({

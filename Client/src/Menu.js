@@ -3,6 +3,7 @@ import './Menu.css'
 import { TiUserAdd } from "react-icons/ti";
 import { FaUserEdit } from "react-icons/fa";
 import { FaClipboardList } from "react-icons/fa";
+import { FaKey } from "react-icons/fa";
 
 import { useContext } from 'react';
 import { userContext } from './App';
@@ -34,6 +35,11 @@ function Menu() {
                     Журнал <br /> действий
                 </Link>
             }
+
+            <Link className='menuComponent nodecoration' to="/menu/changepassword">
+                <FaKey size="3em" /><br />
+                Сменить <br /> пароль
+            </Link>
 
             {/* {user.name !== 'root' &&
                 <Link className='menuComponent nodecoration' to="/menu/profile">

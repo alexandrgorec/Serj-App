@@ -1,6 +1,6 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
-import { useState, useEffect, createContext } from 'react';
+import { useState, useEffect, createContext, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import OrderEditor from "./OrderEditor";
 import FooterApp from './FooterApp';
@@ -12,6 +12,7 @@ import axios from 'axios';
 import Menu from './Menu';
 import AddUser from './AddUser';
 import DeleteUser from './DeleteUser';
+import ChangePassword from './ChangePassword';
 import Header from './Header';
 import AlertMessage from './AlertMessage';
 import AuditLog from './AuditLog';
@@ -29,6 +30,40 @@ function createEmptyEditingOrder() {
   };
 }
 
+const NEW_ORDER_DRAFT_PREFIX = 'serjApp:newOrderDraft:';
+
+function getNewOrderDraftKey(user) {
+  const rawKey = user?.id || user?.userId || user?.name;
+  if (!rawKey) return '';
+  return `${NEW_ORDER_DRAFT_PREFIX}${encodeURIComponent(String(rawKey))}`;
+}
+
+function readNewOrderDraft(storageKey, managerName = '') {
+  try {
+    const raw = window.localStorage.getItem(storageKey);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return null;
+    const defaults = createEmptyOrder({ manager: managerName });
+    return {
+      ...defaults,
+      ...parsed,
+      suppliers: Array.isArray(parsed.suppliers) ? parsed.suppliers : defaults.suppliers,
+      buyers: Array.isArray(parsed.buyers) ? parsed.buyers : defaults.buyers,
+    };
+  } catch (error) {
+    return null;
+  }
+}
+
+function writeNewOrderDraft(storageKey, order) {
+  try {
+    window.localStorage.setItem(storageKey, JSON.stringify(order));
+  } catch (error) {
+    // Если браузер запретил запись, просто оставляем черновик в памяти приложения.
+  }
+}
+
 function App() {
   const apiBaseUrl = getApiBaseUrl();
   const [showMessage, setShowMessage] = useState(false);
@@ -40,6 +75,7 @@ function App() {
     setShowMessage(true);
   }
   const [token, setToken] = useState(window.localStorage.token);
+  const skipNewOrderDraftPersistRef = useRef(false);
 
   const [editingOrder, setEditingOrder] = useState(createEmptyEditingOrder());
 
@@ -48,8 +84,12 @@ function App() {
     rights: {},
   })
   const [newOrder, setNewOrder] = useState(createEmptyOrder());
+  const newOrderDraftKey = getNewOrderDraftKey(user);
+  const newOrderDraftManagerName = user?.name || '';
 
   const resetVolatileState = () => {
+    const currentDraftKey = getNewOrderDraftKey(user);
+    if (currentDraftKey) window.localStorage.removeItem(currentDraftKey);
     setEditingOrder(createEmptyEditingOrder());
     setNewOrder(createEmptyOrder());
     setUser({
@@ -108,6 +148,22 @@ function App() {
   }, [token]);
 
   useEffect(() => {
+    if (!newOrderDraftKey) return;
+    const draft = readNewOrderDraft(newOrderDraftKey, newOrderDraftManagerName);
+    skipNewOrderDraftPersistRef.current = true;
+    setNewOrder(draft || createEmptyOrder({ manager: newOrderDraftManagerName }));
+  }, [newOrderDraftKey, newOrderDraftManagerName]);
+
+  useEffect(() => {
+    if (!newOrderDraftKey) return;
+    if (skipNewOrderDraftPersistRef.current) {
+      skipNewOrderDraftPersistRef.current = false;
+      return;
+    }
+    writeNewOrderDraft(newOrderDraftKey, newOrder);
+  }, [newOrderDraftKey, newOrder]);
+
+  useEffect(() => {
     const setAppHeight = () => {
       const viewportHeight = window.visualViewport?.height || window.innerHeight;
       document.documentElement.style.setProperty('--app-height', `${Math.round(viewportHeight)}px`);
@@ -150,6 +206,7 @@ function App() {
                   {user.rights.adminAccess && <Route path='/menu/adduser' element={<AddUser />}></Route>}
                   {user.rights.adminAccess && <Route path='/menu/deleteuser' element={<DeleteUser />}></Route>}
                   {user.rights.adminAccess && <Route path='/menu/auditlog' element={<AuditLog />}></Route>}
+                  <Route path='/menu/changepassword' element={<ChangePassword />}></Route>
                   <Route path='/menu/profile' element={'profile'}></Route>
                 </Route>
                 <Route path='/mailing' element={<Mailings />}></Route>

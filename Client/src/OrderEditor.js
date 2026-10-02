@@ -229,7 +229,8 @@ function getSpecificationStatusClass(status) {
   const normalizedStatus = normalizeOrderSpecificationStatus(status);
   if (normalizedStatus === 'Подписана') return 'editOrder-specification-signed';
   if (normalizedStatus === 'Отправлена') return 'editOrder-specification-sent';
-  return 'editOrder-specification-required';
+  if (normalizedStatus === 'Требуется') return 'editOrder-specification-required';
+  return 'editOrder-specification-not-required';
 }
 
 function hasEmptyBuyerH(order) {
@@ -268,15 +269,6 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
   const specificationStatus = normalizeOrderSpecificationStatus(activeOrder?.specificationStatus);
   const managerOptions = user?.managerOptions || [];
   const goBack = () => navigate(-1);
-
-  useEffect(() => {
-    if (isNewMode && setActiveOrder) {
-      setMessage('');
-      setActiveOrder(createEmptyOrder({ manager: user?.name || '' }));
-    }
-    // Сбрасываем форму именно при открытии режима новой заявки.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isNewMode]);
 
   useEffect(() => {
     if (isNewMode && user?.name) {

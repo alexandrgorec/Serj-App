@@ -158,8 +158,8 @@
 }
 
 .editOrderMobile-specificationStatusField {
-    flex: 1 1 122px;
-    min-width: 118px;
+    flex: 1 1 136px;
+    min-width: 128px;
 }
 
 .editOrderMobile-statusField .form-select,
@@ -208,6 +208,11 @@
 .editOrder-specification-required .form-select {
     background-color: rgba(217, 45, 32, 0.16);
     color: rgba(145, 32, 24, 0.98);
+}
+
+.editOrder-specification-not-required .form-select {
+    background-color: rgba(107, 114, 128, 0.14);
+    color: rgba(55, 65, 81, 0.98);
 }
 
 .editOrder-specification-sent .form-select {

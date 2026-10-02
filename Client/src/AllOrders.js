@@ -162,20 +162,44 @@ function formatSummaCell(num) {
   return new Intl.NumberFormat().format(Number(n));
 }
 
-function parseNumericCellValue(value) {
-  if (value === undefined || value === null) return null;
+function normalizeDecimalCellValue(value) {
+  if (value === undefined || value === null) return '';
   const normalized = String(value).trim().replace(/\s/g, '').replace(/,/g, '.');
-  if (normalized === '' || Number.isNaN(Number(normalized))) return null;
-  return Number(normalized);
+  return /^-?\d+(\.\d+)?$/.test(normalized) ? normalized : '';
+}
+
+function getDecimalPlaces(value) {
+  const [, fraction = ''] = String(value).split('.');
+  return fraction.length;
+}
+
+function scaledIntegerFromDecimal(value, scale) {
+  const sign = value.startsWith('-') ? -1 : 1;
+  const unsigned = sign === -1 ? value.slice(1) : value;
+  const [integerPart, fractionPart = ''] = unsigned.split('.');
+  const fraction = fractionPart.padEnd(Math.log10(scale), '0');
+  return sign * Number(`${integerPart}${fraction}`);
 }
 
 function suppliersTonsTotal(orderjson) {
   const suppliers = Array.isArray(orderjson?.suppliers) ? orderjson.suppliers : [];
-  const total = suppliers.reduce((sum, supplier) => {
-    const tons = parseNumericCellValue(supplier?.tons);
-    return tons === null ? sum : sum + tons;
-  }, 0);
-  return total === 0 ? '' : total;
+  const tonsValues = suppliers
+    .map((supplier) => normalizeDecimalCellValue(supplier?.tons))
+    .filter((tons) => tons !== '');
+  if (tonsValues.length === 0) return '';
+
+  const maxDecimalPlaces = Math.max(...tonsValues.map(getDecimalPlaces));
+  const scale = 10 ** maxDecimalPlaces;
+  const scaledTotal = tonsValues.reduce((sum, tons) => sum + scaledIntegerFromDecimal(tons, scale), 0);
+  if (scaledTotal === 0) return '';
+
+  const sign = scaledTotal < 0 ? '-' : '';
+  const unsignedTotal = String(Math.abs(scaledTotal)).padStart(maxDecimalPlaces + 1, '0');
+  if (maxDecimalPlaces === 0) return `${sign}${unsignedTotal}`;
+
+  const integerPart = unsignedTotal.slice(0, -maxDecimalPlaces);
+  const fractionPart = unsignedTotal.slice(-maxDecimalPlaces).replace(/0+$/, '');
+  return fractionPart === '' ? `${sign}${integerPart}` : `${sign}${integerPart}.${fractionPart}`;
 }
 
 function supplierProductsDisplay(orderjson) {
@@ -274,7 +298,8 @@ function getOrderSpecificationStatusClass(status) {
   const normalizedStatus = normalizeOrderSpecificationStatus(status);
   if (normalizedStatus === 'Подписана') return 'allOrders-specification-signed';
   if (normalizedStatus === 'Отправлена') return 'allOrders-specification-sent';
-  return 'allOrders-specification-required';
+  if (normalizedStatus === 'Требуется') return 'allOrders-specification-required';
+  return 'allOrders-specification-not-required';
 }
 
 function getOrderManager(orderjson) {

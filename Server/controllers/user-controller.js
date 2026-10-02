@@ -1,7 +1,7 @@
 const { pool } = require("../db");
 const jwt = require('jsonwebtoken');
-// const bcrypt = require('bcrypt');
-// const { writeAuditLog } = require("../utils/audit-log");
+const bcrypt = require('bcrypt');
+const { writeAuditLog } = require("../utils/audit-log");
 const { updateSelectListData, getRootToken, verifyRootPassword, getUserDB, getUserToken } = require("../services/userServices");
 
 class UserController {
@@ -70,6 +70,58 @@ class UserController {
             res.status(202).send({ user });
         }
     }
+
+    async changePassword(req, res) {
+        try {
+            const userId = req.body.userId;
+            const currentPassword = String(req.body.currentPassword || "");
+            const newPassword = String(req.body.newPassword || "");
+
+            if (userId === 'root') {
+                return res.status(403).send("Пароль root меняется через настройки сервера");
+            }
+
+            if (!currentPassword || !newPassword) {
+                return res.status(400).send("Заполните текущий и новый пароль");
+            }
+
+            const userResult = await pool.query(
+                "SELECT id, login, password, userinfo FROM users WHERE id = $1",
+                [userId]
+            );
+            const user = userResult.rows?.[0];
+
+            if (!user) {
+                return res.status(404).send("Пользователь не найден");
+            }
+
+            if (!bcrypt.compareSync(currentPassword, user.password)) {
+                return res.status(400).send("Текущий пароль указан неверно");
+            }
+
+            const passwordHash = bcrypt.hashSync(newPassword, 10);
+            await pool.query("UPDATE users SET password = $1 WHERE id = $2", [passwordHash, userId]);
+
+            await writeAuditLog({
+                actorUserId: req.body.userId,
+                actorName: req.body.user,
+                action: "CHANGE_OWN_PASSWORD",
+                entityType: "user",
+                entityId: userId,
+                route: "/user/changepassword",
+                payload: {
+                    login: user.login,
+                    name: user.userinfo?.name || null,
+                },
+            });
+
+            res.sendStatus(202);
+        } catch (error) {
+            console.error("Error change password", error);
+            res.status(500).send("ошибка доступа к базе данных");
+        }
+    }
+
     async checkAuth(req, res, next) {
         const bearerToken = req.headers?.authorization?.replace(/^Bearer\s+/i, '') || '';
         const token = req.body?.token || req.query?.token || bearerToken;

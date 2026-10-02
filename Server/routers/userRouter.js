@@ -8,6 +8,7 @@ const userRouter = Router();
 userRouter.use(userController.checkAuth);
 userRouter.post("/editSelectListsData", userController.editSelectListsData );
 userRouter.post("/getData", userController.getData);
+userRouter.post("/changepassword", userController.changePassword);
 userRouter.post("/neworder", orderController.neworder);
 userRouter.post("/getallorders", orderController.getallorders);
 userRouter.post("/deleteorder", orderController.deleteorder);

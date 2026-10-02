@@ -330,6 +330,10 @@
     background: #d92d20;
 }
 
+.allOrders-specification-not-required {
+    background: #9ca3af;
+}
+
 .allOrders-specification-sent {
     background: #f2b230;
 }
