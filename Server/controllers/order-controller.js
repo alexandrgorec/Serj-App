@@ -557,6 +557,8 @@ function buildReport(orderId, order, showFinBlock) {
 const ORDER_DIFF_IGNORED_KEYS = new Set(["id", "haveEmptyBuyerH"]);
 const ORDER_DIFF_MAX_CHANGES_IN_LOG = 200;
 const ORDER_DIFF_MAX_VALUE_LEN = 180;
+const LOCKED_ORDER_STATUSES = new Set(["Заприходована", "Реализована"]);
+const LOCKED_ORDER_MESSAGE = "Заявка заприходована или реализована. Изменения доступны только бухгалтеру или администратору.";
 const ORDER_DIFF_DEFAULT_VALUES = {
     orderStatus: "Создана",
     ttnStatus: "Х",
@@ -865,10 +867,10 @@ class OrderController {
                 ...(previousOrderRes.rows[0].orderjson || {}),
                 orderNumber: previousOrderNumber,
             };
-            const isLockedOrder = normalizeAuditStatus(previousOrder.orderStatus) === "Заприходована";
+            const isLockedOrder = LOCKED_ORDER_STATUSES.has(normalizeAuditStatus(previousOrder.orderStatus));
             const canEditLockedOrder = !!(req.body?.rights?.finBlockAccess || req.body?.rights?.adminAccess);
             if (isLockedOrder && !canEditLockedOrder) {
-                res.status(403).json({ message: "Заявка заприходована. Изменения доступны только бухгалтеру или администратору." });
+                res.status(403).json({ message: LOCKED_ORDER_MESSAGE });
                 return;
             }
 

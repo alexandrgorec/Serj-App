@@ -66,6 +66,9 @@ const HISTORY_FIELD_LABELS = {
   akt: 'акт транспорт',
 };
 
+const LOCKED_ORDER_STATUSES = ['Заприходована', 'Реализована'];
+const LOCKED_ORDER_MESSAGE = 'Заявка заприходована или реализована. Изменения доступны только бухгалтеру или администратору.';
+
 function formatHistoryDateTime(value) {
   if (!value) return '—';
   const date = new Date(value);
@@ -262,7 +265,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
   const setActiveOrder = isEditMode ? setEditingOrder : setOrder;
   const orderStatus = normalizeOrderStatus(activeOrder?.orderStatus);
   const hasPrivilegedOrderEditAccess = !!(user?.rights?.finBlockAccess || user?.rights?.adminAccess);
-  const isOrderLockedForCurrentUser = isEditMode && orderStatus === 'Заприходована' && !hasPrivilegedOrderEditAccess;
+  const isOrderLockedForCurrentUser = isEditMode && LOCKED_ORDER_STATUSES.includes(orderStatus) && !hasPrivilegedOrderEditAccess;
   const canEditOrder = !isOrderLockedForCurrentUser;
   const canEditOrderStatus = hasPrivilegedOrderEditAccess;
   const ttnStatus = normalizeOrderTtnStatus(activeOrder?.ttnStatus);
@@ -321,7 +324,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
 
   const resetOrder = () => {
     if (!canEditOrder) {
-      setToast('Заявка заприходована. Изменения доступны только бухгалтеру или администратору.', 'warning');
+      setToast(LOCKED_ORDER_MESSAGE, 'warning');
       return;
     }
     if (isNewMode) {
@@ -357,7 +360,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
 
   const saveOrder = async () => {
     if (!canEditOrder) {
-      setToast('Заявка заприходована. Изменения доступны только бухгалтеру или администратору.', 'warning');
+      setToast(LOCKED_ORDER_MESSAGE, 'warning');
       return;
     }
 
@@ -428,7 +431,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
       }
       if (error?.response?.status === 403) {
         setAlertVariant('danger');
-        setMessage(error.response.data?.message || 'Заявка заприходована. Изменения доступны только бухгалтеру или администратору.');
+        setMessage(error.response.data?.message || LOCKED_ORDER_MESSAGE);
       }
     }
   };

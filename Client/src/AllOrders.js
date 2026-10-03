@@ -1072,7 +1072,9 @@ function AllOrders() {
       case 'specificationStatus':
         return (
           <td className="allOrders-cell-specification-status" data-status={orderSpecificationStatus} aria-label={orderSpecificationStatus} style={{ backgroundColor: highlightedBackground }}>
-            <span className={`allOrders-status-dot ${orderSpecificationStatusClass}`} />
+            {orderSpecificationStatus !== 'Не требуется' &&
+              <span className={`allOrders-status-dot ${orderSpecificationStatusClass}`} />
+            }
           </td>
         );
       case 'suppliers':
@@ -1583,11 +1585,13 @@ function AllOrders() {
                   <div className='allOrders-card-idGroup'>
                     <span className={`allOrders-status-dot ${orderStatusClass}`} aria-label={orderStatus} />
                     <span className='allOrders-card-ttnStatus' title={`Статус ТТН: ${orderTtnStatus}`}>ТТН: {orderTtnStatus}</span>
-                    <span
-                      className={`allOrders-status-dot ${orderSpecificationStatusClass}`}
-                      title={`Спецификация: ${orderSpecificationStatus}`}
-                      aria-label={`Спецификация: ${orderSpecificationStatus}`}
-                    />
+                    {orderSpecificationStatus !== 'Не требуется' &&
+                      <span
+                        className={`allOrders-status-dot ${orderSpecificationStatusClass}`}
+                        title={`Спецификация: ${orderSpecificationStatus}`}
+                        aria-label={`Спецификация: ${orderSpecificationStatus}`}
+                      />
+                    }
                     <div className='allOrders-card-id'>Заявка №{orderNumber}</div>
                   </div>
                   <div className='allOrders-card-date'>{formatDate(order.orderjson.date)}</div>
