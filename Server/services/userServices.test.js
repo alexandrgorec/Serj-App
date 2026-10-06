@@ -41,7 +41,7 @@ describe("updateSelectListData", () => {
         jest.clearAllMocks();
     });
 
-    test("updates user select lists and writes audit log", async () => {
+    test("updates user select lists without writing audit log", async () => {
         const userInfo = { selectListsData: {} };
         mockQueryOnce({ rows: [{ userinfo: userInfo }] });
         mockQueryOnce({});
@@ -61,23 +61,7 @@ describe("updateSelectListData", () => {
             [{ selectListsData }, 46],
             expect.any(Function),
         );
-        expect(writeAuditLog).toHaveBeenCalledWith({
-            actorUserId: 46,
-            actorName: "test user",
-            action: "UPDATE_SELECT_LISTS",
-            entityType: "select_lists",
-            entityId: 46,
-            route: "/user/editSelectListsData",
-            payload: {
-                listSizes: {
-                    SUPPLIERS: 2,
-                    BUYERS: 0,
-                    DRIVERS: 0,
-                    TYPE_OF_PRODUCT: 0,
-                    MANAGERS: 0,
-                },
-            },
-        });
+        expect(writeAuditLog).not.toHaveBeenCalled();
     });
 
     test("rejects when user does not exist", async () => {

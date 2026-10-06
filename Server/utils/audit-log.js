@@ -84,9 +84,28 @@ async function listAuditLogs({ page = 1, pageSize = 20 } = {}) {
     const total = countRes?.rows?.[0]?.total || 0;
 
     const itemsRes = await pool.query(
-        `SELECT id, created_at, actor_user_id, actor_name, action, entity_type, entity_id, route, payload
-         FROM audit_log
-         ORDER BY created_at DESC, id DESC
+        `SELECT
+            a.id,
+            a.created_at,
+            a.actor_user_id,
+            a.actor_name,
+            a.action,
+            a.entity_type,
+            a.entity_id,
+            CASE
+                WHEN a.entity_type = 'order'
+                    THEN COALESCE(a.payload->>'orderNumber', o.order_number::text, a.entity_id)
+                ELSE a.entity_id
+            END AS entity_display_id,
+            a.route,
+            a.payload
+         FROM audit_log a
+         LEFT JOIN orders o
+            ON o.id = CASE
+                WHEN a.entity_type = 'order' AND a.entity_id ~ '^[0-9]+$' THEN a.entity_id::bigint
+                ELSE NULL
+            END
+         ORDER BY a.created_at DESC, a.id DESC
          LIMIT $1 OFFSET $2`,
         [safePageSize, offset]
     );

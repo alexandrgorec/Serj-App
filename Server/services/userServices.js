@@ -1,5 +1,4 @@
 const { pool } = require("../db");
-const { writeAuditLog } = require("../utils/audit-log");
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 
@@ -23,21 +22,6 @@ module.exports.updateSelectListData = function (userId, selectListsData, user) {
                     reject(new Error('Ошибка доступа к базе данных'));
                     return;
                 } else {
-                    const listSizes = {};
-                    Object.keys(selectListsData || {}).forEach((key) => {
-                        listSizes[key] = Array.isArray(selectListsData[key]) ? selectListsData[key].length : 0;
-                    });
-                    writeAuditLog({
-                        actorUserId: userId,
-                        actorName: user,
-                        action: "UPDATE_SELECT_LISTS",
-                        entityType: "select_lists",
-                        entityId: userId,
-                        route: "/user/editSelectListsData",
-                        payload: { listSizes },
-                    }).catch((logError) => {
-                        console.error("Audit log error (UPDATE_SELECT_LISTS):", logError);
-                    });
                     resolve(true);
                 }
             });

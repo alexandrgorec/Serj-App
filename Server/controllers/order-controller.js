@@ -944,17 +944,6 @@ class OrderController {
                 [id]
             );
             const releasedLock = result.rows?.[0] || null;
-            writeAuditLog({
-                actorUserId: req.body.userId,
-                actorName: req.body.user,
-                action: "FORCE_RELEASE_ORDER_LOCK",
-                entityType: "order",
-                entityId: id,
-                route: "/user/forceorderunlock",
-                payload: releasedLock,
-            }).catch((logError) => {
-                console.error("Audit log error (FORCE_RELEASE_ORDER_LOCK):", logError);
-            });
             res.status(202).json({ released: !!releasedLock });
         } catch (err) {
             console.error("Error force order unlock", err.stack || err);

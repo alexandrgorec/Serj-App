@@ -38,6 +38,13 @@ function formatDetails(payload) {
     }
 }
 
+function getEntityDisplayValue(item) {
+    if (!item) return '—';
+    if (item.entity_display_id) return item.entity_display_id;
+    if (item.entity_type === 'order' && item.payload?.orderNumber) return item.payload.orderNumber;
+    return item.entity_id || '—';
+}
+
 function AuditLog() {
     const { aAxios, setToast } = useContext(userContext);
     const [items, setItems] = useState([]);
@@ -102,15 +109,14 @@ function AuditLog() {
                             <th>Пользователь</th>
                             <th>Действие</th>
                             <th>Сущность</th>
-                            <th>ID</th>
-                            <th>Route</th>
+                            <th>№ / ID</th>
                             <th>Детали</th>
                         </tr>
                     </thead>
                     <tbody>
                         {items.length === 0 &&
                             <tr>
-                                <td colSpan={7} className='text-center'>Журнал пуст</td>
+                                <td colSpan={6} className='text-center'>Журнал пуст</td>
                             </tr>
                         }
                         {items.map((item) => (
@@ -119,8 +125,7 @@ function AuditLog() {
                                 <td>{item.actor_name || item.actor_user_id || '—'}</td>
                                 <td>{item.action || '—'}</td>
                                 <td>{item.entity_type || '—'}</td>
-                                <td>{item.entity_id || '—'}</td>
-                                <td>{item.route || '—'}</td>
+                                <td>{getEntityDisplayValue(item)}</td>
                                 <td className='auditLogDetails'>{formatDetails(item.payload)}</td>
                             </tr>
                         ))}
