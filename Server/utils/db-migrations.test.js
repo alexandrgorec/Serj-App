@@ -73,3 +73,31 @@ describe("ensureMailingsTable", () => {
         await expect(ensureMailingsTable()).rejects.toThrow("mailings migration failed");
     });
 });
+
+describe("ensureOrderEditLocksTable", () => {
+    beforeEach(() => {
+        jest.resetModules();
+    });
+
+    test("creates order edit locks table idempotently", async () => {
+        const { pool } = require("../db");
+        pool.query.mockResolvedValue({});
+        const { ensureOrderEditLocksTable } = require("./db-migrations");
+
+        await expect(ensureOrderEditLocksTable()).resolves.toBeUndefined();
+
+        expect(pool.query).toHaveBeenCalledWith(expect.stringContaining("CREATE TABLE IF NOT EXISTS order_edit_locks"));
+        expect(pool.query).toHaveBeenCalledWith(expect.stringContaining("order_id BIGINT PRIMARY KEY REFERENCES orders(id) ON DELETE CASCADE"));
+        expect(pool.query).toHaveBeenCalledWith(expect.stringContaining("user_id TEXT NOT NULL"));
+        expect(pool.query).toHaveBeenCalledWith(expect.stringContaining("locked_at TIMESTAMPTZ NOT NULL DEFAULT now()"));
+    });
+
+    test("resets cached promise when order edit locks migration fails", async () => {
+        const { pool } = require("../db");
+        const migrationError = new Error("order locks migration failed");
+        pool.query.mockRejectedValueOnce(migrationError);
+        const { ensureOrderEditLocksTable } = require("./db-migrations");
+
+        await expect(ensureOrderEditLocksTable()).rejects.toThrow("order locks migration failed");
+    });
+});

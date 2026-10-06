@@ -64,6 +64,32 @@ function writeNewOrderDraft(storageKey, order) {
   }
 }
 
+function releaseOrderLockBestEffort({ apiBaseUrl, token, orderId }) {
+  if (!orderId || !token) return;
+  const url = `${apiBaseUrl}/user/releaseorderlock?token=${encodeURIComponent(token)}&id=${encodeURIComponent(orderId)}`;
+  const payload = JSON.stringify({ id: orderId });
+
+  try {
+    if (navigator.sendBeacon) {
+      const blob = new Blob([payload], { type: 'application/json' });
+      if (navigator.sendBeacon(url, blob)) return;
+    }
+  } catch (error) {
+    // Best-effort release: if beacon is unavailable, fall back to keepalive fetch.
+  }
+
+  try {
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: payload,
+      keepalive: true,
+    }).catch(() => {});
+  } catch (error) {
+    // Closing the page may interrupt this request; admin can release stale locks manually.
+  }
+}
+
 function App() {
   const apiBaseUrl = getApiBaseUrl();
   const [showMessage, setShowMessage] = useState(false);
@@ -78,6 +104,7 @@ function App() {
   const skipNewOrderDraftPersistRef = useRef(false);
 
   const [editingOrder, setEditingOrder] = useState(createEmptyEditingOrder());
+  const [orderEditLock, setOrderEditLock] = useState(null);
 
   const [user, setUser] = useState({
     name: '',
@@ -91,6 +118,7 @@ function App() {
     const currentDraftKey = getNewOrderDraftKey(user);
     if (currentDraftKey) window.localStorage.removeItem(currentDraftKey);
     setEditingOrder(createEmptyEditingOrder());
+    setOrderEditLock(null);
     setNewOrder(createEmptyOrder());
     setUser({
       name: '',
@@ -103,6 +131,9 @@ function App() {
   };
 
   const logOut = () => {
+    if (orderEditLock?.isOwner && orderEditLock?.orderId) {
+      releaseOrderLockBestEffort({ apiBaseUrl, token, orderId: orderEditLock.orderId });
+    }
     delete window.localStorage.token;
     resetVolatileState();
     setToken(null);
@@ -189,7 +220,7 @@ function App() {
     size = 'sm';
   }
   return (
-    <userContext.Provider value={{ user, logOut, setUser, apiBaseUrl, setToast, aAxios, editingOrder, setEditingOrder, size, display }}>
+    <userContext.Provider value={{ user, logOut, setUser, apiBaseUrl, setToast, aAxios, editingOrder, setEditingOrder, orderEditLock, setOrderEditLock, size, display }}>
       <BrowserRouter>
         {!token && <Login setToken={setToken} />}
         {token && <div className='appViewport'>

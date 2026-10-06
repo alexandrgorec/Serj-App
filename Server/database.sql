@@ -21,3 +21,10 @@ CREATE TABLE IF NOT EXISTS mailings(
     employee_json JSON NOT NULL,
     categories_json JSON NOT NULL DEFAULT '[]'::json
 );
+
+CREATE TABLE IF NOT EXISTS order_edit_locks(
+    order_id BIGINT PRIMARY KEY REFERENCES orders(id) ON DELETE CASCADE,
+    user_id TEXT NOT NULL,
+    user_name TEXT NOT NULL,
+    locked_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);

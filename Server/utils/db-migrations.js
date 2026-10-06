@@ -2,6 +2,7 @@ const { pool } = require("../db");
 
 let ensureOrderNumberColumnPromise = null;
 let ensureMailingsTablePromise = null;
+let ensureOrderEditLocksTablePromise = null;
 
 async function ensureOrderNumberColumn() {
     if (!ensureOrderNumberColumnPromise) {
@@ -75,7 +76,27 @@ async function ensureMailingsTable() {
     return ensureMailingsTablePromise;
 }
 
+async function ensureOrderEditLocksTable() {
+    if (!ensureOrderEditLocksTablePromise) {
+        ensureOrderEditLocksTablePromise = (async () => {
+            await pool.query(`
+                CREATE TABLE IF NOT EXISTS order_edit_locks (
+                    order_id BIGINT PRIMARY KEY REFERENCES orders(id) ON DELETE CASCADE,
+                    user_id TEXT NOT NULL,
+                    user_name TEXT NOT NULL,
+                    locked_at TIMESTAMPTZ NOT NULL DEFAULT now()
+                )
+            `);
+        })().catch((error) => {
+            ensureOrderEditLocksTablePromise = null;
+            throw error;
+        });
+    }
+    return ensureOrderEditLocksTablePromise;
+}
+
 module.exports = {
     ensureOrderNumberColumn,
     ensureMailingsTable,
+    ensureOrderEditLocksTable,
 };

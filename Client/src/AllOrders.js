@@ -352,7 +352,7 @@ function formatDate(date) {
 
 
 function AllOrders() {
-  const { user, setToast, aAxios, setEditingOrder } = useContext(userContext);
+  const { user, setToast, aAxios, setEditingOrder, setOrderEditLock } = useContext(userContext);
   const navigate = useNavigate();
   const userUiStateKey = getUserUiStateKey(user);
   const tableRef = useRef(null);
@@ -707,6 +707,32 @@ function AllOrders() {
       setToast('Разрешите всплывающие окна, чтобы открыть печать', 'warning');
     }
   }
+
+  const openOrderForEdit = (order) => {
+    rememberActiveOrder(order);
+    aAxios.post('/user/openorderforedit', { id: order.id })
+      .then((response) => {
+        if (response.status === 202) {
+          const freshOrder = response.data?.order;
+          const lock = response.data?.lock || null;
+          if (!freshOrder) {
+            setToast('Заявка не найдена', 'warning');
+            return;
+          }
+          setEditingOrder(() => freshOrder);
+          setOrderEditLock(lock);
+          navigate('/editorder');
+        }
+      })
+      .catch((error) => {
+        if (error?.response?.status === 404) {
+          setToast('Заявка была удалена', 'warning');
+          getAllOrders(false);
+          return;
+        }
+        setToast(error?.response?.data?.message || 'Не удалось открыть заявку', 'danger');
+      });
+  };
 
   const resetFilters = () => {
     setOrderNumberFilter('');
@@ -1124,10 +1150,8 @@ function AllOrders() {
               <div className="vr" />
               <BiEditAlt size='1.7em' className='clickable icon' style={{ color: 'rgba(1, 87, 248, 0.85)' }} onClick={(e) => {
                 e.stopPropagation();
-                rememberActiveOrder(order);
                 if (orderIndex >= 0) showHideOrder(orderIndex);
-                setEditingOrder(() => order.orderjson);
-                navigate('/editorder');
+                openOrderForEdit(order);
               }} />
               <div className="vr" />
               <MdDelete size='1.7em' className='clickable icon' style={{ color: 'rgb(194, 65, 65)' }} onClick={(e) => {
@@ -1603,9 +1627,7 @@ function AllOrders() {
                     }} />
                     <BiEditAlt size='1.6em' className='clickable icon' style={{ color: 'rgba(1, 87, 248, 0.85)' }} onClick={(e) => {
                       e.stopPropagation();
-                      rememberActiveOrder(order);
-                      setEditingOrder(() => order.orderjson);
-                      navigate("/editorder");
+                      openOrderForEdit(order);
                     }} />
                     <MdDelete size='1.6em' className='clickable icon' style={{ color: 'rgb(194, 65, 65)' }} onClick={(e) => {
                       e.stopPropagation();
@@ -1778,8 +1800,7 @@ function AllOrders() {
                   onClick={toggleRow}
                   onDoubleClick={() => {
                     toggleRow();
-                    setEditingOrder(() => order.orderjson);
-                    navigate("/editorder");
+                    openOrderForEdit(order);
                   }}
                 >
                   {orderedColumns.map((column) => (

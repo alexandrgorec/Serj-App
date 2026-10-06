@@ -5,7 +5,7 @@ import './EditOrder.css';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import FloatingLabel from 'react-bootstrap/FloatingLabel';
-import { useState, useContext, useEffect } from 'react';
+import { useState, useContext, useEffect, useRef } from 'react';
 import { Alert, Modal, Table } from 'react-bootstrap';
 import { userContext } from './App';
 import { useNavigate } from 'react-router-dom';
@@ -16,7 +16,7 @@ import OrderPaymentDates from './OrderPaymentDates';
 import OrderDeliveryFields from './OrderDeliveryFields';
 import { getManagerOptions } from './managerOptions';
 import { createEmptyOrder, emptyOrderRow } from './orderDefaults';
-import { ORDER_STATUS_OPTIONS, normalizeOrderStatus } from './orderStatus';
+import { ORDER_STATUS_OPTIONS, getAvailableOrderStatusOptions, normalizeOrderStatus } from './orderStatus';
 import { ORDER_TTN_STATUS_OPTIONS, normalizeOrderTtnStatus } from './orderTtnStatus';
 import { ORDER_SPECIFICATION_STATUS_OPTIONS, normalizeOrderSpecificationStatus } from './orderSpecificationStatus';
 import { FaArrowsRotate, FaPrint } from 'react-icons/fa6';
@@ -242,6 +242,13 @@ function hasEmptyBuyerH(order) {
       .some((buyerH) => String(buyerH?.name || '').trim() === ''));
 }
 
+function formatLockDateTime(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString('ru-RU');
+}
+
 function OrderEditor({ mode = 'new', order, setOrder }) {
   const isEditMode = mode === 'edit';
   const isNewMode = !isEditMode;
@@ -254,7 +261,10 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
     aAxios,
     editingOrder,
     setEditingOrder,
+    orderEditLock,
+    setOrderEditLock,
   } = useContext(userContext);
+  const releasedLockRef = useRef(false);
   const [message, setMessage] = useState('');
   const [alertVariant, setAlertVariant] = useState('');
   const [historyShow, setHistoryShow] = useState(false);
@@ -266,12 +276,82 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
   const orderStatus = normalizeOrderStatus(activeOrder?.orderStatus);
   const hasPrivilegedOrderEditAccess = !!(user?.rights?.finBlockAccess || user?.rights?.adminAccess);
   const isOrderLockedForCurrentUser = isEditMode && LOCKED_ORDER_STATUSES.includes(orderStatus) && !hasPrivilegedOrderEditAccess;
-  const canEditOrder = !isOrderLockedForCurrentUser;
-  const canEditOrderStatus = hasPrivilegedOrderEditAccess;
+  const isOrderLockedByAnotherUser = isEditMode && orderEditLock?.canEdit === false;
+  const canEditOrder = !isOrderLockedForCurrentUser && !isOrderLockedByAnotherUser;
+  const canEditOrderStatus = canEditOrder;
+  const availableOrderStatusOptions = getAvailableOrderStatusOptions({
+    canUsePrivilegedStatuses: hasPrivilegedOrderEditAccess,
+    currentStatus: orderStatus,
+  });
   const ttnStatus = normalizeOrderTtnStatus(activeOrder?.ttnStatus);
   const specificationStatus = normalizeOrderSpecificationStatus(activeOrder?.specificationStatus);
   const managerOptions = user?.managerOptions || [];
-  const goBack = () => navigate(-1);
+  const releaseCurrentOrderLock = ({ bestEffort = false } = {}) => {
+    if (!isEditMode || !activeOrder?.id || !orderEditLock?.isOwner || releasedLockRef.current) return Promise.resolve();
+    releasedLockRef.current = true;
+    setOrderEditLock(null);
+
+    if (bestEffort) {
+      const token = window.localStorage.token || '';
+      const baseUrl = aAxios?.defaults?.baseURL || window.location.origin;
+      const url = `${baseUrl}/user/releaseorderlock?token=${encodeURIComponent(token)}&id=${encodeURIComponent(activeOrder.id)}`;
+      const payload = JSON.stringify({ id: activeOrder.id });
+      try {
+        if (navigator.sendBeacon) {
+          const blob = new Blob([payload], { type: 'application/json' });
+          if (navigator.sendBeacon(url, blob)) return Promise.resolve();
+        }
+      } catch (error) {
+        // Best-effort release continues with keepalive fetch below.
+      }
+      try {
+        fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: payload,
+          keepalive: true,
+        }).catch(() => {});
+      } catch (error) {
+        // If the browser is closing, admin can release a stale lock manually.
+      }
+      return Promise.resolve();
+    }
+
+    return aAxios.post('/user/releaseorderlock', { id: activeOrder.id }).catch(() => {});
+  };
+  const goBack = () => {
+    releaseCurrentOrderLock().finally(() => navigate(-1));
+  };
+
+  const reopenOrderForEdit = () => {
+    if (!activeOrder?.id) return;
+    aAxios.post('/user/openorderforedit', { id: activeOrder.id })
+      .then((response) => {
+        if (response.status === 202) {
+          setActiveOrder(response.data?.order || activeOrder);
+          setOrderEditLock(response.data?.lock || null);
+          releasedLockRef.current = false;
+          setMessage('');
+        }
+      })
+      .catch((error) => {
+        setToast(error?.response?.data?.message || 'Не удалось открыть заявку', 'danger');
+      });
+  };
+
+  const forceUnlockOrder = () => {
+    if (!activeOrder?.id || !user?.rights?.adminAccess) return;
+    aAxios.post('/user/forceorderunlock', { id: activeOrder.id })
+      .then((response) => {
+        if (response.status === 202) {
+          setToast('Блокировка снята');
+          reopenOrderForEdit();
+        }
+      })
+      .catch((error) => {
+        setToast(error?.response?.data?.message || 'Не удалось снять блокировку', 'danger');
+      });
+  };
 
   useEffect(() => {
     if (isNewMode && user?.name) {
@@ -287,6 +367,25 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
       navigate('/allorders');
     }
   }, [isEditMode, activeOrder?.id, navigate]);
+
+  useEffect(() => {
+    releasedLockRef.current = false;
+  }, [activeOrder?.id]);
+
+  useEffect(() => {
+    if (!isEditMode || !activeOrder?.id || !orderEditLock?.isOwner) return undefined;
+
+    const handleBeforeUnload = () => {
+      releaseCurrentOrderLock({ bestEffort: true });
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      releaseCurrentOrderLock({ bestEffort: true });
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditMode, activeOrder?.id, orderEditLock?.isOwner]);
 
   if (isEditMode && activeOrder?.id === undefined) return null;
 
@@ -405,12 +504,21 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
         });
         const createdOrderId = response.data?.id || response.data;
         const createdOrderNumber = response.data?.orderNumber || orderToSave.orderNumber || createdOrderId;
-        setEditingOrder({
+        const createdOrder = {
           ...orderToSave,
           id: createdOrderId,
           orderNumber: createdOrderNumber,
           order_number: createdOrderNumber,
-        });
+        };
+        try {
+          const openResponse = await aAxios.post('/user/openorderforedit', { id: createdOrderId });
+          setEditingOrder(openResponse.data?.order || createdOrder);
+          setOrderEditLock(openResponse.data?.lock || null);
+          releasedLockRef.current = false;
+        } catch (openError) {
+          setEditingOrder(createdOrder);
+          setOrderEditLock(null);
+        }
         resetNewOrder();
         setAlertVariant('success');
         sessionStorage.createdOrderId = createdOrderId;
@@ -432,6 +540,12 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
       if (error?.response?.status === 403) {
         setAlertVariant('danger');
         setMessage(error.response.data?.message || LOCKED_ORDER_MESSAGE);
+      }
+      if (error?.response?.status === 423) {
+        setOrderEditLock(error.response.data?.lock || null);
+        setAlertVariant('');
+        setMessage('');
+        setToast(error.response.data?.message || 'Заявка открыта другим пользователем. Изменения не сохранены. Обновите заявку.', 'danger');
       }
     }
   };
@@ -495,7 +609,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
         disabled={isNewMode || !canEditOrderStatus}
         onChange={(evt) => updateOrderField('orderStatus', evt.target.value)}
       >
-        {ORDER_STATUS_OPTIONS.map((status) => (
+        {availableOrderStatusOptions.map((status) => (
           <option key={status} value={status}>{status}</option>
         ))}
       </Form.Select>
@@ -706,8 +820,29 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
     </>
   );
 
+  const renderLockAlert = () => {
+    if (!isEditMode || !isOrderLockedByAnotherUser) return null;
+    const userName = orderEditLock?.userName || 'другой пользователь';
+    const lockedAt = formatLockDateTime(orderEditLock?.lockedAt);
+    return (
+      <Alert className="mt-2 mb-2" variant="warning">
+        <div className="d-flex flex-wrap align-items-center gap-2">
+          <span>
+            Заявку редактирует {userName}{lockedAt ? ` с ${lockedAt}` : ''}. Открыт режим просмотра.
+          </span>
+          {user?.rights?.adminAccess &&
+            <Button size="sm" variant="outline-danger" onClick={forceUnlockOrder}>
+              Снять блокировку
+            </Button>
+          }
+        </div>
+      </Alert>
+    );
+  };
+
   return (
     <>
+      {renderLockAlert()}
       {isPhone
         ? <EditOrderMobile
             mode={mode}

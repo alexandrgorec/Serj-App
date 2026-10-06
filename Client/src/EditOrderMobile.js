@@ -14,7 +14,7 @@ import OrderExtraFields from './OrderExtraFields';
 import OrderPaymentDates from './OrderPaymentDates';
 import OrderDeliveryFields from './OrderDeliveryFields';
 import { getManagerOptions } from './managerOptions';
-import { ORDER_STATUS_OPTIONS, normalizeOrderStatus } from './orderStatus';
+import { getAvailableOrderStatusOptions, normalizeOrderStatus } from './orderStatus';
 import { ORDER_TTN_STATUS_OPTIONS, normalizeOrderTtnStatus } from './orderTtnStatus';
 import { ORDER_SPECIFICATION_STATUS_OPTIONS, normalizeOrderSpecificationStatus } from './orderSpecificationStatus';
 
@@ -53,8 +53,12 @@ function EditOrderMobile({
   const bgColorH = 'rgba(127, 244, 166, 0.22)';
   const isEditMode = mode === 'edit';
   const canAccessFinBlock = !!(user?.rights?.finBlockAccess || user?.rights?.adminAccess);
-  const canEditOrderStatus = !!(user?.rights?.finBlockAccess || user?.rights?.adminAccess);
+  const canEditOrderStatus = !readOnly;
   const orderStatus = normalizeOrderStatus(order.orderStatus);
+  const availableOrderStatusOptions = getAvailableOrderStatusOptions({
+    canUsePrivilegedStatuses: canAccessFinBlock,
+    currentStatus: orderStatus,
+  });
   const ttnStatus = normalizeOrderTtnStatus(order.ttnStatus);
   const specificationStatus = normalizeOrderSpecificationStatus(order.specificationStatus);
   const managerOptions = user?.managerOptions || [];
@@ -288,7 +292,7 @@ function EditOrderMobile({
                   refresh();
                 }}
               >
-                {ORDER_STATUS_OPTIONS.map((status) => (
+                {availableOrderStatusOptions.map((status) => (
                   <option key={status} value={status}>{status}</option>
                 ))}
               </Form.Select>
