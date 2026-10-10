@@ -2,7 +2,44 @@ const { pool } = require("../db");
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const { writeAuditLog } = require("../utils/audit-log");
-const { updateSelectListData, getRootToken, verifyRootPassword, getUserDB, getUserToken } = require("../services/userServices");
+const {
+    updateSelectListData,
+    getRootTokens,
+    verifyRootPassword,
+    getUserDB,
+    getUserTokens,
+    saveRefreshToken,
+    refreshStoredTokenPair,
+    clearRefreshToken,
+    isAccessTokenPayload,
+    REFRESH_TOKEN_EXPIRES_IN,
+} = require("../services/userServices");
+
+const REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
+
+function getRefreshTokenCookieOptions() {
+    return {
+        httpOnly: true,
+        sameSite: process.env.REFRESH_TOKEN_COOKIE_SAMESITE || "lax",
+        secure: process.env.REFRESH_TOKEN_COOKIE_SECURE === "true",
+        maxAge: REFRESH_TOKEN_EXPIRES_IN * 1000,
+        path: "/",
+    };
+}
+
+function sendTokenResponse(res, tokens) {
+    res.cookie(REFRESH_TOKEN_COOKIE_NAME, tokens.refreshToken, getRefreshTokenCookieOptions());
+    res.status(202).json({
+        accessToken: tokens.accessToken,
+        accessTokenExpiresIn: tokens.accessTokenExpiresIn,
+        refreshTokenExpiresIn: tokens.refreshTokenExpiresIn,
+    });
+}
+
+function clearRefreshTokenCookie(res) {
+    const { maxAge, ...options } = getRefreshTokenCookieOptions();
+    res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, options);
+}
 
 class UserController {
     async editSelectListsData(req, res) {
@@ -22,25 +59,42 @@ class UserController {
         try {
             const user = req.body.u;
             const password = req.body.p;
-            let token = null;
+            let tokens = null;
             if (user === 'root' && verifyRootPassword(password)) {
-                token = getRootToken();
+                tokens = getRootTokens();
             }
             else {
                 let userDB = await getUserDB(user, password);
                 if (userDB) {
-                    token = getUserToken(userDB.userinfo.name, userDB.rights, userDB.id);
+                    tokens = getUserTokens(userDB.userinfo.name, userDB.rights, userDB.id);
+                    if (tokens) await saveRefreshToken(userDB.id, tokens.refreshToken);
                 }
             }
-            if (token) {
-                res.status(202);
-                res.send(token);
+            if (tokens) {
+                sendTokenResponse(res, tokens);
             }
             else throw new Error('Неизвестная ошибка')
         }
         catch {
             res.sendStatus(422);
         }
+    }
+
+    async refreshToken(req, res) {
+        const refreshToken = req.cookies?.[REFRESH_TOKEN_COOKIE_NAME];
+        const tokens = await refreshStoredTokenPair(refreshToken);
+        if (!tokens) {
+            res.sendStatus(401);
+            return;
+        }
+        sendTokenResponse(res, tokens);
+    }
+
+    async logout(req, res) {
+        const refreshToken = req.cookies?.[REFRESH_TOKEN_COOKIE_NAME];
+        await clearRefreshToken(refreshToken);
+        clearRefreshTokenCookie(res);
+        res.sendStatus(202);
     }
     async getData(req, res) {
         const user = {
@@ -134,6 +188,10 @@ class UserController {
                 res.sendStatus(401);
             }
             else {
+                if (!isAccessTokenPayload(result)) {
+                    res.sendStatus(401);
+                    return;
+                }
                 req.body = req.body || {};
                 req.body.rights = result.user.rights;
                 req.body.user = result?.user?.name || '';
@@ -154,6 +212,10 @@ class UserController {
                 res.sendStatus(401);
             }
             else {
+                if (!isAccessTokenPayload(result)) {
+                    res.sendStatus(401);
+                    return;
+                }
                 if (result.user.rights.adminAccess) {
                     next();
                 }

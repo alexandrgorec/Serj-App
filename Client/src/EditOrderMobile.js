@@ -53,6 +53,7 @@ function EditOrderMobile({
   const bgColorH = 'rgba(127, 244, 166, 0.22)';
   const isEditMode = mode === 'edit';
   const canAccessFinBlock = !!(user?.rights?.finBlockAccess || user?.rights?.adminAccess);
+  const finBlockReadOnly = readOnly || !canAccessFinBlock;
   const canEditOrderStatus = !readOnly;
   const orderStatus = normalizeOrderStatus(order.orderStatus);
   const availableOrderStatusOptions = getAvailableOrderStatusOptions({
@@ -487,8 +488,7 @@ function EditOrderMobile({
                 </div>
               </div>
 
-              {canAccessFinBlock &&
-                <>
+                <fieldset disabled={finBlockReadOnly}>
                   <div className='editOrderMobile-grid3'>
                     <div className='editOrderMobile-field'>
                       <div className='editOrderMobile-label'>С/Ф</div>
@@ -527,6 +527,7 @@ function EditOrderMobile({
                       />
                     </div>
                   </div>
+                </fieldset>
                   <div className='editOrderMobile-field'>
                     <div className='editOrderMobile-label'>Сумма</div>
                     <InputGroup>
@@ -556,8 +557,6 @@ function EditOrderMobile({
                       </Button>
                     </InputGroup>
                   </div>
-                </>
-              }
             </div>
           ))}
         </div>
@@ -621,8 +620,7 @@ function EditOrderMobile({
                 </div>
               </div>
 
-              {canAccessFinBlock &&
-                <>
+                <fieldset disabled={finBlockReadOnly}>
                   <div className='editOrderMobile-grid3'>
                     <div className='editOrderMobile-field'>
                       <div className='editOrderMobile-label'>С/Ф</div>
@@ -661,6 +659,7 @@ function EditOrderMobile({
                       />
                     </div>
                   </div>
+                </fieldset>
                   <div className='editOrderMobile-field'>
                     <div className='editOrderMobile-label'>Сумма</div>
                     <InputGroup>
@@ -690,8 +689,6 @@ function EditOrderMobile({
                       </Button>
                     </InputGroup>
                   </div>
-                </>
-              }
 
               {(buyer.buyersH || []).map((buyerH, indexBuyerH) => (
                 <div className='editOrderMobile-subCard' key={getRowKey(buyerH, `buyerH-${index}`, `${index}-${indexBuyerH}`)} style={{ backgroundColor: bgColorH }}>
@@ -735,8 +732,7 @@ function EditOrderMobile({
                     </div>
                   </div>
 
-                  {canAccessFinBlock &&
-                    <>
+                    <fieldset disabled={finBlockReadOnly}>
                       <div className='editOrderMobile-grid3'>
                         <div className='editOrderMobile-field'>
                           <div className='editOrderMobile-label'>С/Ф</div>
@@ -775,6 +771,7 @@ function EditOrderMobile({
                           />
                         </div>
                       </div>
+                    </fieldset>
                       <div className='editOrderMobile-field'>
                         <div className='editOrderMobile-label'>Сумма</div>
                         <InputGroup>
@@ -804,8 +801,6 @@ function EditOrderMobile({
                           </Button>
                         </InputGroup>
                       </div>
-                    </>
-                  }
                 </div>
               ))}
             </div>

@@ -21,6 +21,7 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
   sessionStorage.tabIndex = 0;
   const { user, size, display } = useContext(userContext);
   const canAccessFinBlock = !!(user?.rights?.finBlockAccess || user?.rights?.adminAccess);
+  const finBlockReadOnly = readOnly || !canAccessFinBlock;
   const [, reload] = useState(false);
   const bgColorH = 'rgba(127, 244, 166, 0.49)';
 
@@ -227,14 +228,12 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
               <th width='6%'>Литры</th>
               <th width='6%'>Тонны</th>
               <th width='6%'>Цена</th>
-              {canAccessFinBlock &&
                 <>
                   <th width='6%' style={{ display: display }}>С/Ф</th>
                   <th width='1%' style={{ display: display }} className='th-date'>Дата СФ</th>
                   <th width='8%' style={{ display: display }} className='th-summa'>Сумма</th>
                   <th width='5%' style={{ display: display }} className='th-akt'>Акт транспорт</th>
                 </>
-              }
             </tr>
           </thead>
           <tbody>
@@ -264,14 +263,12 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
                   <TDInput object={supplier} field={'liters'} type={'number'} disabled={readOnly} onChangeExtra={() => triggerSummaCalc(index)} />
                   <TDInput object={supplier} field={'tons'} type={'number'} disabled={readOnly} onChangeExtra={() => triggerSummaCalc(index)} />
                   <TDInput object={supplier} field={'price'} type={'number'} disabled={readOnly} onChangeExtra={() => triggerSummaCalc(index)} />
-                  {canAccessFinBlock &&
                     <>
-                      <TDInput object={supplier} field={'sf'} type={'text'} display={display} disabled={readOnly} />
-                      <TDInput object={supplier} field={'date'} type={'date'} display={display} disabled={readOnly} tdClassName="td-date" inputClassName="date-input" fontSize="12px" />
+                      <TDInput object={supplier} field={'sf'} type={'text'} display={display} disabled={finBlockReadOnly} />
+                      <TDInput object={supplier} field={'date'} type={'date'} display={display} disabled={finBlockReadOnly} tdClassName="td-date" inputClassName="date-input" fontSize="12px" />
                       <TDSumma object={supplier} field={'summa'} display={display} calcTrigger={summaKeys[index] || 0} disabled={readOnly} />
-                      <TDInput object={supplier} field={'akt'} type={'text'} display={display} disabled={readOnly}/>
+                      <TDInput object={supplier} field={'akt'} type={'text'} display={display} disabled={finBlockReadOnly}/>
                     </>
-                  }
 
                 </tr>
               )
@@ -316,11 +313,10 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
                     <TDInput object={order} field={'manager'} type={'text'} fontSize='12px' disabled={readOnly}/>
                   </>
               }
-              {canAccessFinBlock &&
                 <>
                   <th style={{ display: display }} colSpan={3}></th>
                   <th style={{ display: display }}></th>
-                </>}
+                </>
 
             </tr>
           </thead>
@@ -366,14 +362,12 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
                     <TDInput object={buyer} field={'liters'} type={'number'} disabled={readOnly} onChangeExtra={() => triggerBuyerSummaCalc(index)} />
                     <TDInput object={buyer} field={'tons'} type={'number'} disabled={readOnly} onChangeExtra={() => triggerBuyerSummaCalc(index)} />
                     <TDInput object={buyer} field={'price'} type={'number'} disabled={readOnly} onChangeExtra={() => triggerBuyerSummaCalc(index)} />
-                    {canAccessFinBlock &&
                       <>
-                        <TDInput object={buyer} field={'sf'} type={'text'} display={display} disabled={readOnly} />
-                        <TDInput object={buyer} field={'date'} type={'date'} display={display} disabled={readOnly} tdClassName="td-date" inputClassName="date-input" fontSize="12px" />
+                        <TDInput object={buyer} field={'sf'} type={'text'} display={display} disabled={finBlockReadOnly} />
+                        <TDInput object={buyer} field={'date'} type={'date'} display={display} disabled={finBlockReadOnly} tdClassName="td-date" inputClassName="date-input" fontSize="12px" />
                         <TDSumma object={buyer} field={'summa'} display={display} calcTrigger={buyerSummaKeys[index] || 0} disabled={readOnly} />
-                        <TDInput object={buyer} field={'akt'} type={'number'} display={display} disabled={readOnly} />
+                        <TDInput object={buyer} field={'akt'} type={'number'} display={display} disabled={finBlockReadOnly} />
                       </>
-                    }
                   </tr>
                   {
                     buyer.buyersH && buyer.buyersH.map((buyerH, indexBuyerH, arr) => {
@@ -403,14 +397,12 @@ function OrderTable({ setOrder, order, showExternalAddButtons = false, hideInlin
                           <TDInput object={buyerH} field={'liters'} type={'number'} disabled={readOnly} onChangeExtra={() => triggerBuyerHSummaCalc(index, indexBuyerH)} />
                           <TDInput object={buyerH} field={'tons'} type={'number'} disabled={readOnly} onChangeExtra={() => triggerBuyerHSummaCalc(index, indexBuyerH)} />
                           <TDInput object={buyerH} field={'price'} type={'number'} disabled={readOnly} onChangeExtra={() => triggerBuyerHSummaCalc(index, indexBuyerH)} />
-                          {canAccessFinBlock &&
                             <>
-                              <TDInput object={buyerH} field={'sf'} type={'text'} display={display} disabled={readOnly} />
-                              <TDInput object={buyerH} field={'date'} type={'date'} display={display} disabled={readOnly} tdClassName="td-date" inputClassName="date-input" fontSize="12px" />
+                              <TDInput object={buyerH} field={'sf'} type={'text'} display={display} disabled={finBlockReadOnly} />
+                              <TDInput object={buyerH} field={'date'} type={'date'} display={display} disabled={finBlockReadOnly} tdClassName="td-date" inputClassName="date-input" fontSize="12px" />
                               <TDSumma object={buyerH} field={'summa'} display={display} calcTrigger={buyerHSummaKeys[`${index}-${indexBuyerH}`] || 0} disabled={readOnly} />
-                              <TDInput object={buyerH} field={'akt'} type={'number'} display={display} disabled={readOnly} />
+                              <TDInput object={buyerH} field={'akt'} type={'number'} display={display} disabled={finBlockReadOnly} />
                             </>
-                          }
 
                         </tr>
 

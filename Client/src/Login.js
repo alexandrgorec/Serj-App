@@ -28,12 +28,16 @@ function Login({ setToken }) {
                 axios.post(`${apiBaseUrl || getApiBaseUrl()}/guest/getAccessToken`, {
                     u,
                     p,
+                }, {
+                    withCredentials: true,
                 })
                     .then(function (response) {
                         if (response.status === 202) {
-                         
-                            window.localStorage.token = response.data;
-                            setToken(response.data);
+                            const accessToken = response.data?.accessToken || response.data;
+                            window.localStorage.token = accessToken;
+                            window.localStorage.accessToken = accessToken;
+                            delete window.localStorage.refreshToken;
+                            setToken(accessToken);
                         }
                         else {
                             setAlert(response.data);

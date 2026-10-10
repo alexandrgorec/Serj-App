@@ -12,9 +12,17 @@ const { adminRouter } = require('./routers/adminRouter.js')
 const { userRouter } = require('./routers/userRouter.js')
 const { guestRouter } = require("./routers/guestRouter.js")
 const { ensureAuditLogTable } = require("./utils/audit-log");
-const { ensureOrderNumberColumn, ensureMailingsTable, ensureOrderEditLocksTable } = require("./utils/db-migrations");
+const {
+    ensureOrderNumberColumn,
+    ensureMailingsTable,
+    ensureOrderEditLocksTable,
+    ensureUserRefreshTokenColumn,
+} = require("./utils/db-migrations");
 // const bcrypt = require('bcrypt');
-app.use(cors());
+app.use(cors({
+    origin: true,
+    credentials: true,
+}));
 app.use(cookieParser(process.env.SECRET_KEY));
 app.use(bodyParser.json());
 app.use("/*", (req, res, next) => {
@@ -45,6 +53,7 @@ async function startServer() {
     await ensureOrderNumberColumn();
     await ensureMailingsTable();
     await ensureOrderEditLocksTable();
+    await ensureUserRefreshTokenColumn();
     await ensureAuditLogTable();
 
     const server = app.listen(PORT, () => {

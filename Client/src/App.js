@@ -90,6 +90,42 @@ function releaseOrderLockBestEffort({ apiBaseUrl, token, orderId }) {
   }
 }
 
+function getStoredAccessToken() {
+  return window.localStorage.accessToken || window.localStorage.token;
+}
+
+function storeAuthTokens(tokens) {
+  const accessToken = tokens?.accessToken || tokens;
+  if (!accessToken) return '';
+  window.localStorage.token = accessToken;
+  window.localStorage.accessToken = accessToken;
+  delete window.localStorage.refreshToken;
+  return accessToken;
+}
+
+function removeAuthTokens() {
+  delete window.localStorage.token;
+  delete window.localStorage.accessToken;
+  delete window.localStorage.refreshToken;
+}
+
+function attachTokenToRequestConfig(config, accessToken) {
+  const nextConfig = { ...config };
+  let data = nextConfig.data || {};
+  if (typeof data === 'string') {
+    try {
+      data = JSON.parse(data);
+    } catch (error) {
+      data = {};
+    }
+  }
+  nextConfig.data = {
+    ...data,
+    token: accessToken,
+  };
+  return nextConfig;
+}
+
 function App() {
   const apiBaseUrl = getApiBaseUrl();
   const [showMessage, setShowMessage] = useState(false);
@@ -100,8 +136,9 @@ function App() {
     setMessage(message);
     setShowMessage(true);
   }
-  const [token, setToken] = useState(window.localStorage.token);
+  const [token, setToken] = useState(getStoredAccessToken());
   const skipNewOrderDraftPersistRef = useRef(false);
+  const refreshTokenPromiseRef = useRef(null);
 
   const [editingOrder, setEditingOrder] = useState(createEmptyEditingOrder());
   const [orderEditLock, setOrderEditLock] = useState(null);
@@ -134,25 +171,52 @@ function App() {
     if (orderEditLock?.isOwner && orderEditLock?.orderId) {
       releaseOrderLockBestEffort({ apiBaseUrl, token, orderId: orderEditLock.orderId });
     }
-    delete window.localStorage.token;
+    axios.post(`${apiBaseUrl}/guest/logout`, {}, { withCredentials: true }).catch(() => {});
+    removeAuthTokens();
     resetVolatileState();
     setToken(null);
   }
 
+  const refreshAccessToken = () => {
+    if (!refreshTokenPromiseRef.current) {
+      refreshTokenPromiseRef.current = axios.post(`${apiBaseUrl}/guest/refreshToken`, {}, { withCredentials: true })
+        .then((response) => {
+          if (response.status !== 202) throw new Error('Refresh token rejected');
+          const accessToken = storeAuthTokens(response.data);
+          if (!accessToken) throw new Error('Refresh response without access token');
+          setToken(accessToken);
+          return accessToken;
+        })
+        .finally(() => {
+          refreshTokenPromiseRef.current = null;
+        });
+    }
+    return refreshTokenPromiseRef.current;
+  };
+
   const aAxios = axios.create();
   aAxios.defaults.baseURL = apiBaseUrl;
+  aAxios.defaults.withCredentials = true;
   aAxios.interceptors.request.use((config) => {
-    config.data = config.data || {};
-    config.data.token = token;
-    return config;
+    return attachTokenToRequestConfig(config, getStoredAccessToken());
   }, (error) => {
     return Promise.reject(error);
   });
 
   aAxios.interceptors.response.use((config) => {
     return Promise.resolve(config);
-  }, (error) => {
-    if (error?.response?.status === 401) {
+  }, async (error) => {
+    const originalRequest = error?.config;
+    if (error?.response?.status === 401 && originalRequest && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        const accessToken = await refreshAccessToken();
+        return aAxios(attachTokenToRequestConfig(originalRequest, accessToken));
+      } catch (refreshError) {
+        logOut();
+      }
+    }
+    else if (error?.response?.status === 401) {
       logOut();
     }
     if (error?.response?.status === 403) {

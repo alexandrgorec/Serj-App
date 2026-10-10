@@ -114,7 +114,7 @@ function TDSumma({ object, field = '', fontSize = '16px', display = '', calcTrig
     };
 
     useEffect(() => {
-        if (calcTrigger > 0) {
+        if (!disabled && calcTrigger > 0) {
             const m = object?.summaMode || 'liters';
             const raw = m === 'liters' ? object?.liters : object?.tons;
             const price = object?.price;
@@ -122,9 +122,10 @@ function TDSumma({ object, field = '', fontSize = '16px', display = '', calcTrig
             if (ref.current) ref.current.value = formatted;
             object[field] = formatted;
         }
-    }, [calcTrigger, field, object, object?.summaMode]);
+    }, [calcTrigger, field, object, object?.summaMode, disabled]);
 
     const toggleMode = () => {
+        if (disabled) return;
         const newMode = mode === 'liters' ? 'tons' : 'liters';
         object.summaMode = newMode;
         setMode(newMode);

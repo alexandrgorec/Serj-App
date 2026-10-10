@@ -3,6 +3,7 @@ const { pool } = require("../db");
 let ensureOrderNumberColumnPromise = null;
 let ensureMailingsTablePromise = null;
 let ensureOrderEditLocksTablePromise = null;
+let ensureUserRefreshTokenColumnPromise = null;
 
 async function ensureOrderNumberColumn() {
     if (!ensureOrderNumberColumnPromise) {
@@ -95,8 +96,26 @@ async function ensureOrderEditLocksTable() {
     return ensureOrderEditLocksTablePromise;
 }
 
+async function ensureUserRefreshTokenColumn() {
+    if (!ensureUserRefreshTokenColumnPromise) {
+        ensureUserRefreshTokenColumnPromise = (async () => {
+            await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS refresh_token TEXT");
+            await pool.query(`
+                CREATE UNIQUE INDEX IF NOT EXISTS users_refresh_token_uidx
+                ON users(refresh_token)
+                WHERE refresh_token IS NOT NULL
+            `);
+        })().catch((error) => {
+            ensureUserRefreshTokenColumnPromise = null;
+            throw error;
+        });
+    }
+    return ensureUserRefreshTokenColumnPromise;
+}
+
 module.exports = {
     ensureOrderNumberColumn,
     ensureMailingsTable,
     ensureOrderEditLocksTable,
+    ensureUserRefreshTokenColumn,
 };

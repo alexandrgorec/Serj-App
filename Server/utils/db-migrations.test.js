@@ -101,3 +101,30 @@ describe("ensureOrderEditLocksTable", () => {
         await expect(ensureOrderEditLocksTable()).rejects.toThrow("order locks migration failed");
     });
 });
+
+describe("ensureUserRefreshTokenColumn", () => {
+    beforeEach(() => {
+        jest.resetModules();
+    });
+
+    test("adds user refresh token column and unique index idempotently", async () => {
+        const { pool } = require("../db");
+        pool.query.mockResolvedValue({});
+        const { ensureUserRefreshTokenColumn } = require("./db-migrations");
+
+        await expect(ensureUserRefreshTokenColumn()).resolves.toBeUndefined();
+
+        expect(pool.query).toHaveBeenCalledWith("ALTER TABLE users ADD COLUMN IF NOT EXISTS refresh_token TEXT");
+        expect(pool.query).toHaveBeenCalledWith(expect.stringContaining("CREATE UNIQUE INDEX IF NOT EXISTS users_refresh_token_uidx"));
+        expect(pool.query).toHaveBeenCalledWith(expect.stringContaining("WHERE refresh_token IS NOT NULL"));
+    });
+
+    test("resets cached promise when user refresh token migration fails", async () => {
+        const { pool } = require("../db");
+        const migrationError = new Error("refresh token migration failed");
+        pool.query.mockRejectedValueOnce(migrationError);
+        const { ensureUserRefreshTokenColumn } = require("./db-migrations");
+
+        await expect(ensureUserRefreshTokenColumn()).rejects.toThrow("refresh token migration failed");
+    });
+});

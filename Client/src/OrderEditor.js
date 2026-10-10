@@ -76,6 +76,13 @@ function formatHistoryDateTime(value) {
   return date.toLocaleString('ru-RU');
 }
 
+function formatLastSaveInfo(item) {
+  if (!item) return '';
+  const actor = item.actor_name || item.actor_user_id || '—';
+  const date = formatHistoryDateTime(item.created_at);
+  return `${actor} - ${date}`;
+}
+
 function formatHistoryAction(action) {
   if (action === 'CREATE_ORDER') return 'Создание';
   if (action === 'UPDATE_ORDER') return 'Изменение';
@@ -270,6 +277,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
   const [historyShow, setHistoryShow] = useState(false);
   const [historyItems, setHistoryItems] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [lastSaveInfo, setLastSaveInfo] = useState('');
 
   const activeOrder = isEditMode ? editingOrder : order;
   const setActiveOrder = isEditMode ? setEditingOrder : setOrder;
@@ -387,6 +395,34 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditMode, activeOrder?.id, orderEditLock?.isOwner]);
 
+  useEffect(() => {
+    if (!isEditMode || !activeOrder?.id) {
+      setLastSaveInfo('');
+      return;
+    }
+
+    let cancelled = false;
+    aAxios.post('/user/orderhistory', {
+      id: activeOrder.id,
+      page: 1,
+      pageSize: 20,
+    })
+      .then((response) => {
+        if (cancelled || response.status !== 202) return;
+        const items = response.data?.items || [];
+        const lastSave = items.find((item) => item?.action === 'UPDATE_ORDER' || item?.action === 'CREATE_ORDER');
+        setLastSaveInfo(formatLastSaveInfo(lastSave));
+      })
+      .catch(() => {
+        if (!cancelled) setLastSaveInfo('');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditMode, activeOrder?.id]);
+
   if (isEditMode && activeOrder?.id === undefined) return null;
 
   const updateOrderField = (field, value) => {
@@ -490,6 +526,11 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
           setAlertVariant('success');
           setMessage('');
           setToast('Изменения записаны');
+          setLastSaveInfo(formatLastSaveInfo({
+            actor_name: user?.name,
+            actor_user_id: user?.id || user?.userId,
+            created_at: new Date().toISOString(),
+          }));
           sessionStorage.createdOrderId = orderToSave.id;
         }
         return;
@@ -737,6 +778,12 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
           {renderSalaryIncludedField()}
           {renderInvoiceSentField()}
           {renderReconciliationActField()}
+          {isEditMode && lastSaveInfo &&
+            <div className="orderEditor-lastSaveInfo">
+              <div className="orderEditor-lastSaveLabel">Последнее сохранение</div>
+              <div className="orderEditor-lastSaveValue">{lastSaveInfo}</div>
+            </div>
+          }
         </div>
 
         <div className={isEditMode ? 'editOrderDesktop-topBarRight' : 'newOrderDesktop-topBarRight'}>

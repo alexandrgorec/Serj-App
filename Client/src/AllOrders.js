@@ -35,6 +35,7 @@ const DEFAULT_FILTER_SETTINGS = {
   manager: '',
   supplier: '',
   buyer: '',
+  tons: '',
   dateType: 'created',
   dateFrom: '',
   dateTo: '',
@@ -128,6 +129,7 @@ function normalizeFilterSettings(value) {
     manager: String(value?.manager || ''),
     supplier: String(value?.supplier || ''),
     buyer: String(value?.buyer || ''),
+    tons: String(value?.tons ?? ''),
     dateType,
     dateFrom: String(value?.dateFrom || ''),
     dateTo: String(value?.dateTo || ''),
@@ -160,6 +162,10 @@ function formatSummaCell(num) {
     n = n.replace(/\s/g, '').replace(/,/g, '.');
   if (n === '' || Number.isNaN(Number(n))) return '';
   return new Intl.NumberFormat().format(Number(n));
+}
+
+function normalizeTonsSearchValue(value) {
+  return String(value ?? '').replace(/\s/g, '').replace(/,/g, '.');
 }
 
 function normalizeDecimalCellValue(value) {
@@ -200,6 +206,13 @@ function suppliersTonsTotal(orderjson) {
   const integerPart = unsignedTotal.slice(0, -maxDecimalPlaces);
   const fractionPart = unsignedTotal.slice(-maxDecimalPlaces).replace(/0+$/, '');
   return fractionPart === '' ? `${sign}${integerPart}` : `${sign}${integerPart}.${fractionPart}`;
+}
+
+function matchesOrderTons(orderjson, filter) {
+  if (normalizeTonsSearchValue(filter) === '') return true;
+  const requestedTons = normalizeDecimalCellValue(filter);
+  const totalTons = suppliersTonsTotal(orderjson);
+  return requestedTons !== '' && totalTons !== '' && Number(totalTons) === Number(requestedTons);
 }
 
 function supplierProductsDisplay(orderjson) {
@@ -392,6 +405,11 @@ function AllOrders() {
     return normalizeFilterSettings(savedState?.filters).buyer;
   });
   const buyerTypeaheadRef = useRef(null);
+  const [tonsFilter, setTonsFilter] = useState(() => {
+    const savedState = readUserUiState(getUserUiStateKey(user));
+    return normalizeFilterSettings(savedState?.filters).tons;
+  });
+  const tonsTypeaheadRef = useRef(null);
   const [managerFilter, setManagerFilter] = useState(() => {
     const savedState = readUserUiState(getUserUiStateKey(user));
     return normalizeFilterSettings(savedState?.filters).manager;
@@ -461,6 +479,10 @@ function AllOrders() {
 
 
   const [orders, setOrders] = useState([]);
+
+  const tonsOptions = Array.from(new Set(
+    orders.map((order) => suppliersTonsTotal(order?.orderjson)).filter((tons) => tons !== '')
+  )).sort((a, b) => Number(a) - Number(b));
 
   const buyerOptions = Array.from(new Set(
     orders
@@ -744,6 +766,7 @@ function AllOrders() {
     setManagerFilter('');
     setSupplierFilter('');
     setBuyerFilter('');
+    setTonsFilter('');
     setDateFilterType('created');
     setDateFromFilter('');
     setDateToFilter('');
@@ -751,6 +774,7 @@ function AllOrders() {
     managerTypeaheadRef.current?.clear();
     supplierTypeaheadRef.current?.clear();
     buyerTypeaheadRef.current?.clear();
+    tonsTypeaheadRef.current?.clear();
     reload(!state);
   };
 
@@ -786,6 +810,7 @@ function AllOrders() {
     setManagerFilter(savedFilters.manager);
     setSupplierFilter(savedFilters.supplier);
     setBuyerFilter(savedFilters.buyer);
+    setTonsFilter(savedFilters.tons);
     setDateFilterType(savedFilters.dateType);
     setDateFromFilter(savedFilters.dateFrom);
     setDateToFilter(savedFilters.dateTo);
@@ -809,6 +834,7 @@ function AllOrders() {
       manager: managerFilter,
       supplier: supplierFilter,
       buyer: buyerFilter,
+      tons: tonsFilter,
       dateType: dateFilterType,
       dateFrom: dateFromFilter,
       dateTo: dateToFilter,
@@ -829,6 +855,7 @@ function AllOrders() {
     managerFilter,
     supplierFilter,
     buyerFilter,
+    tonsFilter,
     dateFilterType,
     dateFromFilter,
     dateToFilter,
@@ -865,6 +892,7 @@ function AllOrders() {
   const managerQ = String(managerFilter || '').trim().toLowerCase();
   const supplierQ = String(supplierFilter || '').trim().toLowerCase();
   const filteredOrders = orders.filter((order) => {
+    const matchTons = matchesOrderTons(order.orderjson, tonsFilter);
     const matchOrderNumber =
       orderNumberQ === '' ||
       String(getOrderNumber(order) || '').replace(/\s/g, '').trim() === orderNumberQ;
@@ -912,6 +940,7 @@ function AllOrders() {
       (orderDate !== '' && orderDate <= dateToFilter);
 
     if (!matchOrderNumber) return false;
+    if (!matchTons) return false;
     if (!matchBuyer) return false;
     if (!matchSupplier) return false;
     if (!matchManager) return false;
@@ -1470,6 +1499,40 @@ function AllOrders() {
                 title="Очистить"
                 onMouseDown={(evt) => evt.preventDefault()}
                 onClick={() => clearTypeaheadFilter(setBuyerFilter, buyerTypeaheadRef)}
+              >
+                <FaXmark />
+              </button>
+            }
+          </div>
+          <div className={`allOrders-filterTypeahead allOrders-filterWithLabel${activeFilterClass(isFilterValueActive(tonsFilter))}`}>
+            <span className="allOrders-filterInlineLabel">Тонны</span>
+            <Typeahead
+              id="allorders-tons-filter"
+              ref={tonsTypeaheadRef}
+              options={tonsOptions}
+              className="allOrders-filterTypeaheadControl"
+              selected={tonsFilter ? [tonsFilter] : []}
+              onChange={(selected) => setTonsFilter(selected.length ? String(selected[0]) : '')}
+              onInputChange={setTonsFilter}
+              filterBy={(option, props) => normalizeTonsSearchValue(option).includes(normalizeTonsSearchValue(props.text))}
+              placeholder=""
+              emptyLabel="Нет подходящих значений"
+              highlightOnlyResult
+              inputProps={{
+                type: 'text',
+                inputMode: 'decimal',
+                'aria-label': 'Фильтр по тоннажу',
+                style: { fontSize: window.innerWidth < 850 ? '12px' : '14px' },
+              }}
+            />
+            {isFilterValueActive(tonsFilter) &&
+              <button
+                type="button"
+                className="allOrders-typeaheadClearBtn"
+                aria-label="Очистить фильтр Тонны"
+                title="Очистить"
+                onMouseDown={(evt) => evt.preventDefault()}
+                onClick={() => clearTypeaheadFilter(setTonsFilter, tonsTypeaheadRef)}
               >
                 <FaXmark />
               </button>
