@@ -19,12 +19,28 @@
     min-width: 0;
 }
 
+.orderDeliveryFields-carrierGroup {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    min-width: 0;
+}
+
+.orderDeliveryFields-mobile .orderDeliveryFields-carrierGroup {
+    grid-template-columns: 1fr;
+    gap: 8px;
+}
+
 .orderDeliveryFields .form-control {
     font-weight: 400;
 }
 
 @media (max-width: 850px) {
     .orderDeliveryFields-desktop {
+        grid-template-columns: 1fr;
+    }
+
+    .orderDeliveryFields-carrierGroup {
         grid-template-columns: 1fr;
     }
 }

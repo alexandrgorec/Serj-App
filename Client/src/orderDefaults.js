@@ -37,6 +37,7 @@ export const createEmptyOrder = (overrides = {}) => ({
   loadingFromStorage: false,
   shipmentDate: '',
   drainPlace: '',
+  carrier: '',
   date: todayInputDate(),
   ...overrides,
 });
