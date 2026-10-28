@@ -1,192 +1,150 @@
-jest.mock("../db", () => ({
-    pool: {
-        query: jest.fn(),
-    },
-}));
-
-jest.mock("../utils/audit-log", () => ({
-    writeAuditLog: jest.fn(() => Promise.resolve()),
-    listAuditLogsForEntity: jest.fn(),
-}));
-
-const { pool } = require("../db");
-const orderController = require("./order-controller");
-
-function createResponse() {
-    const res = {
-        status: jest.fn(() => res),
-        json: jest.fn(() => res),
-        sendStatus: jest.fn(() => res),
-        send: jest.fn(() => res),
-    };
+jest.mock('../db', () => ({ pool: { query: jest.fn(), connect: jest.fn() } }));
+jest.mock('../utils/audit-log', () => ({ writeAuditLog: jest.fn(async () => {}), listAuditLogsForEntity: jest.fn() }));
+const { pool } = require('../db');
+const controller = require('./order-controller');
+const locks = require('../services/order-locks');
+const { writeAuditLog } = require('../utils/audit-log');
+const NOW = new Date('2026-10-23T12:00:00Z');
+let row, lock, db, minutes;
+const response = () => {
+    const res = {};
+    ['status', 'json', 'sendStatus', 'send'].forEach(key => { res[key] = jest.fn(() => res); });
     return res;
-}
+};
+const request = (extra = {}) => ({ body: { id: 10, userId: 7, user: 'Антон', rights: {}, lockId: 'lease-1',
+    editingOrder: { id: 10, orderNumber: 20, orderStatus: 'Заполнена', suppliers: [{}], buyers: [{}] }, ...extra } });
 
-describe("OrderController edit locks", () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
+beforeEach(() => {
+    jest.clearAllMocks();
+    row = { id: 10, order_number: 20, orderjson: { orderStatus: 'Создана', suppliers: [{}], buyers: [{}] } };
+    lock = { order_id: 10, user_id: '7', user_name: 'Антон', lock_id: 'lease-1',
+        locked_at: NOW, expires_at: new Date(+NOW + 1200000), release_at: new Date(+NOW + 1200000) };
+    minutes = null;
+    db = { release: jest.fn(), query: jest.fn(async (sql, params) => {
+        if (sql.includes('FROM orders WHERE')) return { rows: row ? [row] : [] };
+        if (sql.includes('SELECT * FROM order_edit_locks')) return { rows: lock ? [lock] : [] };
+        if (sql.includes('clock_timestamp()')) return { rows: [{ server_time: NOW }] };
+        if (sql.includes('SELECT edit_minutes')) return { rows: minutes ? [{ edit_minutes: minutes }] : [] };
+        if (sql.includes('INSERT INTO order_edit_locks')) {
+            lock = { order_id: params[0], user_id: params[1], user_name: params[2], lock_id: params[3],
+                locked_at: params[4], expires_at: params[5], release_at: params[6] };
+            return { rows: [lock] };
+        }
+        if (sql.startsWith('UPDATE orders')) { row.orderjson = params[0]; row.order_number = params[1]; }
+        if (sql.startsWith('DELETE FROM order_edit_locks')) lock = null;
+        return { rows: [] };
+    }) };
+    pool.connect.mockResolvedValue(db);
+    pool.query.mockResolvedValue({ rows: [] });
+});
 
-    test("openorderforedit returns fresh order and acquired lock for free order", async () => {
-        pool.query
-            .mockResolvedValueOnce({
-                rows: [{
-                    id: 10,
-                    order_number: 1481,
-                    orderjson: { orderStatus: "Создана", buyers: [], suppliers: [] },
-                }],
-            })
-            .mockResolvedValueOnce({
-                rows: [{
-                    order_id: 10,
-                    user_id: "7",
-                    user_name: "Антон",
-                    locked_at: "2026-10-06T10:00:00.000Z",
-                }],
-            });
-        const res = createResponse();
+test('free order gets exactly a 20-minute lease and fresh data', async () => {
+    lock = null;
+    const res = response();
+    await controller.openorderforedit(request(), res);
+    expect(res.status).toHaveBeenCalledWith(202);
+    const result = res.json.mock.calls[0][0];
+    expect(result.order.orderNumber).toBe(20);
+    expect(result.lock).toMatchObject({ isOwner: true, canEdit: true, serverTime: NOW.toISOString() });
+    expect(+new Date(result.lock.expiresAt) - +NOW).toBe(1200000);
+    expect(+new Date(result.lock.releaseAt) - +NOW).toBe(1200000);
+    expect(db.query.mock.calls.findIndex(([sql]) => sql.includes('FOR UPDATE'))).toBeLessThan(db.query.mock.calls.findIndex(([sql]) => sql.includes('INSERT INTO')));
+    expect(db.query).toHaveBeenLastCalledWith('COMMIT');
+    expect(db.release).toHaveBeenCalled();
+});
 
-        await orderController.openorderforedit({ body: { id: 10, userId: 7, user: "Антон" } }, res);
+test('custom duration applies only to new acquisitions, including root', async () => {
+    minutes = 9000;
+    let result = await locks.openOrder(10, 7, 'Антон', {});
+    expect(result.lock.lockId).toBe('lease-1');
+    expect(+new Date(result.lock.expiresAt) - +NOW).toBe(1200000);
+    lock.release_at = new Date(+NOW - 1);
+    result = await locks.openOrder(10, 'root', 'root', { adminAccess: true });
+    expect(result.lock.lockId).not.toBe('lease-1');
+    expect(+new Date(result.lock.expiresAt) - +NOW).toBe(9000 * 60000);
+});
 
-        expect(pool.query).toHaveBeenNthCalledWith(2, expect.stringContaining("INSERT INTO order_edit_locks"), [10, "7", "Антон"]);
-        expect(res.status).toHaveBeenCalledWith(202);
-        expect(res.json).toHaveBeenCalledWith({
-            order: expect.objectContaining({ id: 10, orderNumber: 1481, order_number: 1481 }),
-            lock: expect.objectContaining({ locked: true, canEdit: true, isOwner: true, orderId: 10 }),
-        });
-    });
+test('another user cannot take a lease before its deadline', async () => {
+    lock.expires_at = new Date(+NOW + 1); lock.release_at = lock.expires_at;
+    const result = await locks.openOrder(10, 8, 'Другой', {});
+    expect(result.lock).toMatchObject({ canEdit: false, isOwner: false, lockId: 'lease-1' });
+});
 
-    test("openorderforedit returns read-only lock info when another user owns lock", async () => {
-        pool.query
-            .mockResolvedValueOnce({
-                rows: [{
-                    id: 11,
-                    order_number: 1482,
-                    orderjson: { orderStatus: "Создана" },
-                }],
-            })
-            .mockResolvedValueOnce({ rows: [] })
-            .mockResolvedValueOnce({
-                rows: [{
-                    order_id: 11,
-                    user_id: "3",
-                    user_name: "Ольга",
-                    locked_at: "2026-10-06T10:00:00.000Z",
-                }],
-            });
-        const res = createResponse();
+test('another user can take a lease exactly at its deadline without waiting', async () => {
+    lock.expires_at = NOW; lock.release_at = NOW;
+    const result = await locks.openOrder(10, 8, 'Другой', {});
+    expect(result.lock).toMatchObject({ canEdit: true, isOwner: true, userId: '8' });
+    expect(result.lock.lockId).not.toBe('lease-1');
+    expect(result.lock.releaseAt).toEqual(result.lock.expiresAt);
+});
 
-        await orderController.openorderforedit({ body: { id: 11, userId: 7, user: "Антон" } }, res);
+test('protected order opens read-only without taking a lease', async () => {
+    row.orderjson.orderStatus = 'Реализована'; lock = null;
+    const result = await locks.openOrder(10, 7, 'Антон', {});
+    expect(result.lock.canEdit).toBe(false); expect(lock).toBeNull();
+});
 
-        expect(res.status).toHaveBeenCalledWith(202);
-        expect(res.json).toHaveBeenCalledWith({
-            order: expect.objectContaining({ id: 11, orderNumber: 1482 }),
-            lock: expect.objectContaining({ locked: true, canEdit: false, isOwner: false, userName: "Ольга" }),
-        });
-    });
+test('owner saves without renewing the lease and writes history', async () => {
+    const res = response(); await controller.editorder(request(), res);
+    expect(res.sendStatus).toHaveBeenCalledWith(202);
+    expect(lock.lock_id).toBe('lease-1'); expect(row.orderjson.orderStatus).toBe('Заполнена');
+    expect(writeAuditLog).toHaveBeenCalledWith(expect.objectContaining({ action: 'UPDATE_ORDER' }));
+});
 
-    test("editorder allows save when current user owns lock", async () => {
-        pool.query
-            .mockResolvedValueOnce({
-                rows: [{
-                    order_number: 20,
-                    orderjson: { orderStatus: "Создана", buyers: [], suppliers: [] },
-                }],
-            })
-            .mockResolvedValueOnce({
-                rows: [{ order_id: 10, user_id: "7", user_name: "Антон", locked_at: "2026-10-06T10:00:00.000Z" }],
-            })
-            .mockResolvedValueOnce({})
-            .mockResolvedValueOnce({});
-        const res = createResponse();
+test.each([undefined, 'wrong-generation'])('missing or stale lease %s cannot write', async lockId => {
+    const res = response(); await controller.editorder(request({ lockId }), res);
+    expect(res.status).toHaveBeenCalledWith(423); expect(row.orderjson.orderStatus).toBe('Создана');
+    expect(db.query).toHaveBeenLastCalledWith('ROLLBACK');
+});
 
-        await orderController.editorder({
-            body: {
-                userId: 7,
-                user: "Антон",
-                rights: {},
-                editingOrder: { id: 10, orderNumber: 20, orderStatus: "Заполнена", buyers: [], suppliers: [] },
-            },
-        }, res);
+test('nonowner cannot write or release', async () => {
+    const res = response(); await controller.editorder(request({ userId: 8 }), res);
+    expect(res.status).toHaveBeenCalledWith(423);
+    expect(await locks.releaseOrder(10, 8, 'lease-1')).toBe(false); expect(lock).not.toBeNull();
+});
 
-        expect(pool.query).toHaveBeenCalledWith(
-            "UPDATE orders SET orderjson = $1, order_number = $2 where id = $3",
-            [expect.objectContaining({ orderStatus: "Заполнена" }), 20, 10]
-        );
-        expect(res.sendStatus).toHaveBeenCalledWith(202);
-    });
+test('expired lease rejects ordinary save but accepts atomic finish if not replaced', async () => {
+    lock.expires_at = NOW; lock.release_at = NOW;
+    const res = response(); await controller.editorder(request(), res);
+    expect(res.status).toHaveBeenCalledWith(423);
+    const finish = response(); await controller.finishorderedit(request(), finish);
+    expect(finish.sendStatus).toHaveBeenCalledWith(202); expect(lock).toBeNull();
+    const queries = db.query.mock.calls.map(([sql]) => sql);
+    expect(queries.lastIndexOf('COMMIT')).toBeGreaterThan(queries.findIndex(sql => sql.startsWith('DELETE')));
+});
 
-    test("editorder rejects save without own lock", async () => {
-        pool.query
-            .mockResolvedValueOnce({
-                rows: [{
-                    order_number: 20,
-                    orderjson: { orderStatus: "Создана", buyers: [], suppliers: [] },
-                }],
-            })
-            .mockResolvedValueOnce({
-                rows: [{ order_id: 10, user_id: "3", user_name: "Ольга", locked_at: "2026-10-06T10:00:00.000Z" }],
-            });
-        const res = createResponse();
+test('expired generation cannot finish or release a replacement of the same user', async () => {
+    lock.lock_id = 'new-generation';
+    const res = response(); await controller.finishorderedit(request(), res);
+    expect(res.status).toHaveBeenCalledWith(423);
+    expect(await locks.releaseOrder(10, 7, 'lease-1')).toBe(false); expect(lock.lock_id).toBe('new-generation');
+});
 
-        await orderController.editorder({
-            body: {
-                userId: 7,
-                user: "Антон",
-                rights: {},
-                editingOrder: { id: 10, orderNumber: 20, orderStatus: "Заполнена", buyers: [], suppliers: [] },
-            },
-        }, res);
+test.each(['Заприходована', 'Реализована'])('status protection remains for %s', async status => {
+    row.orderjson.orderStatus = status;
+    const res = response(); await controller.finishorderedit(request(), res);
+    expect(res.status).toHaveBeenCalledWith(403); expect(lock).not.toBeNull();
+});
 
-        expect(res.status).toHaveBeenCalledWith(423);
-        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-            message: "Заявка открыта другим пользователем. Изменения не сохранены. Обновите заявку.",
-            lock: expect.objectContaining({ canEdit: false, orderId: 10, userName: "Ольга" }),
-        }));
-    });
+test('invalid data and missing orders do not release or report success', async () => {
+    let res = response(); await controller.finishorderedit(request({ editingOrder: { id: 10, suppliers: [], buyers: [] } }), res);
+    expect(res.status).toHaveBeenCalledWith(400); expect(lock).not.toBeNull();
+    row = null; res = response(); await controller.openorderforedit(request(), res);
+    expect(res.status).toHaveBeenCalledWith(404);
+});
 
-    test("releaseorderlock deletes only current user's lock", async () => {
-        pool.query.mockResolvedValueOnce({});
-        const res = createResponse();
+test('force unlock requires admin and targets displayed generation', async () => {
+    let res = response(); await controller.forceorderunlock(request(), res);
+    expect(res.status).toHaveBeenCalledWith(403);
+    res = response(); await controller.forceorderunlock(request({ rights: { adminAccess: true }, lockId: 'old' }), res);
+    expect(res.json).toHaveBeenCalledWith({ released: false });
+    res = response(); await controller.forceorderunlock(request({ rights: { adminAccess: true } }), res);
+    expect(res.json).toHaveBeenCalledWith({ released: true });
+});
 
-        await orderController.releaseorderlock({ body: { id: 10, userId: 7 } }, res);
-
-        expect(pool.query).toHaveBeenCalledWith(
-            "delete from order_edit_locks where order_id = $1 and user_id = $2",
-            [10, "7"]
-        );
-        expect(res.sendStatus).toHaveBeenCalledWith(202);
-    });
-
-    test("forceorderunlock requires admin rights", async () => {
-        const res = createResponse();
-
-        await orderController.forceorderunlock({ body: { id: 10, rights: { adminAccess: false } } }, res);
-
-        expect(pool.query).not.toHaveBeenCalled();
-        expect(res.status).toHaveBeenCalledWith(403);
-    });
-
-    test("forceorderunlock deletes lock for admins", async () => {
-        pool.query.mockResolvedValueOnce({
-            rows: [{
-                order_id: 10,
-                user_id: "3",
-                user_name: "Ольга",
-                locked_at: "2026-10-06T10:00:00.000Z",
-            }],
-        });
-        const res = createResponse();
-
-        await orderController.forceorderunlock({
-            body: { id: 10, userId: 7, user: "Антон", rights: { adminAccess: true } },
-        }, res);
-
-        expect(pool.query).toHaveBeenCalledWith(
-            "delete from order_edit_locks where order_id = $1 RETURNING order_id, user_id, user_name, locked_at",
-            [10]
-        );
-        expect(res.status).toHaveBeenCalledWith(202);
-        expect(res.json).toHaveBeenCalledWith({ released: true });
-    });
+test.each([0, -1, 1.5, '', 'abc', 'Infinity', '999999999999999999999999'])('reject invalid timeout %s', value => {
+    expect(() => locks.parseEditMinutes(value)).toThrow();
+});
+test.each([1, 20, 240, 1440, 1000000])('accept positive timeout %s without business cap', value => {
+    expect(locks.parseEditMinutes(String(value))).toBe(value);
 });

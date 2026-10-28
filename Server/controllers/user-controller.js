@@ -1,6 +1,7 @@
 const { pool } = require("../db");
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const { getEditMinutes, parseEditMinutes } = require('../services/order-locks');
 const { writeAuditLog } = require("../utils/audit-log");
 const {
     updateSelectListData,
@@ -42,6 +43,17 @@ function clearRefreshTokenCookie(res) {
 }
 
 class UserController {
+    async ordereditsettings(req, res) {
+        try {
+            const editMinutes = parseEditMinutes(req.body?.editMinutes);
+            await pool.query(`INSERT INTO user_order_settings(user_id, edit_minutes) VALUES ($1, $2)
+                ON CONFLICT (user_id) DO UPDATE SET edit_minutes = EXCLUDED.edit_minutes`,
+            [String(req.body.userId), editMinutes]);
+            res.status(202).json({ editMinutes });
+        } catch (error) {
+            res.status(error.status || 500).json({ message: error.status ? error.message : 'Не удалось сохранить настройку' });
+        }
+    }
     async editSelectListsData(req, res) {
         const selectListsData = req.body.selectListsData;
         const userId = req.body.userId;
@@ -104,9 +116,11 @@ class UserController {
             userId: req.body.userId,
             selectListsData: {},
             managerOptions: [],
+            orderEditMinutes: 20,
         };
 
         try {
+            user.orderEditMinutes = await getEditMinutes(req.body.userId);
             const usersResult = await pool.query("select login, userinfo from users order by id");
             user.managerOptions = usersResult.rows
                 .map((row) => row?.userinfo?.name || row?.login)

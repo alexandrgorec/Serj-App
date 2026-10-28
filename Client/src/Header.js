@@ -1,17 +1,23 @@
-import { Stack } from "react-bootstrap";
 import { useContext } from "react";
 import { userContext } from "./App";
 import { MdLogout } from "react-icons/md";
 import { FaCircleUser } from "react-icons/fa6";
 
-function Header() {
+function Header({ timerRef }) {
     const { logOut, user } = useContext(userContext);
     return (
-        <Stack direction="horizontal" gap={3} className='activeComponentHeader'>
-            <Stack style={{ userSelect: 'none', cursor: 'pointer' }} direction="horizontal" gap={1}><div className='logo'></div>Santo</Stack >
-            <div className='p-2 ms-auto noselect' style={{ cursor: 'pointer' }}>{user.name}  <FaCircleUser style={{ paddingBottom: '2px' }} size={'1.5em'} /></div>
-            <div onClick={logOut} className="p-2 noselect" style={{ cursor: 'pointer' }}><MdLogout style={{ paddingBottom: '2px' }} size={'1.5em'} className='icon ms-auto' />Выход</div>
-        </Stack>
+        <header className="activeComponentHeader">
+            <div className="header-brand"><div className="logo" /><span className="header-brandName">Santo</span></div>
+            <div ref={timerRef} className="header-timerSlot" />
+            <div className="header-account">
+                <div className="header-user" title={user.name}>
+                    <span className="header-userName">{user.name}</span><FaCircleUser size="1.5em" />
+                </div>
+                <button type="button" onClick={logOut} className="header-logout" aria-label="Выход" title="Выход">
+                    <MdLogout size="1.5em" /><span className="header-logoutText">Выход</span>
+                </button>
+            </div>
+        </header>
     )
 }
 

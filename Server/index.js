@@ -17,6 +17,7 @@ const {
     ensureMailingsTable,
     ensureOrderEditLocksTable,
     ensureUserRefreshTokenColumn,
+    ensureOrderEditLeaseSchema,
 } = require("./utils/db-migrations");
 // const bcrypt = require('bcrypt');
 app.use(cors({
@@ -53,6 +54,7 @@ async function startServer() {
     await ensureOrderNumberColumn();
     await ensureMailingsTable();
     await ensureOrderEditLocksTable();
+    await ensureOrderEditLeaseSchema();
     await ensureUserRefreshTokenColumn();
     await ensureAuditLogTable();
 

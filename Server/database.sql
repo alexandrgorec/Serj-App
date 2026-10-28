@@ -26,5 +26,13 @@ CREATE TABLE IF NOT EXISTS order_edit_locks(
     order_id BIGINT PRIMARY KEY REFERENCES orders(id) ON DELETE CASCADE,
     user_id TEXT NOT NULL,
     user_name TEXT NOT NULL,
-    locked_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    locked_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    lock_id UUID NOT NULL UNIQUE,
+    expires_at TIMESTAMPTZ NOT NULL,
+    release_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS user_order_settings(
+    user_id TEXT PRIMARY KEY,
+    edit_minutes BIGINT NOT NULL DEFAULT 20 CHECK (edit_minutes > 0)
 );

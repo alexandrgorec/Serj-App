@@ -6,6 +6,7 @@ import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import FloatingLabel from 'react-bootstrap/FloatingLabel';
 import { useState, useContext, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Alert, Modal, Table } from 'react-bootstrap';
 import { userContext } from './App';
 import { useNavigate } from 'react-router-dom';
@@ -20,6 +21,8 @@ import { ORDER_STATUS_OPTIONS, getAvailableOrderStatusOptions, normalizeOrderSta
 import { ORDER_TTN_STATUS_OPTIONS, normalizeOrderTtnStatus } from './orderTtnStatus';
 import { ORDER_SPECIFICATION_STATUS_OPTIONS, normalizeOrderSpecificationStatus } from './orderSpecificationStatus';
 import { FaArrowsRotate, FaPrint } from 'react-icons/fa6';
+import useOrderEditSession from './useOrderEditSession';
+import { receiveOrderLock, comparableOrder, withSaveDeadline, leasePhase } from './orderEditSession';
 
 const HISTORY_FIELD_LABELS = {
   orderNumber: '№ заявки',
@@ -271,10 +274,17 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
     setEditingOrder,
     orderEditLock,
     setOrderEditLock,
+    orderTimerTarget,
   } = useContext(userContext);
   const releasedLockRef = useRef(false);
+  const savingRef = useRef(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [autoClosing, setAutoClosing] = useState(false);
+  const autoFinishStartedRef = useRef(false);
+  const latestSaveRef = useRef(null);
+  const [formRevision, setFormRevision] = useState(0);
   const [message, setMessage] = useState('');
-  const [alertVariant, setAlertVariant] = useState('');
+  const [alertVariant] = useState('');
   const [historyShow, setHistoryShow] = useState(false);
   const [historyItems, setHistoryItems] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -287,7 +297,8 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
   const isOrderLockedForCurrentUser = isEditMode && LOCKED_ORDER_STATUSES.includes(orderStatus) && !hasPrivilegedOrderEditAccess;
   const isOrderLockedByAnotherUser = isEditMode && orderEditLock?.canEdit === false;
   const canEditOrder = !isOrderLockedForCurrentUser && !isOrderLockedByAnotherUser;
-  const canEditOrderStatus = canEditOrder;
+  const controlsReadOnly = !canEditOrder || autoClosing || isSaving;
+  const canEditOrderStatus = !controlsReadOnly;
   const availableOrderStatusOptions = getAvailableOrderStatusOptions({
     canUsePrivilegedStatuses: hasPrivilegedOrderEditAccess,
     currentStatus: orderStatus,
@@ -303,8 +314,8 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
     if (bestEffort) {
       const token = window.localStorage.token || '';
       const baseUrl = aAxios?.defaults?.baseURL || window.location.origin;
-      const url = `${baseUrl}/user/releaseorderlock?token=${encodeURIComponent(token)}&id=${encodeURIComponent(activeOrder.id)}`;
-      const payload = JSON.stringify({ id: activeOrder.id });
+      const url = `${baseUrl}/user/releaseorderlock?token=${encodeURIComponent(token)}&id=${encodeURIComponent(activeOrder.id)}&lockId=${encodeURIComponent(orderEditLock.lockId || '')}`;
+      const payload = JSON.stringify({ id: activeOrder.id, lockId: orderEditLock.lockId });
       try {
         if (navigator.sendBeacon) {
           const blob = new Blob([payload], { type: 'application/json' });
@@ -326,10 +337,10 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
       return Promise.resolve();
     }
 
-    return aAxios.post('/user/releaseorderlock', { id: activeOrder.id }).catch(() => {});
+    return aAxios.post('/user/releaseorderlock', { id: activeOrder.id, lockId: orderEditLock.lockId }, { timeout: 3000 }).catch(() => {});
   };
   const goBack = () => {
-    releaseCurrentOrderLock().finally(() => navigate(-1));
+    return releaseCurrentOrderLock().finally(() => navigate(-1));
   };
 
   const reopenOrderForEdit = () => {
@@ -338,7 +349,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
       .then((response) => {
         if (response.status === 202) {
           setActiveOrder(response.data?.order || activeOrder);
-          setOrderEditLock(response.data?.lock || null);
+          setOrderEditLock(receiveOrderLock(response.data?.lock));
           releasedLockRef.current = false;
           setMessage('');
         }
@@ -350,7 +361,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
 
   const forceUnlockOrder = () => {
     if (!activeOrder?.id || !user?.rights?.adminAccess) return;
-    aAxios.post('/user/forceorderunlock', { id: activeOrder.id })
+    aAxios.post('/user/forceorderunlock', { id: activeOrder.id, lockId: orderEditLock?.lockId })
       .then((response) => {
         if (response.status === 202) {
           setToast('Блокировка снята');
@@ -394,7 +405,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
       releaseCurrentOrderLock({ bestEffort: true });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEditMode, activeOrder?.id, orderEditLock?.isOwner]);
+  }, [isEditMode, activeOrder?.id, orderEditLock?.isOwner, orderEditLock?.lockId]);
 
   useEffect(() => {
     if (!isEditMode || !activeOrder?.id) {
@@ -423,8 +434,6 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditMode, activeOrder?.id]);
-
-  if (isEditMode && activeOrder?.id === undefined) return null;
 
   const updateOrderField = (field, value) => {
     if (!canEditOrder) return;
@@ -494,102 +503,126 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
     haveEmptyBuyerH: hasEmptyBuyerH(activeOrder),
   });
 
-  const saveOrder = async () => {
-    if (!canEditOrder) {
-      setToast(LOCKED_ORDER_MESSAGE, 'warning');
-      return;
-    }
-
-    let alertMessage = '';
-    if ((activeOrder.buyers || []).length === 0)
-      alertMessage = 'Заполните раздел Покупатели';
-    if ((activeOrder.suppliers || []).length === 0)
-      alertMessage = 'Заполните раздел Поставщики';
-
-    if (alertMessage !== '') {
-      setAlertVariant('danger');
-      setMessage(alertMessage);
-      return;
-    }
-
-    const orderToSave = buildOrderForSave();
-    setActiveOrder(orderToSave);
-
+  const saveOrder = async ({ closeAfterSave = false, automatic = false } = {}) => {
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setIsSaving(true);
+    let orderToSave;
     try {
+      document.activeElement?.blur?.();
+      lease.captureDraft(true);
+      if (!canEditOrder) throw new Error(LOCKED_ORDER_MESSAGE);
+      orderToSave = JSON.parse(JSON.stringify(buildOrderForSave()));
+      if (!orderToSave.buyers?.length || !orderToSave.suppliers?.length) {
+        throw new Error('Заполните разделы Поставщики и Покупатели');
+      }
+      setActiveOrder(orderToSave);
+      const endpoint = isEditMode
+        ? (closeAfterSave ? '/user/finishorderedit' : '/user/editorder')
+        : '/user/neworder';
+      const payload = isEditMode
+        ? { editingOrder: orderToSave, lockId: orderEditLock?.lockId }
+        : { order: orderToSave };
+      const response = await withSaveDeadline(signal => aAxios.post(endpoint, payload, {
+        signal, timeout: 15000, preserveSessionOnAuthError: true,
+      }));
+      if (response.status !== 202) throw new Error('Сервер не подтвердил сохранение заявки');
+
+      lease.acknowledgeSaved(orderToSave, closeAfterSave);
+      setMessage('');
+      // Updating suggestions is independent of the committed order and must not delay closing.
+      syncOrderSelectLists({ order: orderToSave, user, setUser, aAxios }).catch(error => {
+        console.error('Select lists sync error:', error);
+      });
       if (isEditMode) {
-        const response = await aAxios.post('/user/editorder', {
-          editingOrder: orderToSave,
-        });
-        if (response.status === 202) {
-          await syncOrderSelectLists({ order: orderToSave, user, setUser, aAxios }).catch((error) => {
-            console.error('Select lists sync error:', error);
-          });
-          setAlertVariant('success');
-          setMessage('');
+        setLastSaveInfo(formatLastSaveInfo({
+          actor_name: user?.name, actor_user_id: user?.id || user?.userId,
+          created_at: new Date().toISOString(),
+        }));
+        sessionStorage.createdOrderId = orderToSave.id;
+        if (closeAfterSave) {
+          releasedLockRef.current = true;
+          setOrderEditLock(null);
+          setToast(automatic ? 'Время редактирования истекло. Заявка сохранена и закрыта.' : 'Изменения записаны');
+          if (automatic) navigate('/allorders', { replace: true });
+          else navigate(-1);
+        } else {
           setToast('Изменения записаны');
-          setLastSaveInfo(formatLastSaveInfo({
-            actor_name: user?.name,
-            actor_user_id: user?.id || user?.userId,
-            created_at: new Date().toISOString(),
-          }));
-          sessionStorage.createdOrderId = orderToSave.id;
         }
         return;
       }
 
-      const response = await aAxios.post('/user/neworder', {
-        order: orderToSave,
-      });
-      if (response.status === 202) {
-        await syncOrderSelectLists({ order: orderToSave, user, setUser, aAxios }).catch((error) => {
-          console.error('Select lists sync error:', error);
-        });
-        const createdOrderId = response.data?.id || response.data;
-        const createdOrderNumber = response.data?.orderNumber || orderToSave.orderNumber || createdOrderId;
-        const createdOrder = {
-          ...orderToSave,
-          id: createdOrderId,
-          orderNumber: createdOrderNumber,
-          order_number: createdOrderNumber,
-        };
+      const createdOrderId = response.data?.id || response.data;
+      const createdOrderNumber = response.data?.orderNumber || orderToSave.orderNumber || createdOrderId;
+      if (!closeAfterSave) {
         try {
-          const openResponse = await aAxios.post('/user/openorderforedit', { id: createdOrderId });
-          setEditingOrder(openResponse.data?.order || createdOrder);
-          setOrderEditLock(openResponse.data?.lock || null);
+          const opened = await aAxios.post('/user/openorderforedit', { id: createdOrderId }, { timeout: 15000 });
+          setEditingOrder(opened.data.order);
+          setOrderEditLock(receiveOrderLock(opened.data.lock));
           releasedLockRef.current = false;
-        } catch (openError) {
-          setEditingOrder(createdOrder);
-          setOrderEditLock(null);
+        } catch (_) {
+          setEditingOrder({ ...orderToSave, id: createdOrderId, orderNumber: createdOrderNumber });
+          setOrderEditLock({ canEdit: false, isOwner: false });
         }
-        resetNewOrder();
-        setAlertVariant('success');
-        sessionStorage.createdOrderId = createdOrderId;
-        sessionStorage.bgColor = 'rgba(61, 174, 12, 0.44)';
-        setToast(createdOrderNumber ? `Заявка №${createdOrderNumber} создана` : 'Заявка создана');
-        navigate('/editorder', { replace: true });
       }
+      resetNewOrder();
+      sessionStorage.createdOrderId = createdOrderId;
+      sessionStorage.bgColor = 'rgba(61, 174, 12, 0.44)';
+      setToast(`Заявка №${createdOrderNumber} создана`);
+      if (closeAfterSave) navigate(-1);
+      else navigate('/editorder', { replace: true });
     } catch (error) {
-      if (error?.response?.status === 409) {
-        setAlertVariant('danger');
-        setMessage(error.response.data?.message || 'Заявка с таким номером уже существует');
-        return;
+      const hasDraft = lease.captureDraft(true);
+      const reason = error.response?.data?.message || error.message || 'Не удалось сохранить заявку';
+      if (automatic) {
+        // An HTTP timeout may mean the server committed but its acknowledgement was lost.
+        setToast(`${reason}. Сохранение не подтверждено. ${hasDraft
+          ? 'Черновик сохранён на этом устройстве.'
+          : 'Локальный черновик сохранить не удалось.'}`, 'danger');
+        releaseCurrentOrderLock({ bestEffort: true });
+        navigate('/allorders', { replace: true });
+      } else {
+        setToast(reason, 'danger');
+        if (isEditMode && leasePhase(orderEditLock).phase === 'expired') {
+          setAutoClosing(true);
+        } else if (error.response?.status === 423 && error.response.data?.lock) {
+          setOrderEditLock(receiveOrderLock(error.response.data.lock));
+        }
       }
-      if (error?.response?.status === 400) {
-        setAlertVariant('danger');
-        setMessage(error.response.data?.message || 'Некорректный номер заявки');
-        return;
-      }
-      if (error?.response?.status === 403) {
-        setAlertVariant('danger');
-        setMessage(error.response.data?.message || LOCKED_ORDER_MESSAGE);
-      }
-      if (error?.response?.status === 423) {
-        setOrderEditLock(error.response.data?.lock || null);
-        setAlertVariant('');
-        setMessage('');
-        setToast(error.response.data?.message || 'Заявка открыта другим пользователем. Изменения не сохранены. Обновите заявку.', 'danger');
-      }
+    } finally {
+      savingRef.current = false;
+      setIsSaving(false);
     }
+  };
+
+  latestSaveRef.current = saveOrder;
+  useEffect(() => {
+    setAutoClosing(false);
+    // Clearing the lock after a successful finish must not re-arm autosave before navigation.
+    if (orderEditLock?.lockId) autoFinishStartedRef.current = false;
+  }, [activeOrder?.id, orderEditLock?.lockId]);
+
+  const lease = useOrderEditSession({
+    userId: user?.id || user?.userId, order: activeOrder,
+    lock: isEditMode ? orderEditLock : null, enabled: isEditMode && canEditOrder,
+    onExpire: () => setAutoClosing(true), setToast,
+  });
+
+  useEffect(() => {
+    if (!autoClosing || isSaving || autoFinishStartedRef.current) return;
+    autoFinishStartedRef.current = true;
+    latestSaveRef.current({ automatic: true, closeAfterSave: true });
+  }, [autoClosing, isSaving]);
+
+  const saveAndCloseOrder = () => {
+    if (savingRef.current || autoClosing) return;
+    if (!canEditOrder) return goBack();
+    return saveOrder({ closeAfterSave: true });
+  };
+
+  const captureAfterInput = () => {
+    // Child controls also mutate row objects directly; capture after their handlers complete.
+    setTimeout(() => lease.captureDraft(), 0);
   };
 
   const printOrder = () => {
@@ -638,7 +671,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
         min='1'
         placeholder='Авто'
         value={activeOrder.orderNumber || (isEditMode ? activeOrder.id || '' : '')}
-        disabled={!canEditOrder}
+        disabled={controlsReadOnly}
         onChange={(evt) => updateOrderField('orderNumber', evt.target.value)}
       />
     </FloatingLabel>
@@ -662,7 +695,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
     <FloatingLabel label="ТТН" className="p-0 editOrderDesktop-ttnStatus">
       <Form.Select
         value={ttnStatus}
-        disabled={!canEditOrder}
+        disabled={controlsReadOnly}
         onChange={(evt) => updateOrderField('ttnStatus', evt.target.value)}
       >
         {ORDER_TTN_STATUS_OPTIONS.map((status) => (
@@ -676,7 +709,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
     <FloatingLabel label="Спецификация" className={`p-0 editOrderDesktop-specificationStatus ${getSpecificationStatusClass(specificationStatus)}`}>
       <Form.Select
         value={specificationStatus}
-        disabled={!canEditOrder}
+        disabled={controlsReadOnly}
         onChange={(evt) => updateOrderField('specificationStatus', evt.target.value)}
       >
         {ORDER_SPECIFICATION_STATUS_OPTIONS.map((status) => (
@@ -690,7 +723,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
     <FloatingLabel label="Оплачено клиент" className="p-0 orderEditor-clientPaid">
       <Form.Select
         value={activeOrder.clientPaid || 'Нет'}
-        disabled={!canEditOrder}
+        disabled={controlsReadOnly}
         onChange={(evt) => updateOrderField('clientPaid', evt.target.value)}
       >
         <option value="Нет">Нет</option>
@@ -703,7 +736,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
     <FloatingLabel label="Учтено в ЗП" className="p-0 orderEditor-salaryIncluded">
       <Form.Select
         value={activeOrder.salaryIncluded || 'Нет'}
-        disabled={!canEditOrder}
+        disabled={controlsReadOnly}
         onChange={(evt) => updateOrderField('salaryIncluded', evt.target.value)}
       >
         <option value="Нет">Нет</option>
@@ -716,7 +749,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
     <FloatingLabel label="Счет отправлен" className="p-0 orderEditor-invoiceSent">
       <Form.Select
         value={activeOrder.invoiceSent || 'Нет'}
-        disabled={!canEditOrder}
+        disabled={controlsReadOnly}
         onChange={(evt) => updateOrderField('invoiceSent', evt.target.value)}
       >
         <option value="Нет">Нет</option>
@@ -729,7 +762,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
     <FloatingLabel label="Акт сверки" className="p-0 orderEditor-reconciliationAct">
       <Form.Select
         value={activeOrder.reconciliationAct || 'Нет'}
-        disabled={!canEditOrder}
+        disabled={controlsReadOnly}
         onChange={(evt) => updateOrderField('reconciliationAct', evt.target.value)}
       >
         <option value="Нет">Нет</option>
@@ -753,16 +786,16 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
     <>
       <div className={`${isEditMode ? 'mb-2 editOrderDesktop-topBar' : 'orderTable-topActions newOrderDesktop-topBar'} noselect`}>
         <div className={isEditMode ? 'editOrderDesktop-topBarLeft' : 'newOrderDesktop-topBarLeft'}>
-          <Button tabIndex={-1} variant="success" className='p-2' onClick={addBuyer} disabled={!canEditOrder}>
+          <Button tabIndex={-1} variant="success" className='p-2' onClick={addBuyer} disabled={controlsReadOnly}>
             + Покупатель
           </Button>
-          <Button tabIndex={-1} variant="primary" className='p-2' onClick={addSupplier} disabled={!canEditOrder}>
+          <Button tabIndex={-1} variant="primary" className='p-2' onClick={addSupplier} disabled={controlsReadOnly}>
             + Поставщик
           </Button>
           <FloatingLabel label="Менеджер" className={`p-0 ${isEditMode ? 'editOrderDesktop-manager' : 'newOrderDesktop-manager'}`}>
             <Form.Select
               value={activeOrder.manager || ''}
-              disabled={!canEditOrder}
+              disabled={controlsReadOnly}
               onChange={(evt) => updateOrderField('manager', evt.target.value)}
             >
               <option value="">Менеджер</option>
@@ -795,7 +828,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
             className='p-2 orderEditor-clearBtn'
             title="Очистить"
             aria-label="Очистить"
-            disabled={!canEditOrder}
+            disabled={controlsReadOnly}
             onClick={resetOrder}
           >
             <FaArrowsRotate />
@@ -810,10 +843,10 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
           >
             История
           </Button>
-          <Button tabIndex={-1} variant="primary" className='pt-2 pb-2' onClick={goBack}>
-            Назад
+          <Button tabIndex={-1} variant="primary" className='pt-2 pb-2' onClick={saveAndCloseOrder} disabled={isSaving || autoClosing}>
+            {canEditOrder ? 'Записать и закрыть' : 'Закрыть'}
           </Button>
-          <Button tabIndex={-1} variant="success" className='p-2' onClick={saveOrder} disabled={!canEditOrder}>
+          <Button tabIndex={-1} variant="success" className='p-2' onClick={() => saveOrder()} disabled={controlsReadOnly}>
             Записать
           </Button>
           <Button
@@ -835,30 +868,30 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
         setOrder={setActiveOrder}
         hideInlineAddButtons={true}
         hideManagerInTable={true}
-        readOnly={!canEditOrder}
+        readOnly={controlsReadOnly}
       />
 
-      <OrderPaymentDates order={activeOrder} setOrder={setActiveOrder} readOnly={!canEditOrder} />
-      <OrderDeliveryFields order={activeOrder} setOrder={setActiveOrder} readOnly={!canEditOrder} />
+      <OrderPaymentDates order={activeOrder} setOrder={setActiveOrder} readOnly={controlsReadOnly} />
+      <OrderDeliveryFields order={activeOrder} setOrder={setActiveOrder} readOnly={controlsReadOnly} />
 
       <div className='newOrderDesktop-serviceArea'>
         <div className='newOrderDesktop-serviceFields'>
           <div className='newOrderDesktop-leftServiceColumn'>
-            <OrderExtraFields order={activeOrder} setOrder={setActiveOrder} section='main' readOnly={!canEditOrder} />
+            <OrderExtraFields order={activeOrder} setOrder={setActiveOrder} section='main' readOnly={controlsReadOnly} />
             <FloatingLabel label="Комментарии" className="newOrderDesktop-compactComments">
               <Form.Control
                 as='input'
                 type='text'
                 value={activeOrder.comments || ''}
-                disabled={!canEditOrder}
+                disabled={controlsReadOnly}
                 onChange={(evt) => updateOrderField('comments', evt.target.value)}
               />
             </FloatingLabel>
           </div>
 
           <div className='newOrderDesktop-requisites'>
-            <OrderExtraFields order={activeOrder} setOrder={setActiveOrder} section='storage' readOnly={!canEditOrder} />
-            <OtkFields order={activeOrder} setOrder={setActiveOrder} readOnly={!canEditOrder} />
+            <OrderExtraFields order={activeOrder} setOrder={setActiveOrder} section='storage' readOnly={controlsReadOnly} />
+            <OtkFields order={activeOrder} setOrder={setActiveOrder} readOnly={controlsReadOnly} />
             <FloatingLabel label="Налог 42%" className="mb-0">
               <Form.Control as="input" type='number' readOnly value={getOrderOtkTax(activeOrder)} />
             </FloatingLabel>
@@ -870,6 +903,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
 
   const renderLockAlert = () => {
     if (!isEditMode || !isOrderLockedByAnotherUser) return null;
+    if (!orderEditLock?.locked) return null;
     const userName = orderEditLock?.userName || 'другой пользователь';
     const lockedAt = formatLockDateTime(orderEditLock?.lockedAt);
     return (
@@ -888,27 +922,65 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
     );
   };
 
+  if (isEditMode && activeOrder?.id === undefined) return null;
+
   return (
-    <>
+    <div onInputCapture={captureAfterInput} onChangeCapture={captureAfterInput} onClickCapture={captureAfterInput}>
       {renderLockAlert()}
+      {orderTimerTarget && isEditMode && orderEditLock?.isOwner && lease.phase.phase !== 'none' && canEditOrder && createPortal(
+        <div className={`orderEditor-timer${autoClosing ? ' orderEditor-timer--saving' : ''}`}
+          role="timer" aria-label="До автоматического сохранения" aria-live="off"
+          title="По окончании времени заявка автоматически сохраняется и закрывается">
+          <span>Автосохранение</span>
+          <strong>{autoClosing ? 'Сохраняем…'
+            : `${Math.floor(lease.phase.seconds / 60)}:${String(lease.phase.seconds % 60).padStart(2, '0')}`}</strong>
+        </div>, orderTimerTarget
+      )}
+      <div key={formRevision}>
       {isPhone
         ? <EditOrderMobile
             mode={mode}
             order={activeOrder}
             setOrder={setActiveOrder}
-            onSave={saveOrder}
-            onBack={goBack}
+            onSave={() => saveOrder()}
+            onBack={saveAndCloseOrder}
+            backLabel={canEditOrder ? 'Записать и закрыть' : 'Закрыть'}
+            isSaving={isSaving || autoClosing}
             onClear={resetOrder}
             onPrint={printOrder}
             onHistory={openHistory}
             historyDisabled={isNewMode}
             printDisabled={isNewMode}
-            readOnly={!canEditOrder}
+            readOnly={controlsReadOnly}
             specificationStatus={specificationStatus}
             saveLabel="Записать"
           />
         : renderDesktop()
       }
+      </div>
+      <Modal show={lease.recovery.length > 0 && canEditOrder && !autoClosing} backdrop="static" keyboard={false} centered>
+        <Modal.Header><Modal.Title>Найдены несохранённые изменения</Modal.Title></Modal.Header>
+        <Modal.Body>
+          <p>Черновики сохранены только на этом устройстве. Восстановление заполнит редактор, но не запишет заявку автоматически.</p>
+          {lease.recovery.map(draft => (
+            <div key={draft.key} className="border rounded p-2 mb-2">
+              <p>Черновик от {new Date(draft.savedAt).toLocaleString('ru-RU')}</p>
+              {comparableOrder(draft.base) !== comparableOrder(activeOrder) &&
+                <Alert variant="warning">После создания черновика заявка на сервере изменилась. Восстановление заменит поля редактора значениями черновика. Проверьте их перед сохранением.</Alert>
+              }
+              <div className="d-flex gap-2 flex-wrap">
+                <Button disabled={controlsReadOnly} onClick={() => {
+                  lease.markRestored(draft);
+                  setActiveOrder({ ...draft.order, id: activeOrder.id });
+                  setFormRevision(value => value + 1);
+                }}>Восстановить черновик</Button>
+                <Button variant="outline-danger" onClick={() => lease.discardDraft(draft)}>Удалить черновик</Button>
+              </div>
+            </div>
+          ))}
+        </Modal.Body>
+        <Modal.Footer><Button variant="secondary" onClick={goBack}>Вернуться к списку</Button></Modal.Footer>
+      </Modal>
       {message !== ''
         ? <Alert key={alertVariant} className='mt-3' variant={alertVariant}> {message} </Alert>
         : ''
@@ -953,7 +1025,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
           </Button>
         </Modal.Footer>
       </Modal>
-    </>
+    </div>
   );
 }
 

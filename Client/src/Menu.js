@@ -4,6 +4,7 @@ import { TiUserAdd } from "react-icons/ti";
 import { FaUserEdit } from "react-icons/fa";
 import { FaClipboardList } from "react-icons/fa";
 import { FaKey } from "react-icons/fa";
+import { FaClock } from "react-icons/fa";
 
 import { useContext } from 'react';
 import { userContext } from './App';
@@ -39,6 +40,11 @@ function Menu() {
             <Link className='menuComponent nodecoration' to="/menu/changepassword">
                 <FaKey size="3em" /><br />
                 Сменить <br /> пароль
+            </Link>
+
+            <Link className='menuComponent nodecoration' to="/menu/ordereditsettings">
+                <FaClock size="3em" /><br />
+                Время редактирования <br /> заявки
             </Link>
 
             {/* {user.name !== 'root' &&

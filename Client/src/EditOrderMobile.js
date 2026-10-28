@@ -41,6 +41,8 @@ function EditOrderMobile({
   setOrder,
   onSave,
   onBack,
+  backLabel = 'Записать и закрыть',
+  isSaving = false,
   onClear,
   onPrint,
   onHistory,
@@ -425,8 +427,8 @@ function EditOrderMobile({
             >
               <FaClockRotateLeft />
             </Button>
-            {onBack && <Button size='sm' variant='primary' onClick={onBack}>Назад</Button>}
-            <Button size='sm' variant='success' onClick={onSave} disabled={readOnly}>{saveLabel}</Button>
+            {onBack && <Button size='sm' variant='primary' onClick={onBack} disabled={isSaving}>{backLabel}</Button>}
+            <Button size='sm' variant='success' onClick={onSave} disabled={readOnly || isSaving}>{saveLabel}</Button>
             <Button
               size='sm'
               variant='outline-secondary'

@@ -17,6 +17,7 @@ import { Typeahead } from "react-bootstrap-typeahead";
 import { ORDER_STATUS_OPTIONS, normalizeOrderStatus } from './orderStatus';
 import { ORDER_TTN_STATUS_OPTIONS, normalizeOrderTtnStatus } from './orderTtnStatus';
 import { normalizeOrderSpecificationStatus } from './orderSpecificationStatus';
+import { receiveOrderLock } from './orderEditSession';
 
 const DATE_FILTER_TYPE_OPTIONS = [
   { value: 'created', label: 'Создания' },
@@ -742,7 +743,7 @@ function AllOrders() {
             return;
           }
           setEditingOrder(() => freshOrder);
-          setOrderEditLock(lock);
+          setOrderEditLock(receiveOrderLock(lock));
           navigate('/editorder');
         }
       })

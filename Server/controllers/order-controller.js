@@ -1,6 +1,7 @@
 const fs = require("fs");
 const PDFDocument = require("pdfkit");
 const { pool } = require("../db");
+const orderLocks = require('../services/order-locks');
 const { writeAuditLog, listAuditLogsForEntity } = require("../utils/audit-log");
 
 const REPORT_PAGE_SIZE = "A4";
@@ -557,9 +558,7 @@ function buildReport(orderId, order, showFinBlock) {
 const ORDER_DIFF_IGNORED_KEYS = new Set(["id", "haveEmptyBuyerH"]);
 const ORDER_DIFF_MAX_CHANGES_IN_LOG = 200;
 const ORDER_DIFF_MAX_VALUE_LEN = 180;
-const LOCKED_ORDER_STATUSES = new Set(["Заприходована", "Реализована"]);
 const LOCKED_ORDER_MESSAGE = "Заявка заприходована или реализована. Изменения доступны только бухгалтеру или администратору.";
-const EDIT_LOCK_MESSAGE = "Заявка открыта другим пользователем. Изменения не сохранены. Обновите заявку.";
 const ORDER_DIFF_DEFAULT_VALUES = {
     orderStatus: "Создана",
     ttnStatus: "Х",
@@ -643,32 +642,6 @@ function orderRowToClientOrder(row) {
     return order;
 }
 
-function lockRowToClientLock(lockRow, currentUserId) {
-    if (!lockRow) {
-        return {
-            locked: false,
-            canEdit: true,
-            isOwner: true,
-            orderId: null,
-            userId: currentUserId === undefined || currentUserId === null ? "" : String(currentUserId),
-            userName: "",
-            lockedAt: null,
-        };
-    }
-
-    const currentUserIdText = currentUserId === undefined || currentUserId === null ? "" : String(currentUserId);
-    const lockUserId = lockRow.user_id === undefined || lockRow.user_id === null ? "" : String(lockRow.user_id);
-    const isOwner = lockUserId === currentUserIdText;
-    return {
-        locked: true,
-        canEdit: isOwner,
-        isOwner,
-        orderId: lockRow.order_id || null,
-        userId: lockUserId,
-        userName: lockRow.user_name || "",
-        lockedAt: lockRow.locked_at || null,
-    };
-}
 
 function normalizeAuditTtnStatus(value) {
     const text = isBlankAuditValue(value) ? ORDER_DIFF_DEFAULT_VALUES.ttnStatus : String(value).trim();
@@ -801,6 +774,52 @@ function buildOrderChanges(beforeOrder, afterOrder) {
     return changes;
 }
 
+function sendOrderError(res, error) {
+    if (error.code === '23505') return res.status(409).json({ message: 'Заявка с таким номером уже существует' });
+    if (!error.status) console.error('Order operation failed:', error);
+    return res.status(error.status || 500).json({
+        message: error.status ? error.message : 'Не удалось выполнить операцию с заявкой',
+        ...(error.lock ? { lock: error.lock } : {}),
+    });
+}
+
+async function saveExistingOrder(req, res, finishing) {
+    try {
+        const order = req.body.editingOrder;
+        const requestedNumber = parseOrderNumber(order?.orderNumber ?? order?.order_number);
+        if (Number.isNaN(requestedNumber)) throw orderLocks.httpError(400, 'Некорректный номер заявки');
+        if (!Array.isArray(order?.suppliers) || !order.suppliers.length || !Array.isArray(order?.buyers) || !order.buyers.length) {
+            throw orderLocks.httpError(400, 'Заполните разделы Поставщики и Покупатели');
+        }
+        const result = await orderLocks.withOrderTransaction(order?.id, async (db, row, lock, now) => {
+            orderLocks.requireOwner(lock, req.body.userId, req.body.lockId, now, finishing);
+            if (!orderLocks.canEditStatus(row.orderjson, req.body.rights) || !orderLocks.canEditStatus(order, req.body.rights)) {
+                throw orderLocks.httpError(403, LOCKED_ORDER_MESSAGE);
+            }
+            const orderNumber = requestedNumber === null ? row.order_number : requestedNumber;
+            const previous = { ...row.orderjson, orderNumber: row.order_number };
+            const next = { ...order, orderNumber };
+            await db.query('UPDATE orders SET orderjson = $1, order_number = $2 WHERE id = $3', [next, orderNumber, order.id]);
+            if (finishing) await db.query('DELETE FROM order_edit_locks WHERE order_id = $1 AND lock_id = $2', [order.id, req.body.lockId]);
+            return { previous, next, orderNumber };
+        });
+        // Saving has already committed; ancillary failures must not report a failed save.
+        await syncOrderNumberSequence().catch(error => console.error('Order sequence sync:', error));
+        const changes = buildOrderChanges(result.previous, result.next);
+        await writeAuditLog({
+            actorUserId: req.body.userId, actorName: req.body.user, action: 'UPDATE_ORDER',
+            entityType: 'order', entityId: order.id, route: finishing ? '/user/finishorderedit' : '/user/editorder',
+            payload: { orderNumber: result.orderNumber, totalChanges: changes.length,
+                shownChanges: Math.min(changes.length, ORDER_DIFF_MAX_CHANGES_IN_LOG),
+                truncated: changes.length > ORDER_DIFF_MAX_CHANGES_IN_LOG,
+                changes: changes.slice(0, ORDER_DIFF_MAX_CHANGES_IN_LOG) },
+        }).catch(error => console.error('Audit log error (UPDATE_ORDER):', error));
+        res.sendStatus(202);
+    } catch (error) {
+        sendOrderError(res, error);
+    }
+}
+
 class OrderController {
     async neworder(req, res) {
         const order = req.body.order;
@@ -864,91 +883,33 @@ class OrderController {
     }
 
     async openorderforedit(req, res) {
-        const id = Number(req.body?.id);
-        if (!Number.isInteger(id) || id <= 0) {
-            res.status(400).json({ message: "Некорректный номер заявки" });
-            return;
-        }
-
-        const userId = req.body.userId === undefined || req.body.userId === null ? "" : String(req.body.userId);
-        const userName = req.body.user || "";
-
         try {
-            const orderResult = await pool.query("select id, order_number, orderjson from orders where id = $1", [id]);
-            const orderRow = orderResult.rows?.[0];
-            if (!orderRow) {
-                res.status(404).json({ message: "Заявка не найдена" });
-                return;
-            }
-
-            const insertLockResult = await pool.query(
-                `INSERT INTO order_edit_locks(order_id, user_id, user_name)
-                 VALUES ($1, $2, $3)
-                 ON CONFLICT (order_id) DO NOTHING
-                 RETURNING order_id, user_id, user_name, locked_at`,
-                [id, userId, userName]
-            );
-
-            let lockRow = insertLockResult.rows?.[0];
-            if (!lockRow) {
-                const lockResult = await pool.query(
-                    "select order_id, user_id, user_name, locked_at from order_edit_locks where order_id = $1",
-                    [id]
-                );
-                lockRow = lockResult.rows?.[0] || null;
-            }
-
-            res.status(202).json({
-                order: orderRowToClientOrder(orderRow),
-                lock: lockRowToClientLock(lockRow, userId),
-            });
-        } catch (err) {
-            console.error("Error open order for edit", err.stack || err);
-            res.status(500).json({ message: "ошибка доступа к базе данных" });
+            const result = await orderLocks.openOrder(req.body?.id, req.body.userId, req.body.user || "", req.body.rights);
+            res.status(202).json({ ...result, order: orderRowToClientOrder(result.order) });
+        } catch (error) {
+            sendOrderError(res, error);
         }
     }
 
     async releaseorderlock(req, res) {
-        const id = Number(req.body?.id || req.query?.id);
-        if (!Number.isInteger(id) || id <= 0) {
-            res.status(400).json({ message: "Некорректный номер заявки" });
-            return;
-        }
-
         try {
-            await pool.query(
-                "delete from order_edit_locks where order_id = $1 and user_id = $2",
-                [id, String(req.body.userId)]
-            );
+            await orderLocks.releaseOrder(req.body?.id || req.query?.id, req.body.userId, req.body?.lockId || req.query?.lockId);
             res.sendStatus(202);
-        } catch (err) {
-            console.error("Error release order lock", err.stack || err);
-            res.status(500).json({ message: "ошибка доступа к базе данных" });
+        } catch (error) {
+            sendOrderError(res, error);
         }
     }
 
     async forceorderunlock(req, res) {
-        const id = Number(req.body?.id);
-        if (!Number.isInteger(id) || id <= 0) {
-            res.status(400).json({ message: "Некорректный номер заявки" });
-            return;
-        }
-
         if (!req.body?.rights?.adminAccess) {
             res.status(403).json({ message: "Снять чужую блокировку может только администратор" });
             return;
         }
-
         try {
-            const result = await pool.query(
-                "delete from order_edit_locks where order_id = $1 RETURNING order_id, user_id, user_name, locked_at",
-                [id]
-            );
-            const releasedLock = result.rows?.[0] || null;
-            res.status(202).json({ released: !!releasedLock });
-        } catch (err) {
-            console.error("Error force order unlock", err.stack || err);
-            res.status(500).json({ message: "ошибка доступа к базе данных" });
+            const released = await orderLocks.releaseOrder(req.body?.id, req.body.userId, req.body?.lockId, true);
+            res.status(202).json({ released });
+        } catch (error) {
+            sendOrderError(res, error);
         }
     }
 
@@ -976,85 +937,11 @@ class OrderController {
     }
 
     async editorder(req, res) {
-        const order = req.body.editingOrder;
-        const requestedOrderNumber = parseOrderNumber(order?.orderNumber ?? order?.order_number);
-        if (Number.isNaN(requestedOrderNumber)) {
-            res.status(400).json({ message: "Некорректный номер заявки" });
-            return;
-        }
+        return saveExistingOrder(req, res, false);
+    }
 
-        try {
-            const previousOrderRes = await pool.query("select order_number, orderjson from orders where id = $1", [order.id]);
-            if (!previousOrderRes?.rows?.[0]) {
-                res.status(404).json({ message: "Заявка не найдена" });
-                return;
-            }
-
-            const previousOrderNumber = previousOrderRes.rows[0].order_number;
-            const orderNumber = requestedOrderNumber === null ? previousOrderNumber : requestedOrderNumber;
-            const previousOrder = {
-                ...(previousOrderRes.rows[0].orderjson || {}),
-                orderNumber: previousOrderNumber,
-            };
-            const lockRes = await pool.query(
-                "select order_id, user_id, user_name, locked_at from order_edit_locks where order_id = $1",
-                [order.id]
-            );
-            const lock = lockRes.rows?.[0];
-            if (!lock || String(lock.user_id) !== String(req.body.userId)) {
-                res.status(423).json({
-                    message: EDIT_LOCK_MESSAGE,
-                    lock: lockRowToClientLock(lock, req.body.userId),
-                });
-                return;
-            }
-
-            const isLockedOrder = LOCKED_ORDER_STATUSES.has(normalizeAuditStatus(previousOrder.orderStatus));
-            const canEditLockedOrder = !!(req.body?.rights?.finBlockAccess || req.body?.rights?.adminAccess);
-            if (isLockedOrder && !canEditLockedOrder) {
-                res.status(403).json({ message: LOCKED_ORDER_MESSAGE });
-                return;
-            }
-
-            const nextOrder = {
-                ...order,
-                orderNumber,
-            };
-
-            await pool.query(
-                "UPDATE orders SET orderjson = $1, order_number = $2 where id = $3",
-                [nextOrder, orderNumber, order.id]
-            );
-            await syncOrderNumberSequence();
-
-            const allChanges = buildOrderChanges(previousOrder, nextOrder);
-            const changes = allChanges.slice(0, ORDER_DIFF_MAX_CHANGES_IN_LOG);
-            writeAuditLog({
-                actorUserId: req.body.userId,
-                actorName: req.body.user,
-                action: "UPDATE_ORDER",
-                entityType: "order",
-                entityId: order?.id,
-                route: "/user/editorder",
-                payload: {
-                    orderNumber,
-                    totalChanges: allChanges.length,
-                    shownChanges: changes.length,
-                    truncated: allChanges.length > changes.length,
-                    changes,
-                },
-            }).catch((logError) => {
-                console.error("Audit log error (UPDATE_ORDER):", logError);
-            });
-            res.sendStatus(202);
-        } catch (err) {
-            if (err?.code === "23505") {
-                res.status(409).json({ message: "Заявка с таким номером уже существует" });
-                return;
-            }
-            console.error("Error connecting to the database", err.stack || err);
-            res.send("ошибка доступа к базе данных");
-        }
+    async finishorderedit(req, res) {
+        return saveExistingOrder(req, res, true);
     }
 
     async orderhistory(req, res) {

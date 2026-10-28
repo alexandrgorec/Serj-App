@@ -13,6 +13,7 @@ import Menu from './Menu';
 import AddUser from './AddUser';
 import DeleteUser from './DeleteUser';
 import ChangePassword from './ChangePassword';
+import OrderEditSettings from './OrderEditSettings';
 import Header from './Header';
 import AlertMessage from './AlertMessage';
 import AuditLog from './AuditLog';
@@ -64,10 +65,10 @@ function writeNewOrderDraft(storageKey, order) {
   }
 }
 
-function releaseOrderLockBestEffort({ apiBaseUrl, token, orderId }) {
-  if (!orderId || !token) return;
-  const url = `${apiBaseUrl}/user/releaseorderlock?token=${encodeURIComponent(token)}&id=${encodeURIComponent(orderId)}`;
-  const payload = JSON.stringify({ id: orderId });
+function releaseOrderLockBestEffort({ apiBaseUrl, token, orderId, lockId }) {
+  if (!orderId || !token || !lockId) return;
+  const url = `${apiBaseUrl}/user/releaseorderlock?token=${encodeURIComponent(token)}&id=${encodeURIComponent(orderId)}&lockId=${encodeURIComponent(lockId)}`;
+  const payload = JSON.stringify({ id: orderId, lockId });
 
   try {
     if (navigator.sendBeacon) {
@@ -142,6 +143,7 @@ function App() {
 
   const [editingOrder, setEditingOrder] = useState(createEmptyEditingOrder());
   const [orderEditLock, setOrderEditLock] = useState(null);
+  const [orderTimerTarget, setOrderTimerTarget] = useState(null);
 
   const [user, setUser] = useState({
     name: '',
@@ -161,15 +163,14 @@ function App() {
       name: '',
       rights: {},
     });
-    setShowMessage(false);
-    setMessage('');
     delete sessionStorage.createdOrderId;
     delete sessionStorage.bgColor;
   };
 
   const logOut = () => {
+    window.dispatchEvent(new Event('serj:beforelogout'));
     if (orderEditLock?.isOwner && orderEditLock?.orderId) {
-      releaseOrderLockBestEffort({ apiBaseUrl, token, orderId: orderEditLock.orderId });
+      releaseOrderLockBestEffort({ apiBaseUrl, token, orderId: orderEditLock.orderId, lockId: orderEditLock.lockId });
     }
     axios.post(`${apiBaseUrl}/guest/logout`, {}, { withCredentials: true }).catch(() => {});
     removeAuthTokens();
@@ -213,11 +214,11 @@ function App() {
         const accessToken = await refreshAccessToken();
         return aAxios(attachTokenToRequestConfig(originalRequest, accessToken));
       } catch (refreshError) {
-        logOut();
+        if (!originalRequest.preserveSessionOnAuthError) logOut();
       }
     }
     else if (error?.response?.status === 401) {
-      logOut();
+      if (!originalRequest?.preserveSessionOnAuthError) logOut();
     }
     if (error?.response?.status === 403) {
 
@@ -284,13 +285,13 @@ function App() {
     size = 'sm';
   }
   return (
-    <userContext.Provider value={{ user, logOut, setUser, apiBaseUrl, setToast, aAxios, editingOrder, setEditingOrder, orderEditLock, setOrderEditLock, size, display }}>
+    <userContext.Provider value={{ user, logOut, setUser, apiBaseUrl, setToast, aAxios, editingOrder, setEditingOrder, orderEditLock, setOrderEditLock, orderTimerTarget, size, display }}>
       <BrowserRouter>
+        <AlertMessage showMessage={showMessage} setShowMessage={setShowMessage} toastVariant={toastVariant} message={message} />
         {!token && <Login setToken={setToken} />}
         {token && <div className='appViewport'>
-          <AlertMessage showMessage={showMessage} setShowMessage={setShowMessage} toastVariant={toastVariant} message={message} />
           <div className='app' >
-            <Header />
+            <Header timerRef={setOrderTimerTarget} />
             <section className='content'>
               <Routes>
                 <Route path='/neworder' element={<OrderEditor mode="new" order={newOrder} setOrder={setNewOrder} />}></Route>
@@ -302,6 +303,7 @@ function App() {
                   {user.rights.adminAccess && <Route path='/menu/deleteuser' element={<DeleteUser />}></Route>}
                   {user.rights.adminAccess && <Route path='/menu/auditlog' element={<AuditLog />}></Route>}
                   <Route path='/menu/changepassword' element={<ChangePassword />}></Route>
+                  <Route path='/menu/ordereditsettings' element={<OrderEditSettings />}></Route>
                   <Route path='/menu/profile' element={'profile'}></Route>
                 </Route>
                 <Route path='/mailing' element={<Mailings />}></Route>

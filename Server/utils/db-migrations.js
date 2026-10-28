@@ -4,6 +4,7 @@ let ensureOrderNumberColumnPromise = null;
 let ensureMailingsTablePromise = null;
 let ensureOrderEditLocksTablePromise = null;
 let ensureUserRefreshTokenColumnPromise = null;
+let ensureOrderEditLeaseSchemaPromise = null;
 
 async function ensureOrderNumberColumn() {
     if (!ensureOrderNumberColumnPromise) {
@@ -113,9 +114,46 @@ async function ensureUserRefreshTokenColumn() {
     return ensureUserRefreshTokenColumnPromise;
 }
 
+async function ensureOrderEditLeaseSchema() {
+    if (!ensureOrderEditLeaseSchemaPromise) {
+        ensureOrderEditLeaseSchemaPromise = (async () => {
+            const db = await pool.connect();
+            try {
+                await db.query('BEGIN');
+                await db.query(`CREATE TABLE IF NOT EXISTS user_order_settings (
+                    user_id TEXT PRIMARY KEY,
+                    edit_minutes BIGINT NOT NULL DEFAULT 20 CHECK (edit_minutes > 0)
+                )`);
+                await db.query('ALTER TABLE order_edit_locks ADD COLUMN IF NOT EXISTS lock_id UUID');
+                await db.query('ALTER TABLE order_edit_locks ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ');
+                await db.query('ALTER TABLE order_edit_locks ADD COLUMN IF NOT EXISTS release_at TIMESTAMPTZ');
+                await db.query(`UPDATE order_edit_locks SET
+                    lock_id = COALESCE(lock_id, md5(random()::text || clock_timestamp()::text || order_id::text)::uuid),
+                    expires_at = COALESCE(expires_at, locked_at + interval '20 minutes'),
+                    release_at = COALESCE(expires_at, locked_at + interval '20 minutes')
+                    WHERE lock_id IS NULL OR expires_at IS NULL OR release_at IS NULL`);
+                // Existing leases retain their original deadline, but no longer have a grace period.
+                await db.query('UPDATE order_edit_locks SET release_at = expires_at WHERE release_at IS DISTINCT FROM expires_at');
+                await db.query('ALTER TABLE order_edit_locks ALTER COLUMN lock_id SET NOT NULL');
+                await db.query('ALTER TABLE order_edit_locks ALTER COLUMN expires_at SET NOT NULL');
+                await db.query('ALTER TABLE order_edit_locks ALTER COLUMN release_at SET NOT NULL');
+                await db.query('CREATE UNIQUE INDEX IF NOT EXISTS order_edit_locks_lock_id_uidx ON order_edit_locks(lock_id)');
+                await db.query('COMMIT');
+            } catch (error) {
+                await db.query('ROLLBACK').catch(() => {});
+                throw error;
+            } finally {
+                db.release();
+            }
+        })().catch((error) => { ensureOrderEditLeaseSchemaPromise = null; throw error; });
+    }
+    return ensureOrderEditLeaseSchemaPromise;
+}
+
 module.exports = {
     ensureOrderNumberColumn,
     ensureMailingsTable,
     ensureOrderEditLocksTable,
     ensureUserRefreshTokenColumn,
+    ensureOrderEditLeaseSchema,
 };

@@ -145,6 +145,7 @@ function TDSumma({ object, field = '', fontSize = '16px', display = '', calcTrig
                     ref={ref}
                     inputMode="decimal"
                     disabled={disabled}
+                    onChange={(event) => { object[field] = event.target.value; }}
                     onKeyDown={(evt) => {
                         if (!(evt.key.match(/\d/)
                             || evt.key === 'Backspace'

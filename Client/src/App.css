@@ -5,12 +5,74 @@
 }
 
 .activeComponentHeader {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
     background-color: rgba(31, 60, 247, 0.172);
     user-select: none;
     width: 100%;
     min-height: 44px;
     padding: 6px 10px;
+}
+
+.header-brand, .header-account, .header-user, .header-logout {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+}
+
+.header-brand .logo, .header-account svg {
+    flex-shrink: 0;
+}
+
+.header-account {
+    justify-content: flex-end;
+    gap: 16px;
+}
+
+.header-userName {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.header-logout {
+    flex-shrink: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    padding: 8px 0;
+    font: inherit;
+    cursor: pointer;
+}
+
+.header-timerSlot {
+    justify-self: center;
+}
+
+.orderEditor-timer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px;
+    border: 1px solid #9dcbd6;
+    border-radius: 6px;
+    background: #e7f5f9;
+    color: #285563;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.orderEditor-timer strong {
+    font-variant-numeric: tabular-nums;
+}
+
+.orderEditor-timer--saving {
+    background: #fff3cd;
+    border-color: #e5cf89;
+    color: #735a13;
 }
 
 .app {
@@ -22,6 +84,27 @@
     grid-template-rows: auto minmax(0, 1fr) auto;
     background-color: aliceblue;
    
+}
+
+@media (max-width: 480px) {
+    .activeComponentHeader {
+        gap: 6px;
+    }
+
+    .header-account {
+        gap: 6px;
+    }
+
+    .header-logoutText,
+    .activeComponentHeader:has(.orderEditor-timer) .header-brandName {
+        display: none;
+    }
+
+    .orderEditor-timer {
+        gap: 6px;
+        padding: 5px 6px;
+        font-size: 11px;
+    }
 }
 
 .logo{
