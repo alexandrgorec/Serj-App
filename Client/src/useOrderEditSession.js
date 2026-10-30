@@ -22,8 +22,12 @@ export default function useOrderEditSession({ userId, order, lock, enabled, onEx
     const snapshot = current.current.order;
     if (String(snapshot?.id) !== String(state.orderId)) return false;
     const serialized = comparableOrder(snapshot);
-    if (serialized === comparableOrder(state.base) && !state.dirty && force !== true) return true;
     try {
+      if (serialized === comparableOrder(state.base) && force !== true) {
+        if (state.dirty) window.localStorage.removeItem(state.key);
+        state.dirty = false;
+        return true;
+      }
       window.localStorage.setItem(state.key, JSON.stringify({
         order: snapshot, base: state.base, savedAt: Date.now(), lockId: state.lockId,
       }));
@@ -32,16 +36,34 @@ export default function useOrderEditSession({ userId, order, lock, enabled, onEx
     } catch (_) { warnStorage(); return false; }
   };
 
-  const acknowledgeSaved = (saved, finished = false) => {
+  const beginSave = () => {
     const state = session.current;
-    if (!state) return;
+    const drafts = new Map();
+    if (state) {
+      try {
+        const storage = window.localStorage;
+        for (let index = 0; index < storage.length; index += 1) {
+          const key = storage.key(index);
+          if (key?.startsWith(state.prefix)) drafts.set(key, storage.getItem(key));
+        }
+      } catch (_) { warnStorage(); }
+    }
+    return { state, drafts };
+  };
+
+  const acknowledgeSaved = (saved, finished = false, attempt = beginSave()) => {
+    const state = attempt.state;
+    if (!state || session.current !== state) return;
     state.base = JSON.parse(JSON.stringify(saved));
     state.dirty = false;
     state.finished = finished;
     try {
       window.localStorage.removeItem(state.key);
-      if (state.restoredKey) window.localStorage.removeItem(state.restoredKey);
-      state.restoredKey = null;
+      // Clear every superseded draft, but preserve changes another tab made during the request.
+      for (const [key, raw] of attempt.drafts) {
+        if (window.localStorage.getItem(key) === raw) window.localStorage.removeItem(key);
+      }
+      setRecovery([]);
     } catch (_) { warnStorage(); }
   };
 
@@ -51,8 +73,7 @@ export default function useOrderEditSession({ userId, order, lock, enabled, onEx
       setRecovery(items => items.filter(item => item.key !== draft.key));
     } catch (_) { warnStorage(); }
   };
-  const markRestored = draft => {
-    if (session.current) session.current.restoredKey = draft.key;
+  const markRestored = () => {
     setRecovery([]);
   };
 
@@ -60,6 +81,7 @@ export default function useOrderEditSession({ userId, order, lock, enabled, onEx
     if (!userId || !order?.id || !lock?.isOwner || !lock?.lockId || !enabled) return undefined;
     const orderId = order.id;
     const state = {
+      prefix: draftPrefix(userId, orderId),
       key: `${draftPrefix(userId, orderId)}${lock.lockId}:${tabId.current}`,
       orderId, lockId: lock.lockId, base: JSON.parse(JSON.stringify(current.current.order)),
       dirty: false, finished: false, expired: false,
@@ -107,5 +129,5 @@ export default function useOrderEditSession({ userId, order, lock, enabled, onEx
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, order?.id, lock?.lockId, lock?.isOwner, enabled]);
 
-  return { phase, recovery, captureDraft, acknowledgeSaved, discardDraft, markRestored };
+  return { phase, recovery, captureDraft, beginSave, acknowledgeSaved, discardDraft, markRestored };
 }

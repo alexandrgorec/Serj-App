@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import OrderEditor from './OrderEditor';
 import Header from './Header';
 import { userContext } from './App';
-import { readOrderDrafts, receiveOrderLock } from './orderEditSession';
+import { draftPrefix, readOrderDrafts, receiveOrderLock } from './orderEditSession';
 
 const mockNavigate = jest.fn();
 jest.mock('react-router-dom', () => ({ useNavigate: () => mockNavigate }), { virtual: true });
@@ -148,4 +148,50 @@ test('manual save and close is atomic, read-only close never saves', async () =>
   expect(button('Записать').disabled).toBe(true);
   post.mockClear(); await act(async () => button('Закрыть').click());
   expect(post).not.toHaveBeenCalled();
+});
+
+test.each([[1200, 'Записать'], [1200, 'Записать и закрыть'], [400, 'Записать'], [400, 'Записать и закрыть']])('restore, %s px / %s, reopen does not offer stale drafts again', async (width, saveLabel) => {
+  window.innerWidth = width;
+  for (const [key, comment, savedAt] of [['old', 'old version', 1], ['latest', 'restored version', 2]]) {
+    localStorage.setItem(draftPrefix(7, 1) + key, JSON.stringify({
+      order: { ...initialOrder, comments: comment }, base: initialOrder, savedAt,
+    }));
+  }
+  await render();
+  const restore = [...document.querySelectorAll('button')].find(el => el.textContent === 'Восстановить черновик');
+  expect(restore).toBeDefined();
+  await act(async () => restore.click());
+  await act(async () => button(saveLabel).click());
+  const endpoint = saveLabel === 'Записать' ? '/user/editorder' : '/user/finishorderedit';
+  const finish = post.mock.calls.find(([url]) => url === endpoint);
+  expect(finish[1].editingOrder.comments).toBe('restored version');
+  expect(readOrderDrafts(localStorage, 7, 1)).toHaveLength(0);
+  await act(async () => root.unmount());
+  await advance(0);
+  expect(readOrderDrafts(localStorage, 7, 1)).toHaveLength(0);
+  initialOrder = JSON.parse(JSON.stringify(finish[1].editingOrder));
+  initialLock = { ...initialLock, lockId: 'reopened' };
+  root = createRoot(host);
+  await render();
+  expect(document.body.textContent).not.toContain('Найдены несохранённые изменения');
+  expect(readOrderDrafts(localStorage, 7, 1)).toHaveLength(0);
+});
+
+test('failed save and close keeps both recovered and older drafts', async () => {
+  for (const key of ['old', 'latest']) {
+    localStorage.setItem(draftPrefix(7, 1) + key, JSON.stringify({
+      order: { ...initialOrder, comments: key }, base: initialOrder, savedAt: 1,
+    }));
+  }
+  post.mockImplementation(async url => {
+    if (url === '/user/finishorderedit') throw { response: { status: 500, data: { message: 'Error' } } };
+    return { status: 202, data: { items: [] } };
+  });
+  await render();
+  await act(async () => [...document.querySelectorAll('button')].find(el => el.textContent === 'Восстановить черновик').click());
+  await act(async () => button('Записать и закрыть').click());
+  expect(localStorage.getItem(draftPrefix(7, 1) + 'old')).not.toBeNull();
+  expect(localStorage.getItem(draftPrefix(7, 1) + 'latest')).not.toBeNull();
+  expect(readOrderDrafts(localStorage, 7, 1)).toHaveLength(3);
+  expect(mockNavigate).not.toHaveBeenCalled();
 });

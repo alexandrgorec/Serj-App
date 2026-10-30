@@ -511,6 +511,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
     try {
       document.activeElement?.blur?.();
       lease.captureDraft(true);
+      const draftSaveAttempt = lease.beginSave();
       if (!canEditOrder) throw new Error(LOCKED_ORDER_MESSAGE);
       orderToSave = JSON.parse(JSON.stringify(buildOrderForSave()));
       if (!orderToSave.buyers?.length || !orderToSave.suppliers?.length) {
@@ -528,7 +529,7 @@ function OrderEditor({ mode = 'new', order, setOrder }) {
       }));
       if (response.status !== 202) throw new Error('Сервер не подтвердил сохранение заявки');
 
-      lease.acknowledgeSaved(orderToSave, closeAfterSave);
+      lease.acknowledgeSaved(orderToSave, closeAfterSave, draftSaveAttempt);
       setMessage('');
       // Updating suggestions is independent of the committed order and must not delay closing.
       syncOrderSelectLists({ order: orderToSave, user, setUser, aAxios }).catch(error => {
