@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "rclone": "^1.4.0"
+  }
+}

@@ -6,6 +6,7 @@ const app = express();
 const bodyParser = require("body-parser")
 const path = require('path');
 const { pool } = require("./db");
+const { startDatabaseBackup } = require('./services/database-backup');
 const PORT = process.env.PORT || 3001;
 const STATIC_PATH = path.join(__dirname, "../Client/build");
 const { adminRouter } = require('./routers/adminRouter.js')
@@ -57,6 +58,8 @@ async function startServer() {
     await ensureOrderEditLeaseSchema();
     await ensureUserRefreshTokenColumn();
     await ensureAuditLogTable();
+
+    startDatabaseBackup();
 
     const server = app.listen(PORT, () => {
         console.log(`SERVER STARTED ON PORT:${PORT}`);
